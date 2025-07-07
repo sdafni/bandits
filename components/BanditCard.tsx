@@ -21,6 +21,7 @@ export function BanditCard({ bandit }: BanditCardProps) {
         source={bandit.image}
         style={styles.image}
         contentFit="cover"
+        contentPosition={{ top: "10%" }}
       />
       
       <View style={styles.footer}>
@@ -45,7 +46,7 @@ export function BanditCard({ bandit }: BanditCardProps) {
                 onPress={() => setRating(star)}
               >
                 <IconSymbol
-                  size={20}
+                  size={16}
                   name={star <= rating ? 'star.fill' : 'star'}
                   color={star <= rating ? '#FFD700' : '#666'}
                 />
@@ -53,9 +54,11 @@ export function BanditCard({ bandit }: BanditCardProps) {
             ))}
           </View>
 
+          <ThemedText style={styles.ratingNumber}>{rating}</ThemedText>
+
           <Pressable onPress={() => setIsLiked(!isLiked)}>
             <IconSymbol
-              size={24}
+              size={16}
               name={isLiked ? 'heart.fill' : 'heart'}
               color={isLiked ? '#FF6B6B' : '#666'}
             />
@@ -78,7 +81,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
+    borderRadius: 30,
   },
   footer: {
     flexDirection: 'row',
@@ -109,5 +112,10 @@ const styles = StyleSheet.create({
   rating: {
     flexDirection: 'row',
     gap: 2,
+  },
+  ratingNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 }); 
