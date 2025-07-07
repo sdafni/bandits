@@ -18,19 +18,21 @@ export function BanditCard({ bandit }: BanditCardProps) {
   return (
     <ThemedView style={styles.card}>
       <Image
-        source={{ uri: bandit.image }}
+        source={bandit.image}
         style={styles.image}
         contentFit="cover"
       />
       
       <View style={styles.footer}>
         <View style={styles.info}>
-          <ThemedText type="defaultSemiBold">{bandit.name}</ThemedText>
+          <ThemedText type="defaultSemiBold">
+            {bandit.name}, {bandit.age}, {bandit.city}
+          </ThemedText>
           <ThemedText style={styles.occupation}>{bandit.occupation}</ThemedText>
         </View>
 
         <Image 
-          source={{ uri: 'https://picsum.photos/100/100' }}
+          source={require('@/assets/images/banditour-logo.png')}
           style={styles.centerImage}
           contentFit="cover"
         />
@@ -69,22 +71,14 @@ export function BanditCard({ bandit }: BanditCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   image: {
     width: '100%',
     height: 200,
+    borderRadius: 12,
   },
   footer: {
     flexDirection: 'row',
@@ -93,7 +87,6 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
-    alignItems: 'flex-start',
   },
   occupation: {
     fontSize: 14,
@@ -103,7 +96,7 @@ const styles = StyleSheet.create({
   centerImage: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 8,
     marginHorizontal: 12,
   },
   actions: {
