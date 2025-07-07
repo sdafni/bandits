@@ -1,9 +1,9 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
 
+import BandiTeamIcon from '@/assets/icons/bandiTeam.svg';
+import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
 import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -18,33 +18,25 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarPosition: 'top',
+        tabBarStyle: {
+          borderTopWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
       <Tabs.Screen
         name="bandits"
         options={{
-          title: 'Bandits',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+          title: 'local banDit',
+          tabBarIcon: ({ color }) => <LocalBanditsIcon width={28} height={28} fill={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="bandiTeam"
+        options={{
+          title: 'bandiTeam',
+          tabBarIcon: ({ color }) => <BandiTeamIcon width={28} height={28} fill={color} />,
         }}
       />
     </Tabs>
