@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "bandits",
@@ -46,9 +47,12 @@
     },
     "owner": "yuval-dafni",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "sdkVersion"
     },
     "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/fd8c0415-2d8c-4de7-8b1b-7eaa77a5a99f"
     }
   }

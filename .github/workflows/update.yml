@@ -36,10 +36,9 @@ jobs:
         run: npm install
 
       - name: Publish update
-        run: eas update --auto 
-
+        run: eas update --auto       
       - name: Deploy Changes
         run: |
-          eas update --auto --platform all
+          eas update --auto --platform all --branch main --message "Update from GitHub"
           npx expo export --platform web
           eas deploy
