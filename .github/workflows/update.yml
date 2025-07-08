@@ -35,5 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Publish update
-        run: eas update --auto --platform all --channel production  --message "Update from GitHub"
+      - name: Deploy Changes
+        run: |
+          eas update --auto --platform all --branch main --message "Update from GitHub"
+          npx expo export --platform web
+          eas deploy
