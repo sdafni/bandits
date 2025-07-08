@@ -37,3 +37,9 @@ jobs:
 
       - name: Publish update
         run: eas update --auto 
+
+      - name: Deploy Changes
+        run: |
+          eas update --auto --platform all
+          npx expo export --platform web
+          eas deploy
