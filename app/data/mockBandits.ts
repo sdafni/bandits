@@ -6,7 +6,7 @@ export const mockBandits: Bandit[] = [
   {
     id: '1',
     name: 'Nikos',
-    age: 40,
+    age: 41,
     city: 'Athens',
     occupation: 'Local Guide',
     image: require('@/assets/images/bandits/nikos.png'),
