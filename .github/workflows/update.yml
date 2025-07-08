@@ -36,4 +36,4 @@ jobs:
         run: npm install
 
       - name: Publish update
-        run: eas update --auto  --platform all --channel production  --branch main --message "Update from GitHub"
+        run: eas update   --platform all   --branch main --message "Update from GitHub"
