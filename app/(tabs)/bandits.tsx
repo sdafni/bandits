@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { getBandits, toggleBanditLike } from '@/app/services/bandits';
-import { BanditCard } from '@/components/BanditCard';
+import BanditCard from '@/components/BanditCard';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { Bandit } from '../types/bandit';
+import { Database } from '@/lib/database.types';
+type Bandit = Database['public']['Tables']['bandits']['Row'];
 
 export default function BanditsScreen() {
   const [bandits, setBandits] = useState<Bandit[]>([]);
@@ -56,7 +57,7 @@ export default function BanditsScreen() {
           <BanditCard
             key={bandit.id}
             bandit={bandit}
-            onLike={() => handleLike(bandit.id, bandit.isLiked)}
+            onLike={() => handleLike(bandit.id, bandit.is_liked)}
           />
         ))}
       </View>
