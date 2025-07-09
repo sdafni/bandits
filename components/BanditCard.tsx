@@ -1,8 +1,7 @@
 import { Database } from '@/lib/database.types';
 import React from 'react';
-import { Image, Pressable, StyleSheet } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from './ThemedText';
-import { ThemedView } from './ThemedView';
 
 type Bandit = Database['public']['Tables']['bandits']['Row'];
 
@@ -15,64 +14,116 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
   const { id, name, age, city, occupation, image_url, rating, is_liked } = bandit;
 
   return (
-    <ThemedView style={styles.card}>
-      <Image source={{ uri: image_url }} style={styles.image} />
-      <ThemedView style={styles.content}>
-        <ThemedText style={styles.name}>{name}</ThemedText>
-        <ThemedText style={styles.details}>{`${age} years • ${city}`}</ThemedText>
-        <ThemedText style={styles.occupation}>{occupation}</ThemedText>
-        <ThemedView style={styles.footer}>
-          <ThemedText style={styles.rating}>Rating: {rating}/10</ThemedText>
-          {onLike && (
-            <Pressable onPress={() => onLike(id, is_liked)}>
-              <ThemedText style={styles.heart}>{is_liked ? '❤️' : '🤍'}</ThemedText>
-            </Pressable>
-          )}
-        </ThemedView>
-      </ThemedView>
-    </ThemedView>
+    <View style={styles.card}>
+      {/* Main Image */}
+      <Image
+        source={{ uri: image_url }}
+        style={styles.mainImage}
+      />
+      
+      {/* Content Container */}
+      <View style={styles.contentContainer}>
+        {/* Left Section */}
+        <View style={styles.leftSection}>
+          <ThemedText style={styles.mainInfo}>
+            <ThemedText style={styles.bold}>{name}</ThemedText>
+            <ThemedText style={styles.bold}>, {age} years</ThemedText>
+            <ThemedText style={styles.bold}>, {city}</ThemedText>
+          </ThemedText>
+          <ThemedText style={styles.occupation}>{occupation}</ThemedText>
+        </View>
+
+        {/* Center Logo */}
+        <View style={styles.centerSection}>
+          <Image
+            source={require('@/assets/images/banditour-logo.png')}
+            style={styles.logo}
+          />
+        </View>
+
+        {/* Right Section */}
+        <View style={styles.rightSection}>
+          <View style={styles.ratingContainer}>
+            <ThemedText style={styles.stars}>⭐️</ThemedText>
+            <ThemedText style={styles.rating}>{rating}</ThemedText>
+            {onLike && (
+              <Pressable 
+                onPress={() => onLike(id, is_liked)}
+                style={styles.likeButton}
+              >
+                <ThemedText>{is_liked ? '❤️' : '🤍'}</ThemedText>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    overflow: 'hidden', // This ensures the image respects the border radius
     marginVertical: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
-    flexDirection: 'row',
   },
-  image: {
-    width: 120,
-    height: 120,
+  mainImage: {
+    width: '100%',
+    height: 150, // Reduced from 200 to 150 (25% decrease)
+    borderRadius: 30,
   },
-  content: {
-    flex: 1,
-    padding: 12,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  details: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  occupation: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginBottom: 8,
-  },
-  footer: {
+  contentContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  leftSection: {
+    flex: 2, // Give more space to the text sections
+  },
+  centerSection: {
+    flex: 1, // Give the center section a flex value
+    alignItems: 'center', // Center horizontally
+    justifyContent: 'center', // Center vertically
+  },
+  rightSection: {
+    flex: 2, // Give more space to the text sections
+    alignItems: 'flex-end',
+  },
+  mainInfo: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  bold: {
+    fontFamily: 'Caros-ExtraBold',
+    color: '#000000',
+  },
+  occupation: {
+    fontFamily: 'Caros-Regular',
+    fontSize: 12,
+    color: '#777777',
+  },
+  logo: {
+    width: 70,
+    height: 70,
+    resizeMode: 'contain',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stars: {
+    fontSize: 16,
   },
   rating: {
+    fontFamily: 'Caros-Bold',
     fontSize: 14,
+    color: '#000000',
   },
-  heart: {
-    fontSize: 20,
+  likeButton: {
+    marginLeft: 8,
   },
 }); 
