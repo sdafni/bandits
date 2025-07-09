@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { getBandits, toggleBanditLike } from '@/app/services/bandits';
 import BanditCard from '@/components/BanditCard';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { Database } from '@/lib/database.types';
 type Bandit = Database['public']['Tables']['bandits']['Row'];
 
 export default function BanditsScreen() {
   const [bandits, setBandits] = useState<Bandit[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,29 +37,53 @@ export default function BanditsScreen() {
     }
   };
 
+  const filteredBandits = bandits.filter(bandit => 
+    bandit.city.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <ParallaxScrollView
-      headerImage={<View />}
-      headerBackgroundColor={{
-        light: '#ffffff',
-        dark: '#000000',
-      }}
-    >
-      <View style={styles.container}>
-        {bandits.map((bandit) => (
-          <BanditCard
-            key={bandit.id}
-            bandit={bandit}
-            onLike={() => handleLike(bandit.id, bandit.is_liked)}
-          />
-        ))}
-      </View>
-    </ParallaxScrollView>
+    <View style={styles.mainContainer}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search by city..."
+        placeholderTextColor="#666"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.container}>
+          {filteredBandits.map((bandit) => (
+            <BanditCard
+              key={bandit.id}
+              bandit={bandit}
+              onLike={() => handleLike(bandit.id, bandit.is_liked)}
+            />
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  searchInput: {
+    height: 40,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    margin: 16,
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
   container: {
-    flex: 1
+    flex: 1,
+    padding: 16,
+    gap: 16,
   },
 }); 
