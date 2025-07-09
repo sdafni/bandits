@@ -1,73 +1,35 @@
-import { Image } from 'expo-image';
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Database } from '@/lib/database.types';
+import React from 'react';
+import { Image, Pressable, StyleSheet } from 'react-native';
+import { ThemedText } from './ThemedText';
+import { ThemedView } from './ThemedView';
 
-import { Bandit } from '@/app/types/bandit';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+type Bandit = Database['public']['Tables']['bandits']['Row'];
 
 interface BanditCardProps {
   bandit: Bandit;
+  onLike?: (id: string, currentLikeStatus: boolean) => void;
 }
 
-export function BanditCard({ bandit }: BanditCardProps) {
-  const [isLiked, setIsLiked] = useState(bandit.isLiked);
-  const [rating, setRating] = useState(bandit.rating);
+export default function BanditCard({ bandit, onLike }: BanditCardProps) {
+  const { id, name, age, city, occupation, image_url, rating, is_liked } = bandit;
 
   return (
     <ThemedView style={styles.card}>
-      <Image
-        source={bandit.image}
-        style={styles.image}
-        contentFit="cover"
-        contentPosition={{ top: "10%" }}
-      />
-      
-      <View style={styles.footer}>
-        <View style={styles.info}>
-          <ThemedText type="defaultSemiBold">
-            {bandit.name}, {bandit.age}, {bandit.city}
-          </ThemedText>
-          <ThemedText style={styles.occupation}>{bandit.occupation}</ThemedText>
-        </View>
-
-        <Image 
-          source={require('@/assets/images/banditour-logo.png')}
-          style={styles.centerImage}
-          contentFit="cover"
-        />
-
-        <View style={styles.actions}>
-          <View style={styles.rating}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Pressable
-                key={star}
-                onPress={() => setRating(star)}
-              >
-                <IconSymbol
-                  size={16}
-                  name={star <= rating ? 'star.fill' : 'star'}
-                  color={star <= rating ? '#FFD700' : '#666'}
-                />
-              </Pressable>
-            ))}
-          </View>
-
-          <ThemedText style={styles.ratingNumber}>{rating}</ThemedText>
-
-          <Pressable onPress={() => setIsLiked(!isLiked)}>
-            <IconSymbol
-              size={16}
-              name={isLiked ? 'heart.fill' : 'heart'}
-              color={isLiked ? '#FF6B6B' : '#666'}
-            />
-          </Pressable>
-        </View>
-        
-      </View>
-
-
+      <Image source={{ uri: image_url }} style={styles.image} />
+      <ThemedView style={styles.content}>
+        <ThemedText style={styles.name}>{name}</ThemedText>
+        <ThemedText style={styles.details}>{`${age} years • ${city}`}</ThemedText>
+        <ThemedText style={styles.occupation}>{occupation}</ThemedText>
+        <ThemedView style={styles.footer}>
+          <ThemedText style={styles.rating}>Rating: {rating}/10</ThemedText>
+          {onLike && (
+            <Pressable onPress={() => onLike(id, is_liked)}>
+              <ThemedText style={styles.heart}>{is_liked ? '❤️' : '🤍'}</ThemedText>
+            </Pressable>
+          )}
+        </ThemedView>
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -76,46 +38,41 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginVertical: 8,
+    borderRadius: 12,
     overflow: 'hidden',
+    flexDirection: 'row',
   },
   image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 30,
+    width: 120,
+    height: 120,
   },
-  footer: {
-    flexDirection: 'row',
-    padding: 12,
-    alignItems: 'center',
-  },
-  info: {
+  content: {
     flex: 1,
+    padding: 12,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  details: {
+    fontSize: 14,
+    marginBottom: 4,
   },
   occupation: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    fontStyle: 'italic',
+    marginBottom: 8,
   },
-  centerImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    marginHorizontal: 12,
-  },
-  actions: {
+  footer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
-    flex: 1,
-    justifyContent: 'flex-end',
   },
   rating: {
-    flexDirection: 'row',
-    gap: 2,
+    fontSize: 14,
   },
-  ratingNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 4,
+  heart: {
+    fontSize: 20,
   },
 }); 

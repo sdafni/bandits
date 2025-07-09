@@ -1,28 +1,78 @@
-import { mockBandits } from '@/app/data/mockBandits';
+import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { getBandits, toggleBanditLike } from '@/app/services/bandits';
 import { BanditCard } from '@/components/BanditCard';
-import { ThemedView } from '@/components/ThemedView';
-import { ScrollView, StyleSheet } from 'react-native';
+import ParallaxScrollView from '@/components/ParallaxScrollView';
+import { Bandit } from '../types/bandit';
 
 export default function BanditsScreen() {
+  const [bandits, setBandits] = useState<Bandit[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadBandits();
+  }, []);
+
+  const loadBandits = async () => {
+    try {
+      const data = await getBandits();
+      setBandits(data);
+    } catch (error) {
+      console.error('Error loading bandits:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLike = async (id: string, currentLikeStatus: boolean) => {
+    try {
+      await toggleBanditLike(id, currentLikeStatus);
+      // Update local state
+      setBandits(bandits.map(bandit => 
+        bandit.id === id ? { ...bandit, isLiked: !currentLikeStatus } : bandit
+      ));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {mockBandits.map((bandit) => (
-          <BanditCard key={bandit.id} bandit={bandit} />
+    <ParallaxScrollView
+      headerImage={
+        <Image
+          source={require('@/assets/images/banditour-logo.png')}
+          style={styles.headerImage}
+        />
+      }
+      headerBackgroundColor={{
+        light: '#ffffff',
+        dark: '#000000',
+      }}
+    >
+      <View style={styles.container}>
+        {bandits.map((bandit) => (
+          <BanditCard
+            key={bandit.id}
+            bandit={bandit}
+            onLike={() => handleLike(bandit.id, bandit.isLiked)}
+          />
         ))}
-      </ScrollView>
-    </ThemedView>
+      </View>
+    </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
+    gap: 16,
   },
-  scrollContent: {
-    paddingVertical: 16,
+  headerImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
   },
 }); 
