@@ -22,6 +22,8 @@ export interface BanditTable extends BaseTable {
   rating: number;
   is_liked: boolean;
   icon?: string;
+  description?: string;
+  why_follow?: string;
 }
 
 /**

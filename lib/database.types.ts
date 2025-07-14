@@ -14,6 +14,8 @@ export type Database = {
           is_liked: boolean;
           icon: string | null;
           created_at: string;
+          description: string | null;
+          why_follow: string | null;
         };
         Insert: {
           id?: string;
@@ -26,6 +28,8 @@ export type Database = {
           is_liked?: boolean;
           icon?: string | null;
           created_at?: string;
+          description: string | null;
+          why_follow: string | null;
         };
         Update: {
           id?: string;
@@ -38,6 +42,8 @@ export type Database = {
           is_liked?: boolean;
           icon?: string | null;
           created_at?: string;
+          description: string | null;
+          why_follow: string | null;
         };
       };
     };
