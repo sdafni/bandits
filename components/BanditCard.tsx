@@ -97,11 +97,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   mainInfo: {
-    fontSize: 14,
+    fontSize: 12, //doesnt work , i overrode ThemedText
+    lineHeight: 12,
+    letterSpacing: 0,
     marginBottom: 4,
   },
   bold: {
-    fontFamily: 'Caros-ExtraBold',
+    fontFamily: 'Caros',
+    fontWeight: '700',
     color: '#000000',
   },
   occupation: {

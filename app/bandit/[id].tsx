@@ -62,7 +62,12 @@ export default function BanditScreen() {
     <>
       <Stack.Screen options={{ headerShown: true, title: bandit.name }} />
       <View style={styles.container}>
-        <Image source={{ uri: bandit.image_url }} style={styles.image} />
+        <View style={styles.imageContainer}>
+          <Image 
+            source={{ uri: bandit.image_url }} 
+            style={styles.image}
+          />
+        </View>
         <View style={styles.content}>
           <Text style={styles.description}>{bandit.description}</Text>
           <Text style={styles.whyFollow}>{bandit.why_follow}</Text>
@@ -75,21 +80,33 @@ export default function BanditScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  imageContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   image: {
     width: '100%',
-    aspectRatio: 1,
+    height: 200,
+    borderRadius: 30,
+    resizeMode: 'cover',
+    overflow: 'hidden',
   },
   content: {
     padding: 16,
+    paddingTop: 0,
   },
   description: {
     fontSize: 16,
     marginBottom: 16,
+    lineHeight: 24,
+    color: '#333',
   },
   whyFollow: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
   },
   loadingContainer: {
     flex: 1,
