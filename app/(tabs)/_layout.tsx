@@ -17,33 +17,33 @@ export default function TabLayout() {
   return (
     <View style={{ flex: 1 }}>
       <ModeHeader />
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarButton: HapticTab,
-          tabBarBackground: TabBarBackground,
-          tabBarPosition: 'top',
-          tabBarStyle: {
-            borderTopWidth: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
-          },
-        }}>
-        <Tabs.Screen
-          name="bandits"
-          options={{
-            title: 'local banDit',
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarBackground: TabBarBackground,
+        tabBarPosition: 'top',
+        tabBarStyle: {
+          borderTopWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        },
+      }}>
+      <Tabs.Screen
+        name="bandits"
+        options={{
+          title: 'local banDit',
             tabBarIcon: () => <LocalBanditsIcon width={28} height={28} fill={iconColor} />,
-          }}
-        />
-        <Tabs.Screen
-          name="bandiTeam"
-          options={{
-            title: 'bandiTeam',
+        }}
+      />
+      <Tabs.Screen
+        name="bandiTeam"
+        options={{
+          title: 'bandiTeam',
             tabBarIcon: () => <BandiTeamIcon width={28} height={28} fill={iconColor} />,
-          }}
-        />
-      </Tabs>
+        }}
+      />
+    </Tabs>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import { Database } from '@/lib/database.types';
+import { router } from 'expo-router';
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 
 type Bandit = Database['public']['Tables']['bandits']['Row'];
@@ -14,7 +15,10 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
   const { id, name, age, city, occupation, image_url, rating, is_liked } = bandit;
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      onPress={() => router.push(`/bandit/${bandit.id}`)}
+      activeOpacity={0.8}
+    >
       {/* Main Image */}
       <Image
         source={{ uri: image_url }}
@@ -57,7 +61,7 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
