@@ -74,8 +74,11 @@ const styles = StyleSheet.create({
   },
   mainImage: {
     width: '100%',
-    height: 150, // Reduced from 200 to 150 (25% decrease)
+    height: 143,
+ 
     borderRadius: 30,
+    opacity: 1,
+    transform: [{ rotate: '0deg' }],
   },
   contentContainer: {
     flexDirection: 'row',

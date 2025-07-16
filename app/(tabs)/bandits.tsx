@@ -85,10 +85,10 @@ const styles = StyleSheet.create({
   },
   searchWrapper: {
     marginTop: 13,
-    marginBottom: 5,
+    marginBottom: 13,
 
     marginHorizontal: 16,
-    height: 65, // 40 * 1.3 = ~52 (30% increase)
+    height: 64, // 40 * 1.3 = ~52 (30% increase)
   },
   searchInputContainer: {
     backgroundColor: '#FFFFFF',
