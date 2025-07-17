@@ -25,7 +25,7 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
         style={styles.mainImage}
       />
       
-      {/* Content Container */}
+      {/* bandit bottom bar */}
       <View style={styles.contentContainer}>
         {/* Left Section */}
         <View style={styles.leftSection}>
@@ -61,6 +61,7 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
           </View>
         </View>
       </View>
+
     </TouchableOpacity>
   );
 }
