@@ -28,6 +28,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Caros',
     fontWeight: '700',
     fontSize: 24,
-    lineHeight: 
   },
 }); 
