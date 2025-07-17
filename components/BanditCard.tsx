@@ -12,7 +12,7 @@ interface BanditCardProps {
 }
 
 export default function BanditCard({ bandit, onLike }: BanditCardProps) {
-  const { id, name, age, city, occupation, image_url, rating, is_liked } = bandit;
+  const { id, name, family_name, age, city, occupation, image_url, rating, is_liked } = bandit;
 
   return (
     <TouchableOpacity 

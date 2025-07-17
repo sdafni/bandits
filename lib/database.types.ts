@@ -6,6 +6,7 @@ export type Database = {
         Row: {
           id: string;
           name: string;
+          family_name: string;
           age: number;
           city: string;
           occupation: string;
@@ -20,6 +21,7 @@ export type Database = {
         Insert: {
           id?: string;
           name: string;
+          family_name: string;
           age: number;
           city: string;
           occupation: string;
@@ -34,6 +36,7 @@ export type Database = {
         Update: {
           id?: string;
           name?: string;
+          family_name?: string;
           age?: number;
           city?: string;
           occupation?: string;

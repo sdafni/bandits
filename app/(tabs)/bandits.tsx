@@ -65,12 +65,12 @@ export default function BanditsScreen() {
       />
       <ScrollView style={styles.scrollView}>
         <View style={styles.container}>
-          {filteredBandits.map((bandit) => (
-            <BanditCard
-              key={bandit.id}
-              bandit={bandit}
-              onLike={() => handleLike(bandit.id, bandit.is_liked)}
-            />
+                {filteredBandits.map((bandit) => (
+                  <BanditCard
+                    key={bandit.id}
+                    bandit={bandit}
+                    onLike={() => handleLike(bandit.id, bandit.is_liked)}
+                  />
           ))}
         </View>
       </ScrollView>

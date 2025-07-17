@@ -15,6 +15,7 @@ export interface Tables {
 
 export interface BanditTable extends BaseTable {
   name: string;
+  family_name: string;
   age: number;
   city: string;
   occupation: string;
