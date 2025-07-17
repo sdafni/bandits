@@ -1,7 +1,7 @@
 import { Database } from '@/lib/database.types';
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 
 type Bandit = Database['public']['Tables']['bandits']['Row'];
@@ -29,12 +29,14 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
       <View style={styles.contentContainer}>
         {/* Left Section */}
         <View style={styles.leftSection}>
-          <ThemedText style={styles.mainInfo}>
-            <ThemedText style={styles.bold}>{name}</ThemedText>
-            <ThemedText style={styles.bold}>, {age} years</ThemedText>
-            <ThemedText style={styles.bold}>, {city}</ThemedText>
-          </ThemedText>
-          <ThemedText style={styles.occupation}>{occupation}</ThemedText>
+          
+
+          <Text style={styles.mainInfo}>
+            <Text style={styles.caros_700_12}>{name}</Text>
+            <Text style={styles.caros_700_12}>, {age} years</Text>
+            <Text style={styles.caros_700_12}>, {city}</Text>
+          </Text>
+          <Text style={styles.caros_400_8}>{occupation}</Text>
         </View>
 
         {/* Center Logo */}
@@ -67,11 +69,23 @@ export default function BanditCard({ bandit, onLike }: BanditCardProps) {
 }
 
 const styles = StyleSheet.create({
+
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 30,
     overflow: 'hidden', // This ensures the image respects the border radius
     marginVertical: 8,
+  },
+  caros_700_12: {
+    fontFamily: 'Caros',
+    fontWeight: '700',
+    color: '#000000',
+  },
+  caros_400_8: {
+    fontFamily: 'Caros',
+    fontWeight: '400',
+    color: '#777777',
+    fontSize: 8,
   },
   mainImage: {
     width: '100%',

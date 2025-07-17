@@ -63,46 +63,50 @@ export default function BanditScreen() {
     <>
       <Stack.Screen options={{ headerShown: true, title: bandit.name }} />
       
-      <View >
-        <Text style={styles.cityName}>{bandit.city} </Text>
-      </View>
-
+   
       <View style={styles.container}>
+
+           <View >
+            <Text style={styles.cityName}> {bandit.city} </Text>
+            <Text >Find local banDits, review their city guides, chat with and Enjoy Athens like a local!</Text>
+          </View>
+
+
+
         <View style={styles.imageContainer}>
           <Image 
             source={{ uri: bandit.image_url }} 
-            style={styles.image}
+            style={styles.mainImage}
           />
         </View>
-      {/* bandit bottom bar */}
-      <View style={styles.contentContainer}>
-        {/* Left Section */}
-        <View style={styles.leftSection}>
-          <ThemedText style={styles.mainInfo}>
-            <ThemedText style={styles.bold}>{bandit.name}</ThemedText>
-            <ThemedText style={styles.bold}>{bandit.family_name},</ThemedText>
-            <ThemedText style={styles.bold}>, {bandit.city}</ThemedText>
-          </ThemedText>
+        {/* bandit bottom bar */}
+        <View style={styles.contentContainer}>
+          {/* Left Section */}
+          <View style={styles.leftSection}>
+            <ThemedText style={styles.mainInfo}>
+              <ThemedText style={styles.bold}>{bandit.name} {bandit.family_name}, </ThemedText>
+              <ThemedText style={styles.bold}>{bandit.city}</ThemedText>
+            </ThemedText>
 
-          <ThemedText style={styles.occupation}>({bandit.occupation})</ThemedText>
-        </View>
+            <ThemedText style={styles.occupation}>({bandit.occupation})</ThemedText>
+          </View>
 
-        {/* Center Logo */}
-        <View style={styles.centerSection}>
-          <Image
-            source={require('@/assets/images/banditour-logo.png')}
-            style={styles.logo}
-          />
-        </View>
+          {/* Center Logo */}
+          <View style={styles.centerSection}>
+            <Image
+              source={require('@/assets/images/banditour-logo.png')}
+              style={styles.logo}
+            />
+          </View>
 
-        {/* Right Section */}
-        <View style={styles.rightSection}>
-          <View style={styles.ratingContainer}>
-            <ThemedText style={styles.stars}>⭐️</ThemedText>
-            <ThemedText style={styles.rating}>{bandit.rating}</ThemedText>
+          {/* Right Section */}
+          <View style={styles.rightSection}>
+            <View style={styles.ratingContainer}>
+              <ThemedText style={styles.stars}>⭐️</ThemedText>
+              <ThemedText style={styles.rating}>{bandit.rating}</ThemedText>
+            </View>
           </View>
         </View>
-      </View>
 
 
 
@@ -122,20 +126,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
   },
   imageContainer: {
-    paddingHorizontal: 16,
     paddingTop: 16,
   },
-  image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 30,
-    resizeMode: 'cover',
-    overflow: 'hidden',
-  },
+
   content: {
-    padding: 16,
     paddingTop: 0,
   },
   description: {
@@ -164,8 +161,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'red',
   },
-
-
   mainImage: {
     width: '100%',
     height: 143,
@@ -200,6 +195,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bold: {
+    fontFamily: 'Caros',
+    fontWeight: '700',
+    color: '#000000',
+  },
+  bigbold: {
     fontFamily: 'Caros',
     fontWeight: '700',
     color: '#000000',

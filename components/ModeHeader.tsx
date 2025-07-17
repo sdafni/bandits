@@ -8,7 +8,7 @@ export function ModeHeader() {
   return (
     <View style={styles.container}>
       <Text style={[
-        styles.text,
+        styles.caros_700_24,
         { color: Colors[colorScheme ?? 'light'].text }
       ]}>
         Traveler
@@ -24,8 +24,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
   },
-  text: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  caros_700_24: {
+    fontFamily: 'Caros',
+    fontWeight: '700',
+    fontSize: 24,
+    lineHeight: 
   },
 }); 
