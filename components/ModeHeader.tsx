@@ -1,4 +1,3 @@
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -7,10 +6,7 @@ export function ModeHeader() {
   
   return (
     <View style={styles.container}>
-      <Text style={[
-        styles.caros_700_24,
-        { color: Colors[colorScheme ?? 'light'].text }
-      ]}>
+      <Text style={styles.c_700_24}>
         Traveler
       </Text>
     </View>
@@ -24,9 +20,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
   },
-  caros_700_24: {
-    fontFamily: 'Caros',
+  c_700_24: {
     fontWeight: '700',
     fontSize: 24,
+    color: '#3C3C3C'
   },
 }); 

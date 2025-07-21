@@ -2,7 +2,6 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/ThemedText';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 type Bandit = Database['public']['Tables']['bandits']['Row'];
@@ -59,65 +58,49 @@ export default function BanditScreen() {
     );
   }
 
-  return (
+
+
+
+  return (  
     <>
       <Stack.Screen options={{ headerShown: true, title: bandit.name }} />
       
-   
-      <View style={styles.container}>
-
-           <View >
-            <Text style={styles.cityName}> {bandit.city} </Text>
-            <Text >Find local banDits, review their city guides, chat with and Enjoy Athens like a local!</Text>
-          </View>
-
-
-
-        <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: bandit.image_url }} 
-            style={styles.mainImage}
-          />
-        </View>
-        {/* bandit bottom bar */}
-        <View style={styles.contentContainer}>
-          {/* Left Section */}
-          <View style={styles.leftSection}>
-            <ThemedText style={styles.mainInfo}>
-              <ThemedText style={styles.bold}>{bandit.name} {bandit.family_name}, </ThemedText>
-              <ThemedText style={styles.bold}>{bandit.city}</ThemedText>
-            </ThemedText>
-
-            <ThemedText style={styles.occupation}>({bandit.occupation})</ThemedText>
-          </View>
-
-          {/* Center Logo */}
-          <View style={styles.centerSection}>
-            <Image
-              source={require('@/assets/images/banditour-logo.png')}
-              style={styles.logo}
-            />
-          </View>
-
-          {/* Right Section */}
-          <View style={styles.rightSection}>
-            <View style={styles.ratingContainer}>
-              <ThemedText style={styles.stars}>⭐️</ThemedText>
-              <ThemedText style={styles.rating}>{bandit.rating}</ThemedText>
-            </View>
-          </View>
-        </View>
+  <View style={styles.container}>
+    <View style={styles.imageContainer}>
+      <Image
+        source={{ uri: bandit.image_url }}
+        style={styles.mainImage}
+      />
+    </View>
+    <Text style={styles.name}>{`${bandit.name} ${bandit.family_name}, ${bandit.city}`}</Text>
+    <Text style={styles.descriptionLine}>{`(${bandit.age} y/o, local banDit)`}</Text>
+    <Text style={styles.occupation}>{bandit.occupation}</Text>
+    
+        <Text style={styles.description}>{bandit.description}</Text>
 
 
 
-        <View style={styles.content}>
-          <Text style={styles.description}>{bandit.description}</Text>
-          <Text style={styles.whyFollow}>{bandit.why_follow}</Text>
-        </View>
+
+    <Text style={styles.whyFollowLabel}>{`Why follow ${bandit.name}?`}</Text>
+
+        {bandit.why_follow ? (
+      <Text style={styles.why_follow}>
+        {bandit.why_follow
+          .split('.')
+          .filter(s => s.trim().length > 0)
+          .map((sentence, i) => (
+            <Text key={i}>
+              {'\n• '}{sentence.trim()}.
+            </Text>
+          ))}
+      </Text>
+    ) : null}
+
+    
+  </View>
 
 
-
-      </View>
+  
     </>
   );
 }
@@ -127,24 +110,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-  },
-  imageContainer: {
     paddingTop: 16,
   },
-
-  content: {
-    paddingTop: 0,
+  imageContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  mainImage: {
+    width: '100%',
+    height: 143,
+    borderRadius: 30,
+    opacity: 1,
+    transform: [{ rotate: '0deg' }],
+  },
+  name: {
+    fontWeight: '700',
+    fontSize: 17,
+    color: '#222',
+    marginBottom: 4,
+  },
+  descriptionLine: {
+    fontWeight: '400',
+    fontSize: 12,
+    color: '#3C3C3C',
+    marginBottom: 4,
+  },
+  occupation: {
+    fontWeight: '600',
+    fontSize: 13,
+    color: '#3C3C3C',
+    marginBottom: 10,
+  },
+  whyFollowLabel: {
+    fontWeight: '600',
+    fontSize: 13,
+    color: '#3C3C3C',
+    marginBottom: 10,
   },
   description: {
-    fontSize: 16,
-    marginBottom: 16,
-    lineHeight: 24,
-    color: '#333',
-  },
-  whyFollow: {
+    fontWeight: '400',
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    color: '#3C3C3C',
+    marginBottom: 8,
+  },
+  why_follow: {
+    fontWeight: '400',
+    fontSize: 14,
+    color: '#3C3C3C',
+    marginBottom: 8,
+    marginLeft: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -161,75 +175,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'red',
   },
-  mainImage: {
-    width: '100%',
-    height: 143,
- 
-    borderRadius: 30,
-    opacity: 1,
-    transform: [{ rotate: '0deg' }],
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  leftSection: {
-    flex: 2, // Give more space to the text sections
-  },
-  centerSection: {
-    flex: 1, // Give the center section a flex value
-    alignItems: 'center', // Center horizontally
-    justifyContent: 'center', // Center vertically
-  },
-  rightSection: {
-    flex: 2, // Give more space to the text sections
-    alignItems: 'flex-end',
-  },
-  mainInfo: {
-    fontSize: 12, //doesnt work , i overrode ThemedText
-    lineHeight: 12,
-    letterSpacing: 0,
-    marginBottom: 4,
-  },
-  bold: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    color: '#000000',
-  },
-  bigbold: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    color: '#000000',
-  },
-  occupation: {
-    fontFamily: 'Caros-Regular',
-    fontSize: 12,
-    color: '#777777',
-  },
-  logo: {
-    width: 70,
-    height: 70,
-    resizeMode: 'contain',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stars: {
-    fontSize: 16,
-  },
-  rating: {
-    fontFamily: 'Caros-Bold',
-    fontSize: 14,
-    color: '#000000',
-  },
-  cityName: {
-    fontSize: 36,
-    backgroundColor: '#FFFFFF',
-    fontWeight: '800'
-  }  
+
 }); 
