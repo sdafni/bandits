@@ -118,10 +118,9 @@ const styles = StyleSheet.create({
   },
   mainImage: {
     width: '100%',
-    height: 143,
+    height: 145,
     borderRadius: 30,
-    opacity: 1,
-    transform: [{ rotate: '0deg' }],
+    opacity: 1
   },
   name: {
     fontWeight: '700',

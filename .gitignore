@@ -40,3 +40,4 @@ yarn-error.*
 .idea/
 
 app-example
+scripts/deepSeekExtr.js

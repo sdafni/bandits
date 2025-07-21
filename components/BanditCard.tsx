@@ -87,13 +87,13 @@ const styles = StyleSheet.create({
     color: '#777777',
     fontSize: 8,
   },
+
+
   mainImage: {
     width: '100%',
-    height: 143,
- 
+    height: 145,
     borderRadius: 30,
-    opacity: 1,
-    transform: [{ rotate: '0deg' }],
+    opacity: 1
   },
   contentContainer: {
     flexDirection: 'row',
