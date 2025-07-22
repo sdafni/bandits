@@ -1,4 +1,3 @@
-
 export type Database = {
   public: {
     Tables: {
@@ -49,6 +48,64 @@ export type Database = {
           why_follow: string | null;
         };
       };
+      bandit_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          bandit_id: string;
+          event_id: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          bandit_id: string;
+          event_id: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          bandit_id?: string;
+          event_id?: string;
+        };
+      };
+      event: {
+        Row: {
+          id: string;
+          name: string;
+          genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
+          location: string;
+          time: string;
+          description: string;
+          rating: number;
+          created_at: string;
+          image_url: string;
+          link: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
+          location: string;
+          time: string;
+          description: string;
+          rating: number;
+          created_at?: string;
+          image_url: string;
+          link: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          genre?: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
+          location?: string;
+          time?: string;
+          description?: string;
+          rating?: number;
+          created_at?: string;
+          image_url?: string;
+          link?: string;
+        };
+      };
     };
   };
-}; 
+};

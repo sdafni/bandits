@@ -1,6 +1,7 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
@@ -8,6 +9,7 @@ type Bandit = Database['public']['Tables']['bandits']['Row'];
 
 export default function BanditScreen() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const [bandit, setBandit] = useState<Bandit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,10 +69,19 @@ export default function BanditScreen() {
       
   <View style={styles.container}>
     <View style={styles.imageContainer}>
-      <Image
-        source={{ uri: bandit.image_url }}
-        style={styles.mainImage}
-      />
+      
+        <Image
+          source={{ uri: bandit.image_url }}
+          style={styles.mainImage}
+        />
+        <Pressable
+          style={styles.cityGuideButton}
+          onPress={() => router.push(`/bandit/${id}/events`)}
+        >
+          <Ionicons name="add" size={16} color="white" />
+          <Text style={styles.cityGuideText}>city guide</Text>
+        </Pressable>
+     
     </View>
     <Text style={styles.name}>{`${bandit.name} ${bandit.family_name}, ${bandit.city}`}</Text>
     <Text style={styles.descriptionLine}>{`(${bandit.age} y/o, local banDit)`}</Text>
@@ -115,12 +126,15 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',
     marginBottom: 16,
+    position: 'relative',
+    zIndex: 1,
   },
   mainImage: {
     width: '100%',
     height: 145,
     borderRadius: 30,
-    opacity: 1
+    opacity: 1,
+    zIndex: 1,
   },
   name: {
     fontWeight: '700',
@@ -175,4 +189,27 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 
-}); 
+  cityGuideButton: {
+    position: 'absolute',
+    left: 16,
+    bottom: -12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 4,
+    zIndex: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  cityGuideText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

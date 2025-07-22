@@ -8,8 +8,25 @@ export interface BaseTable {
   created_at: string;
 }
 
+
+export type EventGenre = 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
+
+export interface EventTable extends BaseTable {
+  name: string;
+  genre: EventGenre;
+  location: string;
+  time: string;
+  description: string;
+  id: string;
+  rating: number;
+  image_url: string;
+  link: string;
+}
+
 export interface Tables {
   bandits: BanditTable;
+  event: EventTable;
+  bandit_events: BanditEventTable;
   // Add more tables here as needed
 }
 
@@ -25,6 +42,12 @@ export interface BanditTable extends BaseTable {
   icon?: string;
   description?: string;
   why_follow?: string;
+}
+
+// Join table for many-to-many relation between bandits and events
+export interface BanditEventTable extends BaseTable {
+  bandit_id: string; // references bandits.id
+  event_id: string;  // references event.id
 }
 
 /**
