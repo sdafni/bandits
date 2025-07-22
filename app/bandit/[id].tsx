@@ -125,9 +125,10 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 32, // increased from 16 to 32 to make space for button
     position: 'relative',
     zIndex: 1,
+    overflow: 'visible', // allow button to hang outside
   },
   mainImage: {
     width: '100%',
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
 
   cityGuideButton: {
     position: 'absolute',
-    left: 16,
+    right: 16,
     bottom: -12,
     flexDirection: 'row',
     alignItems: 'center',
