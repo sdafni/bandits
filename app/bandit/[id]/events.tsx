@@ -21,7 +21,7 @@ export default function BanditEventsScreen() {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from('bandit_events')
+          .from('bandit_event')
           .select('event:event(*)')
           .eq('bandit_id', id as string);
 
