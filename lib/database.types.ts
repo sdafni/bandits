@@ -73,8 +73,10 @@ export type Database = {
           id: string;
           name: string;
           genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
-          location: string;
-          time: string;
+          start_time: string;
+          end_time: string;
+          location_lat: number;
+          location_lng: number;
           description: string;
           rating: number;
           created_at: string;
@@ -85,8 +87,10 @@ export type Database = {
           id?: string;
           name: string;
           genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
-          location: string;
-          time: string;
+          start_time: string;
+          end_time: string;
+          location_lat: number;
+          location_lng: number;
           description: string;
           rating: number;
           created_at?: string;
@@ -97,8 +101,10 @@ export type Database = {
           id?: string;
           name?: string;
           genre?: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
-          location?: string;
-          time?: string;
+          start_time?: string;
+          end_time?: string;
+          location_lat?: number;
+          location_lng?: number;
           description?: string;
           rating?: number;
           created_at?: string;

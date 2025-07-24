@@ -14,8 +14,10 @@ export type EventGenre = 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee
 export interface EventTable extends BaseTable {
   name: string;
   genre: EventGenre;
-  location: string;
-  time: string;
+  start_time: string; // ISO string or timestamp
+  end_time: string;   // ISO string or timestamp
+  location_lat: number;
+  location_lng: number;
   description: string;
   id: string;
   rating: number;

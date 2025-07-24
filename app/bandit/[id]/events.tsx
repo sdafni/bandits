@@ -67,6 +67,9 @@ export default function BanditEventsScreen() {
               />
               <Text style={styles.eventName}>{item.name}</Text>
               <Text style={styles.eventDescription}>{item.description}</Text>
+              <Text style={styles.eventTime}>{`Start: ${item.start_time}`}</Text>
+              <Text style={styles.eventTime}>{`End: ${item.end_time}`}</Text>
+              <Text style={styles.eventLocation}>{`Location: (${item.location_lat}, ${item.location_lng})`}</Text>
             </View>
           )}
           keyExtractor={item => item.id}
@@ -117,5 +120,15 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     fontSize: 14,
     color: '#666',
+  },
+  eventTime: {
+    paddingLeft: 12,
+    fontSize: 13,
+    color: '#444',
+  },
+  eventLocation: {
+    paddingLeft: 12,
+    fontSize: 13,
+    color: '#888',
   },
 });
