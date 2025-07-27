@@ -4,8 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Button, Text, View } from 'react-native';
 
 export default function Index() {
-  const [user, setUser] = useState<any | undefined>(undefined); // undefined = loading
+  const [user, setUser] = useState<any | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,6 +33,34 @@ export default function Index() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
     if (error) setError(error.message);
+  };
+
+  const handleEmailLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) setError(error.message);
+    setLoading(false);
+  };
+
+  const handleEmailSignup = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+    if (error) setError(error.message);
+    setLoading(false);
   };
 
   if (user === undefined) {
