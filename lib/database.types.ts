@@ -77,6 +77,9 @@ export type Database = {
           end_time: string;
           location_lat: number;
           location_lng: number;
+          address: string;
+          city: string;
+          neighborhood: string;
           description: string;
           rating: number;
           created_at: string;
@@ -91,6 +94,9 @@ export type Database = {
           end_time: string;
           location_lat: number;
           location_lng: number;
+          address: string;
+          city: string;
+          neighborhood: string;
           description: string;
           rating: number;
           created_at?: string;
@@ -105,6 +111,9 @@ export type Database = {
           end_time?: string;
           location_lat?: number;
           location_lng?: number;
+          address?: string;
+          city?: string;
+          neighborhood?: string;
           description?: string;
           rating?: number;
           created_at?: string;

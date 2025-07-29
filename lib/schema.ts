@@ -18,6 +18,9 @@ export interface EventTable extends BaseTable {
   end_time: string;   // ISO string or timestamp
   location_lat: number;
   location_lng: number;
+  address: string;      // Full readable address
+  city: string;         // City name
+  neighborhood: string; // Neighborhood name
   description: string;
   id: string;
   rating: number;
@@ -64,6 +67,12 @@ export const tableConstraints = {
       rating: 'integer between 1 and 10',
       age: 'positive integer',
     }
+  },
+  event: {
+    indexes: ['created_at', 'city', 'neighborhood', 'genre'],
+    constraints: {
+      rating: 'integer between 1 and 10',
+    }
   }
 } as const;
 
@@ -81,21 +90,13 @@ export const sqlTypes = {
 } as const;
 
 /**
- * Example SQL for creating the bandits table:
+ * Example SQL for creating the event table with new fields:
  * 
- * CREATE TABLE bandits (
- *   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
- *   name text NOT NULL,
- *   age integer NOT NULL,
- *   city text NOT NULL,
- *   occupation text NOT NULL,
- *   image_url text NOT NULL,
- *   rating integer NOT NULL,
- *   is_liked boolean DEFAULT false,
- *   icon text,
- *   created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
- * );
+ * ALTER TABLE event ADD COLUMN address TEXT NOT NULL DEFAULT '';
+ * ALTER TABLE event ADD COLUMN city TEXT NOT NULL DEFAULT '';
+ * ALTER TABLE event ADD COLUMN neighborhood TEXT NOT NULL DEFAULT '';
  * 
- * CREATE INDEX bandits_created_at_idx ON bandits(created_at);
- * CREATE UNIQUE INDEX bandits_name_idx ON bandits(name);
+ * CREATE INDEX event_city_idx ON event(city);
+ * CREATE INDEX event_neighborhood_idx ON event(neighborhood);
+ * CREATE INDEX event_genre_idx ON event(genre);
  */ 

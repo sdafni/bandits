@@ -3,6 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import BandiTeamIcon from '@/assets/icons/bandiTeam.svg';
+import CityGuideIcon from '@/assets/icons/cityGuide.svg';
 import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
 import { HapticTab } from '@/components/HapticTab';
 import { ModeHeader } from '@/components/ModeHeader';
@@ -12,7 +13,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const iconColor = Colors[colorScheme ?? 'light'].icon;
+  const iconColor = 'white';
 
   return (
     <View style={{ flex: 1 }}>
@@ -36,6 +37,14 @@ export default function TabLayout() {
             tabBarIcon: () => <LocalBanditsIcon width={28} height={28} fill={iconColor} />,
         }}
       />
+      <Tabs.Screen
+        name="cityGuide"
+        options={{
+          title: 'City Guide',
+          tabBarIcon: () => <CityGuideIcon width={28} height={28} fill={iconColor} />,
+        }}
+      />
+
       <Tabs.Screen
         name="bandiTeam"
         options={{

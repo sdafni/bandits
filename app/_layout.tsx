@@ -31,11 +31,15 @@ export default function RootLayout() {
   }, []);
 
   // Redirect logic: if not on the sign-in page and not authenticated, redirect to "/"
+  // If authenticated and on sign-in page, redirect to bandits
   useEffect(() => {
     if (user === undefined) return; // still loading
     const inAuthScreen = !segments[0];
+    
     if (!user && !inAuthScreen) {
       router.replace('/');
+    } else if (user && inAuthScreen) {
+      router.replace('/(tabs)/bandits');
     }
   }, [user, segments, router]);
 

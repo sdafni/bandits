@@ -1,0 +1,142 @@
+import { Database } from '@/lib/database.types';
+import { supabase } from '@/lib/supabase';
+
+type Event = Database['public']['Tables']['event']['Row'];
+
+export interface EventFilters {
+  searchQuery?: string;
+  genre?: string;
+  city?: string;
+  neighborhood?: string;
+  userLat?: number;
+  userLng?: number;
+  radiusKm?: number;
+}
+
+// Calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+export async function getEvents(filters: EventFilters = {}): Promise<Event[]> {
+  let query = supabase.from('event').select('*');
+
+  // Text search in description
+  if (filters.searchQuery) {
+    query = query.ilike('description', `%${filters.searchQuery}%`);
+  }
+
+  // Genre filter
+  if (filters.genre) {
+    query = query.eq('genre', filters.genre);
+  }
+
+  // City filter
+  if (filters.city) {
+    query = query.eq('city', filters.city);
+  }
+
+  // Neighborhood filter
+  if (filters.neighborhood) {
+    query = query.eq('neighborhood', filters.neighborhood);
+  }
+
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching events:', error);
+    throw error;
+  }
+
+  let events = data || [];
+
+  // Apply location-based filter after fetching (client-side filtering)
+  if (filters.userLat && filters.userLng) {
+    const radiusKm = filters.radiusKm || 5;
+    events = events.filter(event => {
+      const distance = calculateDistance(
+        filters.userLat!,
+        filters.userLng!,
+        event.location_lat,
+        event.location_lng
+      );
+      return distance <= radiusKm;
+    });
+  }
+
+  return events;
+}
+
+export async function getUniqueCities(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('event')
+    .select('city')
+    .not('city', 'is', null)
+    .not('city', 'eq', '');
+
+  if (error) {
+    console.error('Error fetching cities:', error);
+    throw error;
+  }
+
+  const cities = [...new Set(data?.map(item => item.city) || [])];
+  return cities.sort();
+}
+
+export async function getUniqueNeighborhoods(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('event')
+    .select('neighborhood')
+    .not('neighborhood', 'is', null)
+    .not('neighborhood', 'eq', '');
+
+  if (error) {
+    console.error('Error fetching neighborhoods:', error);
+    throw error;
+  }
+
+  const neighborhoods = [...new Set(data?.map(item => item.neighborhood) || [])];
+  return neighborhoods.sort();
+}
+
+export async function getEventGenres(): Promise<string[]> {
+  return ['Food', 'Culture', 'Nightlife', 'Shopping', 'Coffee'];
+}
+
+// Get user's current location
+export async function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      // Fallback to default location (Kazanelson 85, Givatayim, Israel)
+      resolve({ lat: 32.0723, lng: 34.8125 });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      (error) => {
+        console.warn('Error getting location:', error);
+        // Fallback to default location
+        resolve({ lat: 32.0723, lng: 34.8125 });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  });
+} 
