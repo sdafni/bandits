@@ -1,4 +1,5 @@
 import { Picker } from '@react-native-picker/picker';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -55,6 +56,7 @@ const EventCard = ({ event }: { event: Event }) => (
 );
 
 export default function CityGuideScreen() {
+  const { banditId } = useLocalSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,13 @@ export default function CityGuideScreen() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Set the bandit filter when banditId is provided in URL params
+  useEffect(() => {
+    if (banditId) {
+      setSelectedBandit(banditId as string);
+    }
+  }, [banditId]);
 
   useEffect(() => {
     loadEvents();

@@ -76,7 +76,7 @@ export default function BanditScreen() {
         />
         <Pressable
           style={styles.cityGuideButton}
-          onPress={() => router.push(`/bandit/${id}/events`)}
+          onPress={() => router.push(`/(tabs)/cityGuide?banditId=${id}`)}
         >
           <CityGuideIcon width={28} height={28} />
           <Text style={styles.cityGuideText}>city guide</Text>
