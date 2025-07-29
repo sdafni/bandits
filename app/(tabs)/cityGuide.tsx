@@ -77,7 +77,7 @@ const FilterPicker = ({
         ]}
       >
         <Picker.Item 
-          label="All" 
+          label={placeholder} 
           value="" 
           color="#4CAF50"
         />
@@ -127,6 +127,9 @@ export default function CityGuideScreen() {
   useEffect(() => {
     if (banditId) {
       setSelectedBandit(banditId as string);
+    } else {
+      // Clear the bandit filter when no banditId is provided
+      setSelectedBandit('');
     }
   }, [banditId]);
 
@@ -239,7 +242,7 @@ export default function CityGuideScreen() {
             selectedValue={selectedBandit}
             onValueChange={setSelectedBandit}
             items={bandits.map(bandit => ({ label: bandit.name, value: bandit.id }))}
-            placeholder="All"
+            placeholder="Bandit"
           />
           
           {/* Genre Filter */}
@@ -247,7 +250,7 @@ export default function CityGuideScreen() {
             selectedValue={selectedGenre}
             onValueChange={setSelectedGenre}
             items={genres.map(genre => ({ label: genre, value: genre }))}
-            placeholder="All"
+            placeholder="Genre"
           />
           
           {/* City Filter */}
@@ -255,7 +258,7 @@ export default function CityGuideScreen() {
             selectedValue={selectedCity}
             onValueChange={setSelectedCity}
             items={cities.map(city => ({ label: city, value: city }))}
-            placeholder="All"
+            placeholder="City"
           />
           
           {/* Neighborhood Filter */}
@@ -263,7 +266,7 @@ export default function CityGuideScreen() {
             selectedValue={selectedNeighborhood}
             onValueChange={setSelectedNeighborhood}
             items={neighborhoods.map(neighborhood => ({ label: neighborhood, value: neighborhood }))}
-            placeholder="All"
+            placeholder="District"
           />
           
           {/* Near Me Filter */}
