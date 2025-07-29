@@ -34,14 +34,60 @@ const FilterButton = ({ title, isActive, onPress }: {
   onPress: () => void;
 }) => (
   <TouchableOpacity
-    style={[styles.filterButton, isActive && styles.filterButtonActive]}
+    style={[
+      styles.filterButton, 
+      isActive && styles.pickerContainerSelected
+    ]}
     onPress={onPress}
   >
-    <Text style={[styles.filterButtonText, isActive && styles.filterButtonTextActive]}>
+    <Text style={[
+      styles.filterButtonText, 
+      { color: isActive ? '#000000' : '#666' }
+    ]}>
       {title}
     </Text>
   </TouchableOpacity>
 );
+
+const FilterPicker = ({ 
+  selectedValue, 
+  onValueChange, 
+  items, 
+  placeholder 
+}: {
+  selectedValue: string;
+  onValueChange: (value: string) => void;
+  items: { label: string; value: string }[];
+  placeholder: string;
+}) => {
+  const isSelected = selectedValue !== '';
+  const selectedItem = items.find(item => item.value === selectedValue);
+  
+  return (
+    <View style={[
+      styles.pickerContainer, 
+      isSelected ? styles.pickerContainerSelected : styles.pickerContainerDefault
+    ]}>
+      <Picker
+        selectedValue={selectedValue}
+        onValueChange={onValueChange}
+        style={[
+          styles.picker,
+          { color: isSelected ? '#000000' : '#666' }
+        ]}
+      >
+        <Picker.Item 
+          label="All" 
+          value="" 
+          color="#4CAF50"
+        />
+        {items.map(item => (
+          <Picker.Item key={item.value} label={item.label} value={item.value} />
+        ))}
+      </Picker>
+    </View>
+  );
+};
 
 const EventCard = ({ event }: { event: Event }) => (
   <View style={styles.eventCard}>
@@ -182,80 +228,60 @@ export default function CityGuideScreen() {
       <CustomSearchInput 
         value={searchQuery}
         onChangeText={setSearchQuery}
-        placeholder="Search events..."
+        placeholder="Search description..."
       />
       
       {/* Filters Section */}
       <View style={styles.filtersContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.filtersRow}>
           {/* Bandit Filter */}
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedBandit}
-              onValueChange={setSelectedBandit}
-              style={styles.picker}
-            >
-              <Picker.Item label="All Bandits" value="" />
-              {bandits.map(bandit => (
-                <Picker.Item key={bandit.id} label={bandit.name} value={bandit.id} />
-              ))}
-            </Picker>
-          </View>
+          <FilterPicker
+            selectedValue={selectedBandit}
+            onValueChange={setSelectedBandit}
+            items={bandits.map(bandit => ({ label: bandit.name, value: bandit.id }))}
+            placeholder="All"
+          />
           
           {/* Genre Filter */}
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedGenre}
-              onValueChange={setSelectedGenre}
-              style={styles.picker}
-            >
-              <Picker.Item label="All Genres" value="" />
-              {genres.map(genre => (
-                <Picker.Item key={genre} label={genre} value={genre} />
-              ))}
-            </Picker>
-          </View>
+          <FilterPicker
+            selectedValue={selectedGenre}
+            onValueChange={setSelectedGenre}
+            items={genres.map(genre => ({ label: genre, value: genre }))}
+            placeholder="All"
+          />
           
           {/* City Filter */}
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedCity}
-              onValueChange={setSelectedCity}
-              style={styles.picker}
-            >
-              <Picker.Item label="All Cities" value="" />
-              {cities.map(city => (
-                <Picker.Item key={city} label={city} value={city} />
-              ))}
-            </Picker>
-          </View>
+          <FilterPicker
+            selectedValue={selectedCity}
+            onValueChange={setSelectedCity}
+            items={cities.map(city => ({ label: city, value: city }))}
+            placeholder="All"
+          />
           
           {/* Neighborhood Filter */}
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedNeighborhood}
-              onValueChange={setSelectedNeighborhood}
-              style={styles.picker}
-            >
-              <Picker.Item label="All Neighborhoods" value="" />
-              {neighborhoods.map(neighborhood => (
-                <Picker.Item key={neighborhood} label={neighborhood} value={neighborhood} />
-              ))}
-            </Picker>
-          </View>
-        </ScrollView>
+          <FilterPicker
+            selectedValue={selectedNeighborhood}
+            onValueChange={setSelectedNeighborhood}
+            items={neighborhoods.map(neighborhood => ({ label: neighborhood, value: neighborhood }))}
+            placeholder="All"
+          />
+          
+          {/* Near Me Filter */}
+          <FilterButton
+            title="Near Me (5km)"
+            isActive={nearMeActive}
+            onPress={handleNearMeToggle}
+          />
+        </View>
         
-        {/* Near Me Filter */}
-        <FilterButton
-          title="Near Me (5km)"
-          isActive={nearMeActive}
-          onPress={handleNearMeToggle}
-        />
+
         
-        {/* Clear Filters */}
-        <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-          <Text style={styles.clearButtonText}>Clear Filters</Text>
-        </TouchableOpacity>
+        {/* Clear Filters - only show when filters are active */}
+        {(selectedBandit || selectedGenre || selectedCity || selectedNeighborhood || nearMeActive) && (
+          <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+            <Text style={styles.clearButtonText}>Clear Filters</Text>
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Events List */}
@@ -318,41 +344,91 @@ const styles = StyleSheet.create({
   },
   filtersContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 13,
+    paddingTop: 0,
   },
+  filtersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: 13,
+  },
+
+
   pickerContainer: {
-    marginRight: 10,
-    minWidth: 120,
+    marginTop: 0,
+    marginBottom: 0,
+    minWidth: 100,
+    maxWidth: 120,
+    flex: 1,
+    borderRadius: 30,
+    height: 40,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  pickerContainerDefault: {
+    backgroundColor: '#FFFFFF',
+  },
+  pickerContainerSelected: {
+    backgroundColor: '#E3F2FD',
   },
   picker: {
     height: 40,
     width: '100%',
+    color: '#666',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
+
   filterButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 10,
+    borderRadius: 30,
+    marginTop: 0,
     alignSelf: 'flex-start',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   filterButtonActive: {
     backgroundColor: '#007AFF',
   },
   filterButtonText: {
-    color: '#333',
+    color: '#666',
     fontSize: 14,
   },
   filterButtonTextActive: {
     color: '#FFFFFF',
   },
   clearButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#4CAF50',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 30,
     marginTop: 10,
     alignSelf: 'flex-start',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   clearButtonText: {
     color: '#FFFFFF',
