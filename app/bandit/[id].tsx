@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import CityGuideIcon from '@/assets/icons/cityGuideWhite.svg';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 type Bandit = Database['public']['Tables']['bandits']['Row'];
@@ -78,7 +78,7 @@ export default function BanditScreen() {
           style={styles.cityGuideButton}
           onPress={() => router.push(`/bandit/${id}/events`)}
         >
-          <Ionicons name="add" size={16} color="white" />
+          <CityGuideIcon width={28} height={28} />
           <Text style={styles.cityGuideText}>city guide</Text>
         </Pressable>
      
