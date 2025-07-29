@@ -2,10 +2,12 @@ import { Picker } from '@react-native-picker/picker';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { getBandits } from '@/app/services/bandits';
 import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueCities, getUniqueNeighborhoods } from '@/app/services/events';
 import { Database } from '@/lib/database.types';
 
 type Event = Database['public']['Tables']['event']['Row'];
+type Bandit = Database['public']['Tables']['bandits']['Row'];
 
 const CustomSearchInput = ({ value, onChangeText, placeholder }: { 
   value: string; 
@@ -59,12 +61,14 @@ export default function CityGuideScreen() {
   const [cities, setCities] = useState<string[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
+  const [bandits, setBandits] = useState<Bandit[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   // Filter states
   const [selectedGenre, setSelectedGenre] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
+  const [selectedBandit, setSelectedBandit] = useState<string>('');
   const [nearMeActive, setNearMeActive] = useState(false);
 
   useEffect(() => {
@@ -73,22 +77,24 @@ export default function CityGuideScreen() {
 
   useEffect(() => {
     loadEvents();
-  }, [searchQuery, selectedGenre, selectedCity, selectedNeighborhood, nearMeActive, userLocation]);
+  }, [searchQuery, selectedGenre, selectedCity, selectedNeighborhood, selectedBandit, nearMeActive, userLocation]);
 
   const loadInitialData = async () => {
     try {
       setLoading(true);
       
       // Load filter options for events
-      const [citiesData, neighborhoodsData, genresData] = await Promise.all([
+      const [citiesData, neighborhoodsData, genresData, banditsData] = await Promise.all([
         getUniqueCities(),
         getUniqueNeighborhoods(),
-        getEventGenres()
+        getEventGenres(),
+        getBandits()
       ]);
       
       setCities(citiesData);
       setNeighborhoods(neighborhoodsData);
       setGenres(genresData);
+      setBandits(banditsData);
       
       // Get user location
       const location = await getCurrentLocation();
@@ -122,6 +128,10 @@ export default function CityGuideScreen() {
         filters.neighborhood = selectedNeighborhood;
       }
       
+      if (selectedBandit) {
+        filters.banditId = selectedBandit;
+      }
+      
       if (nearMeActive && userLocation) {
         filters.userLat = userLocation.lat;
         filters.userLng = userLocation.lng;
@@ -145,6 +155,7 @@ export default function CityGuideScreen() {
     setSelectedGenre('');
     setSelectedCity('');
     setSelectedNeighborhood('');
+    setSelectedBandit('');
     setNearMeActive(false);
   };
 
@@ -168,6 +179,20 @@ export default function CityGuideScreen() {
       {/* Filters Section */}
       <View style={styles.filtersContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {/* Bandit Filter */}
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedBandit}
+              onValueChange={setSelectedBandit}
+              style={styles.picker}
+            >
+              <Picker.Item label="All Bandits" value="" />
+              {bandits.map(bandit => (
+                <Picker.Item key={bandit.id} label={bandit.name} value={bandit.id} />
+              ))}
+            </Picker>
+          </View>
+          
           {/* Genre Filter */}
           <View style={styles.pickerContainer}>
             <Picker

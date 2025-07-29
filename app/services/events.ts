@@ -8,6 +8,7 @@ export interface EventFilters {
   genre?: string;
   city?: string;
   neighborhood?: string;
+  banditId?: string;
   userLat?: number;
   userLng?: number;
   radiusKm?: number;
@@ -27,29 +28,80 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export async function getEvents(filters: EventFilters = {}): Promise<Event[]> {
-  let query = supabase.from('event').select('*');
+  let query;
+  let data;
+  let error;
 
-  // Text search in description
-  if (filters.searchQuery) {
-    query = query.ilike('description', `%${filters.searchQuery}%`);
+  // If bandit filter is applied, use the bandit_event linking table
+  if (filters.banditId) {
+    query = supabase
+      .from('bandit_event')
+      .select('event:event(*)')
+      .eq('bandit_id', filters.banditId);
+    
+    const result = await query;
+    data = result.data;
+    error = result.error;
+    
+    // Extract events from the joined result
+    if (data) {
+      data = data.map((item: any) => item.event);
+    }
+    
+    // Apply additional filters to the bandit-filtered results
+    if (data && (filters.searchQuery || filters.genre || filters.city || filters.neighborhood)) {
+      data = data.filter((event: Event) => {
+        // Text search in description
+        if (filters.searchQuery && !event.description?.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
+          return false;
+        }
+        
+        // Genre filter
+        if (filters.genre && event.genre !== filters.genre) {
+          return false;
+        }
+        
+        // City filter
+        if (filters.city && event.city !== filters.city) {
+          return false;
+        }
+        
+        // Neighborhood filter
+        if (filters.neighborhood && event.neighborhood !== filters.neighborhood) {
+          return false;
+        }
+        
+        return true;
+      });
+    }
+  } else {
+    // Regular event query without bandit filter
+    query = supabase.from('event').select('*');
+
+    // Text search in description
+    if (filters.searchQuery) {
+      query = query.ilike('description', `%${filters.searchQuery}%`);
+    }
+
+    // Genre filter
+    if (filters.genre) {
+      query = query.eq('genre', filters.genre);
+    }
+
+    // City filter
+    if (filters.city) {
+      query = query.eq('city', filters.city);
+    }
+
+    // Neighborhood filter
+    if (filters.neighborhood) {
+      query = query.eq('neighborhood', filters.neighborhood);
+    }
+
+    const result = await query;
+    data = result.data;
+    error = result.error;
   }
-
-  // Genre filter
-  if (filters.genre) {
-    query = query.eq('genre', filters.genre);
-  }
-
-  // City filter
-  if (filters.city) {
-    query = query.eq('city', filters.city);
-  }
-
-  // Neighborhood filter
-  if (filters.neighborhood) {
-    query = query.eq('neighborhood', filters.neighborhood);
-  }
-
-  const { data, error } = await query;
   
   if (error) {
     console.error('Error fetching events:', error);
