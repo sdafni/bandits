@@ -94,13 +94,21 @@ const FilterPicker = ({
           <View style={styles.modalContent}>
             <ScrollView style={styles.modalScrollView}>
               <TouchableOpacity
-                style={styles.modalItem}
+                style={[
+                  styles.modalItem,
+                  styles.modalItemClear
+                ]}
                 onPress={() => {
                   onValueChange('');
                   setIsOpen(false);
                 }}
               >
-                <Text style={styles.modalItemText}>{placeholder}</Text>
+                <Text style={[
+                  styles.modalItemText,
+                  styles.modalItemTextClear
+                ]}>
+                  Any {placeholder}
+                </Text>
               </TouchableOpacity>
               {items.map(item => (
                 <TouchableOpacity
@@ -473,6 +481,16 @@ const styles = StyleSheet.create({
   },
   modalItemTextSelected: {
     color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  modalItemClear: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    marginHorizontal: 8,
+    marginVertical: 2,
+  },
+  modalItemTextClear: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
 
