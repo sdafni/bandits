@@ -1,7 +1,6 @@
-import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits } from '@/app/services/bandits';
 import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueCities, getUniqueNeighborhoods } from '@/app/services/events';
@@ -60,6 +59,7 @@ const FilterPicker = ({
   items: { label: string; value: string }[];
   placeholder: string;
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const isSelected = selectedValue !== '';
   const selectedItem = items.find(item => item.value === selectedValue);
   
@@ -68,23 +68,64 @@ const FilterPicker = ({
       styles.pickerContainer, 
       isSelected ? styles.pickerContainerSelected : styles.pickerContainerDefault
     ]}>
-      <Picker
-        selectedValue={selectedValue}
-        onValueChange={onValueChange}
-        style={[
-          styles.picker,
-          { color: isSelected ? '#000000' : '#666' }
-        ]}
+      <TouchableOpacity
+        style={styles.pickerTouchable}
+        onPress={() => setIsOpen(true)}
       >
-        <Picker.Item 
-          label={placeholder} 
-          value="" 
-          color="#4CAF50"
-        />
-        {items.map(item => (
-          <Picker.Item key={item.value} label={item.label} value={item.value} />
-        ))}
-      </Picker>
+        <Text style={[
+          styles.pickerText,
+          { color: isSelected ? '#000000' : '#666' }
+        ]}>
+          {selectedItem ? selectedItem.label : placeholder}
+        </Text>
+      </TouchableOpacity>
+      
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={styles.modalContent}>
+            <ScrollView style={styles.modalScrollView}>
+              <TouchableOpacity
+                style={styles.modalItem}
+                onPress={() => {
+                  onValueChange('');
+                  setIsOpen(false);
+                }}
+              >
+                <Text style={styles.modalItemText}>{placeholder}</Text>
+              </TouchableOpacity>
+              {items.map(item => (
+                <TouchableOpacity
+                  key={item.value}
+                  style={[
+                    styles.modalItem,
+                    selectedValue === item.value && styles.modalItemSelected
+                  ]}
+                  onPress={() => {
+                    onValueChange(item.value);
+                    setIsOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.modalItemText,
+                    selectedValue === item.value && styles.modalItemTextSelected
+                  ]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -365,8 +406,9 @@ const styles = StyleSheet.create({
     maxWidth: 120,
     flex: 1,
     borderRadius: 30,
-    height: 40,
+    height: 44,
     paddingHorizontal: 12,
+    paddingVertical: 0,
     justifyContent: 'center',
     shadowColor: '#000000',
     shadowOffset: {
@@ -383,12 +425,55 @@ const styles = StyleSheet.create({
   pickerContainerSelected: {
     backgroundColor: '#E3F2FD',
   },
-  picker: {
-    height: 40,
+  pickerTouchable: {
+    height: 44,
     width: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  pickerText: {
+    fontSize: 12,
     color: '#666',
-    backgroundColor: 'transparent',
-    borderWidth: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    maxHeight: 300,
+    width: '80%',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalScrollView: {
+    maxHeight: 300,
+  },
+  modalItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  modalItemSelected: {
+    backgroundColor: '#E3F2FD',
+  },
+  modalItemText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  modalItemTextSelected: {
+    color: '#007AFF',
+    fontWeight: 'bold',
   },
 
   filterButton: {
@@ -397,6 +482,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 30,
     marginTop: 0,
+    height: 44,
+    justifyContent: 'center',
     alignSelf: 'flex-start',
     shadowColor: '#000000',
     shadowOffset: {
@@ -412,7 +499,7 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     color: '#666',
-    fontSize: 14,
+    fontSize: 12,
   },
   filterButtonTextActive: {
     color: '#FFFFFF',
