@@ -138,17 +138,6 @@ export default function Index() {
             </View>
           </View>
 
-          {/* Remember Me & Forgot Password */}
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity style={styles.rememberMeContainer}>
-              <View style={styles.checkbox} />
-              <Text style={styles.rememberMeText}>Remember me</Text>
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Text style={styles.forgotPasswordText}>Forgot Password</Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Sign In Button */}
           <TouchableOpacity 
             style={styles.signInButton}
@@ -163,23 +152,6 @@ export default function Index() {
               </Text>
             )}
           </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or Sign in with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social Login */}
-          <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Text style={styles.socialButtonText}>G</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Text style={styles.socialButtonText}>🍎</Text>
-            </TouchableOpacity>
-          </View>
 
           {/* Error Message */}
           {error && <Text style={styles.errorText}>{error}</Text>}
@@ -287,34 +259,7 @@ const styles = StyleSheet.create({
   eyeIconText: {
     fontSize: 16,
   },
-  optionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  rememberMeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    borderWidth: 1,
-    borderColor: '#adadad',
-    borderRadius: 3,
-    marginRight: 8,
-  },
-  rememberMeText: {
-    fontSize: 14,
-    color: '#000000',
-    fontWeight: '200',
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: '#fa370c',
-    fontWeight: '400',
-  },
+
   signInButton: {
     backgroundColor: '#ff0000',
     borderRadius: 25,
@@ -332,43 +277,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  dividerText: {
-    fontSize: 14,
-    color: '#000000',
-    fontWeight: '200',
-    marginHorizontal: 15,
-  },
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  socialButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  socialButtonText: {
-    fontSize: 18,
-  },
+
   errorText: {
     color: '#ff0000',
     textAlign: 'center',
