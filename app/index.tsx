@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 export default function Index() {
   const [user, setUser] = useState<any | undefined>(undefined);
@@ -9,6 +11,8 @@ export default function Index() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignIn, setIsSignIn] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -28,12 +32,6 @@ export default function Index() {
       router.replace('/(tabs)/bandits');
     }
   }, [user, router]);
-
-  const handleGoogleLogin = async () => {
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-    if (error) setError(error.message);
-  };
 
   const handleEmailLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -65,68 +63,316 @@ export default function Index() {
 
   if (user === undefined) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ff0000" />
       </View>
     );
   }
 
   if (!user) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-        <Text style={{ fontSize: 22, marginBottom: 24 }}>Sign in to continue</Text>
-        
-        <TextInput
-          style={{ 
-            borderWidth: 1, 
-            borderColor: '#ccc', 
-            padding: 10, 
-            width: '100%', 
-            marginBottom: 10,
-            borderRadius: 5
-          }}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        
-        <TextInput
-          style={{ 
-            borderWidth: 1, 
-            borderColor: '#ccc', 
-            padding: 10, 
-            width: '100%', 
-            marginBottom: 20,
-            borderRadius: 5
-          }}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        
-        <Button 
-          title={loading ? "Signing in..." : "Sign in"} 
-          onPress={handleEmailLogin}
-          disabled={loading}
-        />
-        
-        <Button 
-          title="Sign up" 
-          onPress={handleEmailSignup}
-          disabled={loading}
-        />
-        
-        <Text style={{ marginTop: 20, marginBottom: 10 }}>Or</Text>
-        
-        <Button title="Sign in with Google" onPress={handleGoogleLogin} />
-        
-        {error && <Text style={{ color: 'red', marginTop: 16 }}>{error}</Text>}
+      <View style={styles.container}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('@/assets/images/banditour-logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Tab Switcher */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tab, isSignIn && styles.activeTab]}
+            onPress={() => setIsSignIn(true)}
+          >
+            <Text style={[styles.tabText, isSignIn && styles.activeTabText]}>
+              Sign in
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, !isSignIn && styles.activeTab]}
+            onPress={() => setIsSignIn(false)}
+          >
+            <Text style={[styles.tabText, !isSignIn && styles.activeTabText]}>
+              Sign up
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Form */}
+        <View style={styles.formContainer}>
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Enter Email</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholderTextColor="#777777"
+            />
+          </View>
+
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.textInput, styles.passwordInput]}
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#777777"
+              />
+              <TouchableOpacity 
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Text style={styles.eyeIconText}>👁</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Remember Me & Forgot Password */}
+          <View style={styles.optionsContainer}>
+            <TouchableOpacity style={styles.rememberMeContainer}>
+              <View style={styles.checkbox} />
+              <Text style={styles.rememberMeText}>Remember me</Text>
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Text style={styles.forgotPasswordText}>Forgot Password</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Sign In Button */}
+          <TouchableOpacity 
+            style={styles.signInButton}
+            onPress={isSignIn ? handleEmailLogin : handleEmailSignup}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.signInButtonText}>
+                {isSignIn ? 'Sign in' : 'Sign up'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or Sign in with</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Login */}
+          <View style={styles.socialContainer}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Text style={styles.socialButtonText}>G</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Text style={styles.socialButtonText}>🍎</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Error Message */}
+          {error && <Text style={styles.errorText}>{error}</Text>}
+        </View>
       </View>
     );
   }
 
   return null;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    width: 79,
+    height: 79,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 25,
+    padding: 4,
+    marginBottom: 40,
+    alignSelf: 'center',
+  },
+  tab: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 21,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#ff0000',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ff0000',
+  },
+  activeTabText: {
+    color: '#ffffff',
+  },
+  formContainer: {
+    flex: 1,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#777777',
+    marginBottom: 8,
+    fontWeight: '300',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#adadad',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 50,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeIconText: {
+    fontSize: 16,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderWidth: 1,
+    borderColor: '#adadad',
+    borderRadius: 3,
+    marginRight: 8,
+  },
+  rememberMeText: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '200',
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#fa370c',
+    fontWeight: '400',
+  },
+  signInButton: {
+    backgroundColor: '#ff0000',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  signInButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '200',
+    marginHorizontal: 15,
+  },
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  socialButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  socialButtonText: {
+    fontSize: 18,
+  },
+  errorText: {
+    color: '#ff0000',
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 14,
+  },
+});
