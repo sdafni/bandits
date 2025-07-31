@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, Text, View } from 'react-native';
+import { ActivityIndicator, Button, Text, TextInput, View } from 'react-native';
 
 export default function Index() {
   const [user, setUser] = useState<any | undefined>(undefined);
@@ -25,7 +25,7 @@ export default function Index() {
 
   useEffect(() => {
     if (user) {
-      router.replace('/bandits');
+      router.replace('/(tabs)/bandits');
     }
   }, [user, router]);
 
@@ -75,12 +75,58 @@ export default function Index() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
         <Text style={{ fontSize: 22, marginBottom: 24 }}>Sign in to continue</Text>
+        
+        <TextInput
+          style={{ 
+            borderWidth: 1, 
+            borderColor: '#ccc', 
+            padding: 10, 
+            width: '100%', 
+            marginBottom: 10,
+            borderRadius: 5
+          }}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        
+        <TextInput
+          style={{ 
+            borderWidth: 1, 
+            borderColor: '#ccc', 
+            padding: 10, 
+            width: '100%', 
+            marginBottom: 20,
+            borderRadius: 5
+          }}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        
+        <Button 
+          title={loading ? "Signing in..." : "Sign in"} 
+          onPress={handleEmailLogin}
+          disabled={loading}
+        />
+        
+        <Button 
+          title="Sign up" 
+          onPress={handleEmailSignup}
+          disabled={loading}
+        />
+        
+        <Text style={{ marginTop: 20, marginBottom: 10 }}>Or</Text>
+        
         <Button title="Sign in with Google" onPress={handleGoogleLogin} />
+        
         {error && <Text style={{ color: 'red', marginTop: 16 }}>{error}</Text>}
       </View>
     );
   }
 
-  // If user is present, router.replace will redirect
   return null;
 }
