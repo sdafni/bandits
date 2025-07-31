@@ -471,9 +471,14 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    marginHorizontal: 8,
+    marginVertical: 2,
   },
   modalItemSelected: {
     backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    marginHorizontal: 8,
+    marginVertical: 2,
   },
   modalItemText: {
     fontSize: 14,
