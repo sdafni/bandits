@@ -268,4 +268,26 @@ export async function isEventLiked(eventId: string): Promise<boolean> {
   }
 
   return !!data;
+}
+
+// Get all liked event IDs for current user (efficient for bulk checking)
+export async function getUserLikedEventIds(): Promise<Set<string>> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return new Set();
+  }
+
+  const { data, error } = await supabase
+    .from('event_user_likes')
+    .select('event_id')
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error fetching user liked event IDs:', error);
+    throw error;
+  }
+
+  // Return a Set for O(1) lookup performance
+  return new Set(data?.map(item => item.event_id) || []);
 } 

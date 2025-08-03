@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits } from '@/app/services/bandits';
-import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueNeighborhoods, isEventLiked, toggleEventLike } from '@/app/services/events';
+import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueNeighborhoods, getUserLikedEventIds, toggleEventLike } from '@/app/services/events';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 
@@ -276,19 +276,14 @@ export default function ExploreScreen() {
       const eventsData = await getEvents(filters);
       setEvents(eventsData);
       
-      // Load like status for all events
-      const likedEventIds = new Set<string>();
-      for (const event of eventsData) {
-        try {
-          const isLiked = await isEventLiked(event.id);
-          if (isLiked) {
-            likedEventIds.add(event.id);
-          }
-        } catch (error) {
-          console.error('Error checking like status for event:', event.id, error);
-        }
+      // Load like status for all events efficiently (single query)
+      try {
+        const likedEventIds = await getUserLikedEventIds();
+        setLikedEvents(likedEventIds);
+      } catch (error) {
+        console.error('Error loading liked event IDs:', error);
+        setLikedEvents(new Set());
       }
-      setLikedEvents(likedEventIds);
     } catch (error) {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events');
