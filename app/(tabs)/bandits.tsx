@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginBottom: 2,
+    textAlign: 'center',
   },
   selectedCityText: {
     fontSize: 16,

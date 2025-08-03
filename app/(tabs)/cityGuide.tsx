@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits } from '@/app/services/bandits';
-import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueNeighborhoods } from '@/app/services/events';
+import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueNeighborhoods, isEventLiked, toggleEventLike } from '@/app/services/events';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 
@@ -140,9 +140,20 @@ const FilterPicker = ({
   );
 };
 
-const EventCard = ({ event }: { event: Event }) => (
+const EventCard = ({ event, onLike, isLiked }: { 
+  event: Event; 
+  onLike: () => void;
+  isLiked: boolean;
+}) => (
   <View style={styles.eventCard}>
-    <Text style={styles.eventName}>{event.name}</Text>
+    <View style={styles.eventHeader}>
+      <Text style={styles.eventName}>{event.name}</Text>
+      <TouchableOpacity onPress={onLike} style={styles.likeButton}>
+        <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
+          {isLiked ? '❤️' : '🤍'}
+        </Text>
+      </TouchableOpacity>
+    </View>
     <Text style={styles.eventAddress}>{event.address}</Text>
     <Text style={styles.eventGenre}>{event.genre}</Text>
     <Text style={styles.eventDescription}>{event.description}</Text>
@@ -168,6 +179,7 @@ export default function CityGuideScreen() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
   const [selectedBandit, setSelectedBandit] = useState<string>('');
   const [nearMeActive, setNearMeActive] = useState(false);
+  const [likedEvents, setLikedEvents] = useState<Set<string>>(new Set());
   
   // Get selected city from global context
   const { selectedCity } = useCity();
@@ -175,6 +187,13 @@ export default function CityGuideScreen() {
   useEffect(() => {
     loadInitialData();
   }, [selectedCity]);
+
+  // Reload events on every navigation to this screen
+  useFocusEffect(
+    React.useCallback(() => {
+      loadEvents();
+    }, [searchQuery, selectedGenre, selectedNeighborhood, selectedBandit, nearMeActive, userLocation, selectedCity])
+  );
 
   // Reset filters on every navigation to this screen
   useFocusEffect(
@@ -256,6 +275,20 @@ export default function CityGuideScreen() {
       
       const eventsData = await getEvents(filters);
       setEvents(eventsData);
+      
+      // Load like status for all events
+      const likedEventIds = new Set<string>();
+      for (const event of eventsData) {
+        try {
+          const isLiked = await isEventLiked(event.id);
+          if (isLiked) {
+            likedEventIds.add(event.id);
+          }
+        } catch (error) {
+          console.error('Error checking like status for event:', event.id, error);
+        }
+      }
+      setLikedEvents(likedEventIds);
     } catch (error) {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events');
@@ -264,6 +297,26 @@ export default function CityGuideScreen() {
 
   const handleNearMeToggle = () => {
     setNearMeActive(!nearMeActive);
+  };
+
+  const handleEventLike = async (eventId: string) => {
+    try {
+      const isCurrentlyLiked = likedEvents.has(eventId);
+      await toggleEventLike(eventId, isCurrentlyLiked);
+      
+      setLikedEvents(prev => {
+        const newSet = new Set(prev);
+        if (isCurrentlyLiked) {
+          newSet.delete(eventId);
+        } else {
+          newSet.add(eventId);
+        }
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error toggling event like:', error);
+      Alert.alert('Error', 'Failed to update like status');
+    }
   };
 
   const clearFilters = () => {
@@ -342,7 +395,12 @@ export default function CityGuideScreen() {
             <Text style={styles.noEventsText}>No events found</Text>
           ) : (
             events.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                onLike={() => handleEventLike(event.id)}
+                isLiked={likedEvents.has(event.id)}
+              />
             ))
           )}
         </View>
@@ -364,7 +422,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#3C3C3C',
   },
   loadingContainer: {
     flex: 1,
@@ -570,6 +628,21 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  likeButton: {
+    padding: 4,
+  },
+  heartIcon: {
+    fontSize: 20,
+  },
+  heartIconLiked: {
+    fontSize: 20,
   },
   eventName: {
     fontSize: 18,

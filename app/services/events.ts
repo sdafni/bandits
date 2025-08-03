@@ -184,4 +184,88 @@ export async function getCurrentLocation(): Promise<{ lat: number; lng: number }
       }
     );
   });
+}
+
+// Toggle event like for current user
+export async function toggleEventLike(eventId: string, currentLikeStatus: boolean): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  if (currentLikeStatus) {
+    // Remove like
+    const { error } = await supabase
+      .from('event_user_likes')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('event_id', eventId);
+
+    if (error) {
+      console.error('Error removing event like:', error);
+      throw error;
+    }
+  } else {
+    // Add like
+    const { error } = await supabase
+      .from('event_user_likes')
+      .insert({
+        user_id: user.id,
+        event_id: eventId
+      });
+
+    if (error) {
+      console.error('Error adding event like:', error);
+      throw error;
+    }
+  }
+}
+
+// Get user's liked events
+export async function getUserLikedEvents(): Promise<Event[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase
+    .from('event_user_likes')
+    .select(`
+      event:event(*)
+    `)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error fetching user liked events:', error);
+    throw error;
+  }
+
+  // Extract events from the joined result
+  const events = data?.map((item: any) => item.event) || [];
+  return events;
+}
+
+// Check if an event is liked by current user
+export async function isEventLiked(eventId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from('event_user_likes')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('event_id', eventId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+    console.error('Error checking event like status:', error);
+    throw error;
+  }
+
+  return !!data;
 } 
