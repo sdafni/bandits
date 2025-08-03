@@ -1,5 +1,6 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits } from '@/app/services/bandits';
@@ -173,7 +174,14 @@ export default function CityGuideScreen() {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [selectedCity]);
+
+  // Reset filters on every navigation to this screen
+  useFocusEffect(
+    React.useCallback(() => {
+      clearFilters();
+    }, [])
+  );
 
   // Set the bandit filter when banditId is provided in URL params
   useEffect(() => {
@@ -195,7 +203,7 @@ export default function CityGuideScreen() {
       
       // Load filter options for events
       const [neighborhoodsData, genresData, banditsData] = await Promise.all([
-        getUniqueNeighborhoods(),
+        getUniqueNeighborhoods(selectedCity),
         getEventGenres(),
         getBandits()
       ]);

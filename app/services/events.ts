@@ -129,12 +129,19 @@ export async function getEvents(filters: EventFilters = {}): Promise<Event[]> {
 
 
 
-export async function getUniqueNeighborhoods(): Promise<string[]> {
-  const { data, error } = await supabase
+export async function getUniqueNeighborhoods(city?: string): Promise<string[]> {
+  let query = supabase
     .from('event')
     .select('neighborhood')
     .not('neighborhood', 'is', null)
     .not('neighborhood', 'eq', '');
+
+  // Filter by city if provided
+  if (city) {
+    query = query.eq('city', city);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching neighborhoods:', error);
