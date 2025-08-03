@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import CityGuideIcon from '@/assets/icons/cityGuideWhite.svg';
+import ExploreIcon from '@/assets/icons/exploreWhite.svg';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 type Bandit = Database['public']['Tables']['bandits']['Row'];
@@ -75,11 +75,11 @@ export default function BanditScreen() {
           style={styles.mainImage}
         />
         <Pressable
-          style={styles.cityGuideButton}
-          onPress={() => router.push(`/(tabs)/cityGuide?banditId=${id}`)}
+          style={styles.exploreButton}
+          onPress={() => router.push(`/(tabs)/explore?banditId=${id}`)}
         >
-          <CityGuideIcon width={28} height={28} />
-          <Text style={styles.cityGuideText}>city guide</Text>
+          <ExploreIcon />
+          <Text style={styles.exploreText}>explore</Text>
         </Pressable>
      
     </View>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 
-  cityGuideButton: {
+  exploreButton: {
     position: 'absolute',
     right: 16,
     bottom: -12,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  cityGuideText: {
+  exploreText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '600',

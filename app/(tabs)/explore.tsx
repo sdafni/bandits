@@ -163,7 +163,7 @@ const EventCard = ({ event, onLike, isLiked }: {
   </View>
 );
 
-export default function CityGuideScreen() {
+export default function ExploreScreen() {
   const { banditId } = useLocalSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState('');

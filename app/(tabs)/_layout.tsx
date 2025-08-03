@@ -3,7 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import BandiTeamIcon from '@/assets/icons/bandiTeam.svg';
-import CityGuideIcon from '@/assets/icons/cityGuide.svg';
+import ExploreIcon from '@/assets/icons/explore.svg';
 import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
 import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -46,10 +46,10 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="cityGuide"
+        name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: () => <CityGuideIcon width={28} height={28} fill={iconColor} />,
+          tabBarIcon: () => <ExploreIcon width={28} height={28} fill={iconColor} />,
         }}
       />
 
