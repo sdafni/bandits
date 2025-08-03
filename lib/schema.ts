@@ -9,7 +9,9 @@ export interface BaseTable {
 }
 
 
-export type EventGenre = 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
+import { DatabaseEventGenre } from '@/constants/Genres';
+
+export type EventGenre = DatabaseEventGenre;
 
 export interface EventTable extends BaseTable {
   name: string;

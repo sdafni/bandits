@@ -2,30 +2,50 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { getBanditEventCategories } from '@/app/services/events';
 import ExploreIcon from '@/assets/icons/exploreWhite.svg';
+import EventCategories from '@/components/EventCategories';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
+
 type Bandit = Database['public']['Tables']['bandits']['Row'];
+
+interface EventCategory {
+  genre: string;
+  count: number;
+}
 
 export default function BanditScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [bandit, setBandit] = useState<Bandit | null>(null);
+  const [categories, setCategories] = useState<EventCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchBandit = async () => {
+    const fetchBanditData = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        
+        // Fetch bandit data
+        const { data: banditData, error: banditError } = await supabase
           .from('bandits')
           .select('*')
           .eq('id', id as string)
           .single();
 
-        if (error) throw error;
-        setBandit(data);
+        if (banditError) throw banditError;
+        setBandit(banditData);
+
+        // Fetch event categories for this bandit
+        try {
+          const categoriesData = await getBanditEventCategories(id as string);
+          setCategories(categoriesData);
+        } catch (categoriesError) {
+          console.warn('Failed to fetch categories:', categoriesError);
+          // Don't fail the whole page if categories fail
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch bandit');
       } finally {
@@ -33,7 +53,7 @@ export default function BanditScreen() {
       }
     };
 
-    fetchBandit();
+    fetchBanditData();
   }, [id]);
 
   if (loading) {
@@ -92,6 +112,8 @@ export default function BanditScreen() {
 
 
 
+    <EventCategories categories={categories} />
+    
     <Text style={styles.whyFollowLabel}>{`Why follow ${bandit.name}?`}</Text>
 
         {bandit.why_follow ? (

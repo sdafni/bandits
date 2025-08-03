@@ -1,3 +1,4 @@
+import { EVENT_GENRES } from '@/constants/Genres';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
@@ -153,7 +154,7 @@ export async function getUniqueNeighborhoods(city?: string): Promise<string[]> {
 }
 
 export async function getEventGenres(): Promise<string[]> {
-  return ['Food', 'Culture', 'Nightlife', 'Shopping', 'Coffee'];
+  return [...EVENT_GENRES];
 }
 
 // Get user's current location
@@ -291,3 +292,39 @@ export async function getUserLikedEventIds(): Promise<Set<string>> {
   // Return a Set for O(1) lookup performance
   return new Set(data?.map(item => item.event_id) || []);
 } 
+
+// Get event categories/genres count for a specific bandit
+export async function getBanditEventCategories(banditId: string): Promise<{ genre: string; count: number }[]> {
+  const { data, error } = await supabase
+    .from('bandit_event')
+    .select(`
+      event:event(
+        genre
+      )
+    `)
+    .eq('bandit_id', banditId);
+
+  if (error) {
+    console.error('Error fetching bandit event categories:', error);
+    throw error;
+  }
+
+  // Group by genre and count using Map for better performance
+  const genreCounts = new Map<string, number>();
+  
+  data?.forEach((item: any) => {
+    const genre = item.event?.genre;
+    if (genre) {
+      genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
+    }
+  });
+
+  // Convert to array and sort by count (descending)
+  const result = Array.from(genreCounts.entries())
+    .map(([genre, count]) => ({ genre, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return result;
+} 
+
+ 
