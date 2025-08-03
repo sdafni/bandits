@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface ReviewCardProps {
   review: {
@@ -7,14 +7,11 @@ interface ReviewCardProps {
     review: string;
     rating: number;
     created_at?: string;
-  };
-  userProfile?: {
-    name: string;
-    image_url?: string;
+    user_name: string;
   };
 }
 
-export default function ReviewCard({ review, userProfile }: ReviewCardProps) {
+export default function ReviewCard({ review }: ReviewCardProps) {
   const renderStars = (rating: number) => {
     return '⭐'.repeat(rating);
   };
@@ -37,12 +34,8 @@ export default function ReviewCard({ review, userProfile }: ReviewCardProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Image
-            source={{ uri: userProfile?.image_url || 'https://via.placeholder.com/40x40' }}
-            style={styles.userImage}
-          />
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userProfile?.name || 'Anonymous'}</Text>
+            <Text style={styles.userName}>{review.user_name || 'Anonymous'}</Text>
             <Text style={styles.timeAgo}>{getTimeAgo(review.created_at)}</Text>
           </View>
         </View>
@@ -73,37 +66,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  userImage: {
-    width: 29,
-    height: 29,
-    borderRadius: 14.5,
-    marginRight: 8,
-  },
   userDetails: {
     flex: 1,
   },
   userName: {
     fontFamily: 'Caros',
     fontWeight: '500',
-    fontSize: 10,
+    fontSize: 12, // Increased by 10% from 11, rounded up
     color: '#3C3C3C',
     marginBottom: 2,
   },
   timeAgo: {
     fontFamily: 'Caros',
     fontWeight: '300',
-    fontSize: 6,
+    fontSize: 8, // Increased by 10% from 6.6, rounded up
     color: '#868686',
   },
   rating: {
-    fontSize: 9,
+    fontSize: 11, // Increased by 10% from 9.9, rounded up
     marginLeft: 4,
   },
   reviewText: {
     fontFamily: 'Caros',
     fontWeight: '300',
-    fontSize: 7,
+    fontSize: 9, // Increased by 10% from 7.7, rounded up
     color: '#3C3C3C',
-    lineHeight: 10,
+    lineHeight: 12, // Increased by 10% from 11, rounded up
   },
 }); 

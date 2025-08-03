@@ -147,18 +147,21 @@ export type Database = {
           bandit_id: string;
           review: string;
           rating: number;
+          user_name: string;
         };
         Insert: {
           user_id: string;
           bandit_id: string;
           review: string;
           rating: number;
+          user_name: string;
         };
         Update: {
           user_id?: string;
           bandit_id?: string;
           review?: string;
           rating?: number;
+          user_name?: string;
         };
       };
     };

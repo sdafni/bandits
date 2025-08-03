@@ -156,7 +156,6 @@ export default function BanditScreen() {
           <ReviewCard
             key={index}
             review={review}
-            userProfile={undefined}
           />
         ))}
       </ScrollView>
