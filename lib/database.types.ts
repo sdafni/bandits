@@ -48,7 +48,7 @@ export type Database = {
           why_follow: string | null;
         };
       };
-      bandit_events: {
+      bandit_event: {
         Row: {
           id: string;
           created_at: string;
@@ -139,6 +139,26 @@ export type Database = {
           user_id?: string;
           event_id?: string;
           created_at?: string;
+        };
+      };
+      user_bandit: {
+        Row: {
+          user_id: string;
+          bandit_id: string;
+          review: string;
+          rating: number;
+        };
+        Insert: {
+          user_id: string;
+          bandit_id: string;
+          review: string;
+          rating: number;
+        };
+        Update: {
+          user_id?: string;
+          bandit_id?: string;
+          review?: string;
+          rating?: number;
         };
       };
     };

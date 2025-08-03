@@ -294,7 +294,7 @@ export async function getUserLikedEventIds(): Promise<Set<string>> {
 } 
 
 // Get event categories/genres count for a specific bandit
-export async function getBanditEventCategories(banditId: string): Promise<{ genre: string; count: number }[]> {
+export async function getBanditEventCategories(banditId: string): Promise<{ genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee'; count: number }[]> {
   const { data, error } = await supabase
     .from('bandit_event')
     .select(`
@@ -321,7 +321,10 @@ export async function getBanditEventCategories(banditId: string): Promise<{ genr
 
   // Convert to array and sort by count (descending)
   const result = Array.from(genreCounts.entries())
-    .map(([genre, count]) => ({ genre, count }))
+    .map(([genre, count]) => ({ 
+      genre: genre as 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee', 
+      count 
+    }))
     .sort((a, b) => b.count - a.count);
 
   return result;

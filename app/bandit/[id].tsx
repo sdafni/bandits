@@ -1,17 +1,19 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getBanditEventCategories } from '@/app/services/events';
+import { getBanditReviews } from '@/app/services/reviews';
 import ExploreIcon from '@/assets/icons/exploreWhite.svg';
 import EventCategories from '@/components/EventCategories';
+import ReviewCard from '@/components/ReviewCard';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 type Bandit = Database['public']['Tables']['bandits']['Row'];
 
 interface EventCategory {
-  genre: string;
+  genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
   count: number;
 }
 
@@ -20,6 +22,7 @@ export default function BanditScreen() {
   const router = useRouter();
   const [bandit, setBandit] = useState<Bandit | null>(null);
   const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [reviews, setReviews] = useState<Database['public']['Tables']['user_bandit']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +48,16 @@ export default function BanditScreen() {
         } catch (categoriesError) {
           console.warn('Failed to fetch categories:', categoriesError);
           // Don't fail the whole page if categories fail
+        }
+
+        // Fetch reviews for this bandit
+        try {
+          const reviewsData = await getBanditReviews(id as string);
+          setReviews(reviewsData);
+        } catch (reviewsError) {
+          console.warn('Failed to fetch reviews:', reviewsError);
+          // Set empty array if no reviews found
+          setReviews([]);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch bandit');
@@ -129,6 +142,25 @@ export default function BanditScreen() {
       </Text>
     ) : null}
 
+    {/* Reviews Section */}
+    <View style={styles.reviewsSection}>
+      <Text style={styles.reviewsTitle}>
+        Reviews <Text style={styles.reviewsCount}>({reviews.length})</Text>
+      </Text>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.reviewsContainer}
+      >
+        {reviews.map((review, index) => (
+          <ReviewCard
+            key={index}
+            review={review}
+            userProfile={undefined}
+          />
+        ))}
+      </ScrollView>
+    </View>
     
   </View>
 
@@ -234,5 +266,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  reviewsSection: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  reviewsTitle: {
+    fontFamily: 'Caros',
+    fontWeight: '800',
+    fontSize: 22,
+    color: '#3C3C3C',
+    marginBottom: 12,
+  },
+  reviewsCount: {
+    fontFamily: 'Caros',
+    fontWeight: '400',
+    fontSize: 14,
+    color: '#FFB800',
+  },
+  reviewsContainer: {
+    paddingHorizontal: 8,
   },
 });
