@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits } from '@/app/services/bandits';
-import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueCities, getUniqueNeighborhoods } from '@/app/services/events';
+import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueNeighborhoods } from '@/app/services/events';
+import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 
 type Event = Database['public']['Tables']['event']['Row'];
@@ -163,10 +164,12 @@ export default function CityGuideScreen() {
   
   // Filter states
   const [selectedGenre, setSelectedGenre] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
   const [selectedBandit, setSelectedBandit] = useState<string>('');
   const [nearMeActive, setNearMeActive] = useState(false);
+  
+  // Get selected city from global context
+  const { selectedCity } = useCity();
 
   useEffect(() => {
     loadInitialData();
@@ -191,14 +194,12 @@ export default function CityGuideScreen() {
       setLoading(true);
       
       // Load filter options for events
-      const [citiesData, neighborhoodsData, genresData, banditsData] = await Promise.all([
-        getUniqueCities(),
+      const [neighborhoodsData, genresData, banditsData] = await Promise.all([
         getUniqueNeighborhoods(),
         getEventGenres(),
         getBandits()
       ]);
       
-      setCities(citiesData);
       setNeighborhoods(neighborhoodsData);
       setGenres(genresData);
       setBandits(banditsData);
@@ -260,7 +261,6 @@ export default function CityGuideScreen() {
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedGenre('');
-    setSelectedCity('');
     setSelectedNeighborhood('');
     setSelectedBandit('');
     setNearMeActive(false);
@@ -276,6 +276,13 @@ export default function CityGuideScreen() {
 
   return (
     <View style={styles.mainContainer}>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>
+          Explore {selectedCity || 'All Cities'}
+        </Text>
+      </View>
+      
       {/* Search Bar */}
       <CustomSearchInput 
         value={searchQuery}
@@ -286,28 +293,12 @@ export default function CityGuideScreen() {
       {/* Filters Section */}
       <View style={styles.filtersContainer}>
         <View style={styles.filtersRow}>
-          {/* Bandit Filter */}
-          <FilterPicker
-            selectedValue={selectedBandit}
-            onValueChange={setSelectedBandit}
-            items={bandits.map(bandit => ({ label: bandit.name, value: bandit.id }))}
-            placeholder="Bandit"
-          />
-          
           {/* Genre Filter */}
           <FilterPicker
             selectedValue={selectedGenre}
             onValueChange={setSelectedGenre}
             items={genres.map(genre => ({ label: genre, value: genre }))}
             placeholder="Genre"
-          />
-          
-          {/* City Filter */}
-          <FilterPicker
-            selectedValue={selectedCity}
-            onValueChange={setSelectedCity}
-            items={cities.map(city => ({ label: city, value: city }))}
-            placeholder="City"
           />
           
           {/* Neighborhood Filter */}
@@ -329,7 +320,7 @@ export default function CityGuideScreen() {
 
         
         {/* Clear Filters - only show when filters are active */}
-        {(selectedBandit || selectedGenre || selectedCity || selectedNeighborhood || nearMeActive) && (
+        {(selectedBandit || selectedGenre || selectedNeighborhood || nearMeActive) && (
           <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
             <Text style={styles.clearButtonText}>Clear Filters</Text>
           </TouchableOpacity>
@@ -356,6 +347,16 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  headerContainer: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
   },
   loadingContainer: {
     flex: 1,

@@ -27,4 +27,20 @@ export async function toggleBanditLike(id: string, currentLikeStatus: boolean): 
     console.error('Error toggling bandit like:', error);
     throw error;
   }
+}
+
+export async function getUniqueCities(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('event')
+    .select('city')
+    .not('city', 'is', null)
+    .not('city', 'eq', '');
+
+  if (error) {
+    console.error('Error fetching cities:', error);
+    throw error;
+  }
+
+  const cities = [...new Set(data?.map(item => item.city) || [])];
+  return cities.sort();
 } 

@@ -6,7 +6,6 @@ import BandiTeamIcon from '@/assets/icons/bandiTeam.svg';
 import CityGuideIcon from '@/assets/icons/cityGuide.svg';
 import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
 import { HapticTab } from '@/components/HapticTab';
-import { ModeHeader } from '@/components/ModeHeader';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -17,7 +16,7 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ModeHeader />
+      {/* <ModeHeader /> */}
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -37,21 +36,24 @@ export default function TabLayout() {
             tabBarIcon: () => <LocalBanditsIcon width={28} height={28} fill={iconColor} />,
         }}
       />
+
       <Tabs.Screen
-        name="cityGuide"
+        name="mySpots"
         options={{
-          title: 'City Guide',
-          tabBarIcon: () => <CityGuideIcon width={28} height={28} fill={iconColor} />,
+        title: 'My Spots',
+          tabBarIcon: () => <BandiTeamIcon width={28} height={28} fill={iconColor} />,
         }}
       />
 
       <Tabs.Screen
-        name="bandiTeam"
+        name="cityGuide"
         options={{
-          title: 'bandiTeam',
-            tabBarIcon: () => <BandiTeamIcon width={28} height={28} fill={iconColor} />,
+          title: 'Explore',
+          tabBarIcon: () => <CityGuideIcon width={28} height={28} fill={iconColor} />,
         }}
       />
+
+
     </Tabs>
     </View>
   );

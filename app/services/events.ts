@@ -127,21 +127,7 @@ export async function getEvents(filters: EventFilters = {}): Promise<Event[]> {
   return events;
 }
 
-export async function getUniqueCities(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('event')
-    .select('city')
-    .not('city', 'is', null)
-    .not('city', 'eq', '');
 
-  if (error) {
-    console.error('Error fetching cities:', error);
-    throw error;
-  }
-
-  const cities = [...new Set(data?.map(item => item.city) || [])];
-  return cities.sort();
-}
 
 export async function getUniqueNeighborhoods(): Promise<string[]> {
   const { data, error } = await supabase

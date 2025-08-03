@@ -1,42 +1,109 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { getBandits, toggleBanditLike } from '@/app/services/bandits';
+import { getBandits, getUniqueCities, toggleBanditLike } from '@/app/services/bandits';
 import BanditCard from '@/components/BanditCard';
+import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 type Bandit = Database['public']['Tables']['bandits']['Row'];
 
-const CustomSearchInput = ({ value, onChangeText }: { 
-  value: string; 
-  onChangeText: (text: string) => void 
-}) => (
-  <View style={styles.searchWrapper}>
-    <View style={styles.searchInputContainer}>
-      <Text style={styles.placeholder}>Where to?</Text>
-      <TextInput
-        style={styles.searchInput}
-        value={value}
-        onChangeText={onChangeText}
-      />
+const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
+  cities: string[];
+  selectedCity: string;
+  onSelectCity: (city: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <View style={styles.searchWrapper}>
+      <TouchableOpacity
+        style={styles.citySelectContainer}
+        onPress={() => setIsOpen(true)}
+      >
+        <Text style={styles.placeholder}>Where to?</Text>
+        <Text style={styles.selectedCityText}>
+          {selectedCity || 'Select a city'}
+        </Text>
+      </TouchableOpacity>
+      
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={styles.modalContent}>
+            <ScrollView style={styles.modalScrollView}>
+              <TouchableOpacity
+                style={[
+                  styles.modalItem,
+                  !selectedCity && styles.modalItemClear
+                ]}
+                onPress={() => {
+                  onSelectCity('');
+                  setIsOpen(false);
+                }}
+              >
+                <Text style={[
+                  styles.modalItemText,
+                  !selectedCity && styles.modalItemTextClear
+                ]}>
+                  Any City
+                </Text>
+              </TouchableOpacity>
+              {cities.map(city => (
+                <TouchableOpacity
+                  key={city}
+                  style={[
+                    styles.modalItem,
+                    selectedCity === city && styles.modalItemSelected
+                  ]}
+                  onPress={() => {
+                    onSelectCity(city);
+                    setIsOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.modalItemText,
+                    selectedCity === city && styles.modalItemTextSelected
+                  ]}>
+                    {city}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
-  </View>
-);
+  );
+};
 
 export default function BanditsScreen() {
   const [bandits, setBandits] = useState<Bandit[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const { selectedCity, setSelectedCity } = useCity();
 
   useEffect(() => {
-    loadBandits();
+    loadInitialData();
   }, []);
 
-  const loadBandits = async () => {
+  const loadInitialData = async () => {
     try {
-      const data = await getBandits();
-      setBandits(data);
+      const [banditsData, citiesData] = await Promise.all([
+        getBandits(),
+        getUniqueCities()
+      ]);
+      setBandits(banditsData);
+      setCities(citiesData);
     } catch (error) {
-      console.error('Error loading bandits:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -53,24 +120,25 @@ export default function BanditsScreen() {
     }
   };
 
-  const filteredBandits = bandits.filter(bandit => 
-    bandit.city.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBandits = selectedCity 
+    ? bandits.filter(bandit => bandit.city === selectedCity)
+    : bandits;
 
   return (
     <View style={styles.mainContainer}>
-      <CustomSearchInput 
-        value={searchQuery}
-        onChangeText={setSearchQuery}
+      <CityDropdown 
+        cities={cities}
+        selectedCity={selectedCity}
+        onSelectCity={setSelectedCity}
       />
       <ScrollView style={styles.scrollView}>
         <View style={styles.container}>
-                {filteredBandits.map((bandit) => (
-                  <BanditCard
-                    key={bandit.id}
-                    bandit={bandit}
-                    onLike={() => handleLike(bandit.id, bandit.is_liked)}
-                  />
+          {filteredBandits.map((bandit) => (
+            <BanditCard
+              key={bandit.id}
+              bandit={bandit}
+              onLike={() => handleLike(bandit.id, bandit.is_liked)}
+            />
           ))}
         </View>
       </ScrollView>
@@ -90,13 +158,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     height: 64, // 40 * 1.3 = ~52 (30% increase)
   },
-  searchInputContainer: {
+  citySelectContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 30,
     height: '100%',
     paddingHorizontal: 16,
     paddingVertical: 8,
     justifyContent: 'center',
+    minWidth: 200,
+    maxWidth: 300,
+    alignSelf: 'center',
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
@@ -111,10 +182,65 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 2,
   },
-  searchInput: {
-    fontSize: 12,
-    padding: 0,
+  selectedCityText: {
+    fontSize: 16,
     color: '#000000',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    maxHeight: 300,
+    minWidth: 200,
+    maxWidth: 300,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalScrollView: {
+    maxHeight: 300,
+  },
+  modalItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    marginHorizontal: 8,
+    marginVertical: 2,
+  },
+  modalItemSelected: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+  },
+  modalItemClear: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    marginHorizontal: 8,
+    marginVertical: 2,
+  },
+  modalItemText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  modalItemTextSelected: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  modalItemTextClear: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
