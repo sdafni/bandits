@@ -2,10 +2,10 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
 
-import BandiTeamIcon from '@/assets/icons/bandiTeam.svg';
 import ExploreIcon from '@/assets/icons/explore.svg';
 import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
 import { HapticTab } from '@/components/HapticTab';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -41,7 +41,7 @@ export default function TabLayout() {
         name="mySpots"
         options={{
         title: 'My Spots',
-          tabBarIcon: () => <BandiTeamIcon width={28} height={28} fill={iconColor} />,
+          tabBarIcon: () => <IconSymbol name="heart.fill" size={28} color="#FF0000" />,
         }}
       />
 
