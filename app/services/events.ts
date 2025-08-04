@@ -330,4 +330,20 @@ export async function getBanditEventCategories(banditId: string): Promise<{ genr
   return result;
 } 
 
+// Get personal tip for a specific event from a specific bandit
+export async function getBanditEventPersonalTip(banditId: string, eventId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('bandit_event')
+    .select('personal_tip')
+    .eq('bandit_id', banditId)
+    .eq('event_id', eventId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching bandit event personal tip:', error);
+    return null;
+  }
+
+  return data?.personal_tip || null;
+}
  

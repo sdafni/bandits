@@ -175,6 +175,7 @@ export default function CityGuideScreen() {
               variant="horizontal"
               showButton={false}
               imageHeight={256}
+              banditId={banditId as string}
             />
           ))}
         </ScrollView>

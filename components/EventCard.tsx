@@ -1,5 +1,5 @@
 import { Database } from '@/lib/database.types';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -16,6 +16,7 @@ interface EventCardProps {
   variant?: 'default' | 'horizontal';
   imageHeight?: number;
   onPress?: () => void;
+  banditId?: string; // Optional bandit ID for navigation context
 }
 
 export default function EventCard({ 
@@ -27,8 +28,10 @@ export default function EventCard({
   showButton = true,
   variant = 'default',
   imageHeight,
-  onPress
+  onPress,
+  banditId
 }: EventCardProps) {
+  const router = useRouter();
   const isHorizontal = variant === 'horizontal';
 
   const handleCardPress = () => {
@@ -36,7 +39,10 @@ export default function EventCard({
       onPress();
     } else {
       // Default navigation to event detail page
-      router.push(`/event/${event.id}`);
+      const url = banditId 
+        ? `/event/${event.id}?banditId=${banditId}` as any
+        : `/event/${event.id}` as any;
+      router.push(url);
     }
   };
 

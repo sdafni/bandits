@@ -54,18 +54,21 @@ export type Database = {
           created_at: string;
           bandit_id: string;
           event_id: string;
+          personal_tip?: string;
         };
         Insert: {
           id?: string;
           created_at?: string;
           bandit_id: string;
           event_id: string;
+          personal_tip?: string;
         };
         Update: {
           id?: string;
           created_at?: string;
           bandit_id?: string;
           event_id?: string;
+          personal_tip?: string;
         };
       };
       event: {

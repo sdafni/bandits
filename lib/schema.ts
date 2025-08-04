@@ -55,6 +55,7 @@ export interface BanditTable extends BaseTable {
 export interface BanditEventTable extends BaseTable {
   bandit_id: string; // references bandits.id
   event_id: string;  // references event.id
+  personal_tip?: string; // Personal tip from the bandit about this event
 }
 
 /**
