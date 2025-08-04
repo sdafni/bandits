@@ -91,15 +91,17 @@ export default function EventCard({
             )
           )}
         </View>
-        <Text style={styles.eventDescription}>{event.description}</Text>
-        <Text style={styles.eventAddress}>{event.address}</Text>
-        <View style={styles.timeContainer}>
-          <Text style={styles.eventDate}>
-            {new Date(event.start_time).getDate()}/{new Date(event.start_time).getMonth() + 1}
-          </Text>
-          <Text style={styles.eventTime}>
-            {new Date(event.start_time).getHours().toString().padStart(2, '0')}:{new Date(event.start_time).getMinutes().toString().padStart(2, '0')}-{new Date(event.end_time).getHours().toString().padStart(2, '0')}:{new Date(event.end_time).getMinutes().toString().padStart(2, '0')}
-          </Text>
+        <Text style={styles.eventDescription} numberOfLines={3} ellipsizeMode="tail">{event.description}</Text>
+        <View style={styles.bottomInfo}>
+          <Text style={styles.eventAddress}>{event.address}</Text>
+          <View style={styles.timeContainer}>
+            <Text style={styles.eventDate}>
+              {new Date(event.start_time).getDate()}/{new Date(event.start_time).getMonth() + 1}
+            </Text>
+            <Text style={styles.eventTime}>
+              {new Date(event.start_time).getHours().toString().padStart(2, '0')}:{new Date(event.start_time).getMinutes().toString().padStart(2, '0')}-{new Date(event.end_time).getHours().toString().padStart(2, '0')}:{new Date(event.end_time).getMinutes().toString().padStart(2, '0')}
+            </Text>
+          </View>
         </View>
       </View>
     </>
@@ -109,6 +111,7 @@ export default function EventCard({
     <Pressable 
       style={[
         styles.eventCard,
+        !isHorizontal && { maxHeight: 280 },
         isHorizontal && styles.eventCardHorizontal
       ]} 
       onPress={handleCardPress}
@@ -121,13 +124,14 @@ export default function EventCard({
 const styles = StyleSheet.create({
   eventCard: {
     backgroundColor: '#f8f8f8',
-    padding: 16,
+    padding: 8,
     borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
   },
   eventCardHorizontal: {
     width: 192,
+    height: 400,
     marginRight: 16,
     marginBottom: 0,
     backgroundColor: '#FFFFFF',
@@ -142,7 +146,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 0,
   },
   likeButton: {
     padding: 4,
@@ -167,7 +171,7 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 0,
     flex: 1,
   },
   eventAddress: {
@@ -181,6 +185,11 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 2,
     marginTop: 2,
+    flex: 1,
+    minHeight: 0,
+  },
+  bottomInfo: {
+    flexShrink: 0,
   },
   eventTime: {
     fontSize: 16,
@@ -198,9 +207,12 @@ const styles = StyleSheet.create({
   eventImage: {
     width: '100%',
     height: '90%',
+    borderRadius: 8,
   },
   eventContent: {
-    // Content area styling
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
   },
   eventContentHorizontal: {
     flex: 1,
@@ -212,7 +224,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 0,
   },
   imageContainerHorizontal: {
     width: '100%',
