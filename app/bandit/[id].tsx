@@ -4,7 +4,6 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 
 import { getBanditEventCategories } from '@/app/services/events';
 import { getBanditReviews } from '@/app/services/reviews';
-import ExploreIcon from '@/assets/icons/exploreWhite.svg';
 import EventCategories from '@/components/EventCategories';
 import ReviewCard from '@/components/ReviewCard';
 import { Database } from '@/lib/database.types';
@@ -109,10 +108,10 @@ export default function BanditScreen() {
         />
         <Pressable
           style={styles.exploreButton}
-          onPress={() => router.push(`/(tabs)/explore?banditId=${id}`)}
+          onPress={() => router.push(`/cityGuide?banditId=${id}`)}
         >
-          <ExploreIcon />
-          <Text style={styles.exploreText}>explore</Text>
+          <Text style={styles.plusSign}>+</Text>
+          <Text style={styles.exploreText}>CITY GUIDE</Text>
         </Pressable>
      
     </View>
@@ -265,6 +264,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  plusSign: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 2,
   },
   reviewsSection: {
     marginTop: 20,
