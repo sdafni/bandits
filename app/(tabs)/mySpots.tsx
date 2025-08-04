@@ -46,7 +46,7 @@ export default function MySpotsScreen() {
     }
   };
 
-  const handleEventLike = async (eventId: string) => {
+  const handleEventRemove = async (eventId: string) => {
     try {
       await toggleEventLike(eventId, true); // true because it's currently liked
       
@@ -83,8 +83,10 @@ export default function MySpotsScreen() {
               <EventCard 
                 key={event.id} 
                 event={event} 
-                onLike={() => handleEventLike(event.id)}
+                onLike={() => handleEventRemove(event.id)}
                 isLiked={true}
+                buttonType="remove"
+                buttonText="Remove"
               />
             ))
           )}

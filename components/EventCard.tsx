@@ -1,6 +1,7 @@
 import { Database } from '@/lib/database.types';
+import { router } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Event = Database['public']['Tables']['event']['Row'];
 
@@ -8,14 +9,51 @@ interface EventCardProps {
   event: Event;
   onLike: () => void;
   isLiked: boolean;
+  // New variant props for different behaviors
+  buttonType?: 'like' | 'remove';
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: 'default' | 'horizontal';
+  imageHeight?: number;
+  onPress?: () => void;
 }
 
-export default function EventCard({ event, onLike, isLiked }: EventCardProps) {
-  return (
-    <View style={styles.eventCard}>
+export default function EventCard({ 
+  event, 
+  onLike, 
+  isLiked, 
+  buttonType = 'like',
+  buttonText,
+  showButton = true,
+  variant = 'default',
+  imageHeight,
+  onPress
+}: EventCardProps) {
+  const isHorizontal = variant === 'horizontal';
+
+  const handleCardPress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      // Default navigation to event detail page
+      router.push(`/event/${event.id}`);
+    }
+  };
+
+  const handleLikePress = (e: any) => {
+    e.stopPropagation(); // Prevent card press when like button is pressed
+    onLike();
+  };
+
+  const cardContent = (
+    <>
       {/* Event Image */}
       {event.image_url && (
-        <View style={styles.imageContainer}>
+        <View style={[
+          styles.imageContainer, 
+          isHorizontal && styles.imageContainerHorizontal,
+          ...(imageHeight ? [{ height: imageHeight }] : [])
+        ]}>
           <Image
             source={{ uri: event.image_url }}
             style={styles.eventImage}
@@ -24,26 +62,59 @@ export default function EventCard({ event, onLike, isLiked }: EventCardProps) {
               console.error('Image failed to load:', event.image_url, error);
             }}
           />
+          <View style={styles.ratingContainer}>
+            <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
+            <Text style={styles.starText}>★</Text>
+          </View>
         </View>
       )}
       
-      <View style={styles.eventContent}>
+      <View style={[
+        styles.eventContent,
+        isHorizontal && styles.eventContentHorizontal
+      ]}>
         <View style={styles.eventHeader}>
           <Text style={styles.eventName}>{event.name}</Text>
-          <TouchableOpacity onPress={onLike} style={styles.likeButton}>
-            <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
-              {isLiked ? '❤️' : '🤍'}
-            </Text>
-          </TouchableOpacity>
+          {showButton && (
+            buttonType === 'remove' ? (
+              <TouchableOpacity onPress={handleLikePress} style={styles.removeButton}>
+                <Text style={styles.removeButtonText}>
+                  {buttonText || 'Remove'}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={handleLikePress} style={styles.likeButton}>
+                <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
+                  {isLiked ? '❤️' : '🤍'}
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
         </View>
-        <Text style={styles.eventAddress}>{event.address}</Text>
-        <Text style={styles.eventGenre}>{event.genre}</Text>
         <Text style={styles.eventDescription}>{event.description}</Text>
-        <Text style={styles.eventTime}>
-          {new Date(event.start_time).toLocaleDateString()} - {new Date(event.end_time).toLocaleDateString()}
-        </Text>
+        <Text style={styles.eventAddress}>{event.address}</Text>
+        <View style={styles.timeContainer}>
+          <Text style={styles.eventDate}>
+            {new Date(event.start_time).getDate()}/{new Date(event.start_time).getMonth() + 1}
+          </Text>
+          <Text style={styles.eventTime}>
+            {new Date(event.start_time).getHours().toString().padStart(2, '0')}:{new Date(event.start_time).getMinutes().toString().padStart(2, '0')}-{new Date(event.end_time).getHours().toString().padStart(2, '0')}:{new Date(event.end_time).getMinutes().toString().padStart(2, '0')}
+          </Text>
+        </View>
       </View>
-    </View>
+    </>
+  );
+
+  return (
+    <Pressable 
+      style={[
+        styles.eventCard,
+        isHorizontal && styles.eventCardHorizontal
+      ]} 
+      onPress={handleCardPress}
+    >
+      {cardContent}
+    </Pressable>
   );
 }
 
@@ -55,14 +126,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     overflow: 'hidden',
   },
+  eventCardHorizontal: {
+    width: 192,
+    marginRight: 16,
+    marginBottom: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   eventHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   likeButton: {
     padding: 4,
+  },
+  removeButton: {
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  removeButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
   heartIcon: {
     fontSize: 20,
@@ -74,32 +168,43 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
+    flex: 1,
   },
   eventAddress: {
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
   },
-  eventGenre: {
-    fontSize: 12,
-    color: '#007AFF',
-    marginBottom: 4,
-  },
+
   eventDescription: {
     fontSize: 14,
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 2,
+    marginTop: 2,
   },
   eventTime: {
-    fontSize: 12,
+    fontSize: 16,
+    color: '#FF0000',
+    fontWeight: 'bold',
+  },
+  timeContainer: {
+    marginTop: 4,
+  },
+  eventDate: {
+    fontSize: 10,
     color: '#999',
+    marginBottom: 1,
   },
   eventImage: {
     width: '100%',
-    height: '100%',
+    height: '90%',
   },
   eventContent: {
     // Content area styling
+  },
+  eventContentHorizontal: {
+    flex: 1,
+    padding: 3,
   },
   imageContainer: {
     position: 'relative',
@@ -108,5 +213,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 12,
+  },
+  imageContainerHorizontal: {
+    width: '100%',
+    height: 256,
+    marginBottom: 0,
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
+  },
+  ratingContainer: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginRight: 4,
+  },
+  starText: {
+    color: 'white',
+    fontSize: 16,
   },
 }); 

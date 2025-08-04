@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EventFilters, getEvents } from '@/app/services/events';
+import EventCard from '@/components/EventCard';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
@@ -72,6 +73,8 @@ export default function CityGuideScreen() {
   useEffect(() => {
     loadEvents();
   }, [selectedGenre]);
+
+
 
   const handleAskMePress = () => {
     const phoneNumber = '+972544717932';
@@ -163,27 +166,17 @@ export default function CityGuideScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.eventsContainer}
         >
-                     {events.map((event, index) => (
-             <View key={index} style={styles.eventCard}>
-               <View style={styles.eventImageContainer}>
-                 <Image
-                   source={{ uri: event.image_url || 'https://via.placeholder.com/150' }}
-                   style={styles.eventImage}
-                 />
-                 <View style={styles.ratingContainer}>
-                   <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
-                   <Text style={styles.starText}>★</Text>
-                 </View>
-               </View>
-               <View style={styles.eventInfo}>
-                 <Text style={styles.eventTitle}>{event.name}</Text>
-                 <Text style={styles.eventDescription} numberOfLines={3}>
-                   {event.description}
-                 </Text>
-                 <Text style={styles.eventTime}>{`${event.start_time}–${event.end_time}`}</Text>
-               </View>
-             </View>
-           ))}
+          {events.map((event, index) => (
+            <EventCard 
+              key={event.id} 
+              event={event} 
+              onLike={() => {}} // No like functionality in city guide
+              isLiked={false}
+              variant="horizontal"
+              showButton={false}
+              imageHeight={256}
+            />
+          ))}
         </ScrollView>
         
         {/* Ask Me Button */}
@@ -293,73 +286,6 @@ const styles = StyleSheet.create({
   eventsContainer: {
     paddingHorizontal: 8,
     marginBottom: 20,
-  },
-  eventCard: {
-    width: 192,
-    marginRight: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 7,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  eventImageContainer: {
-    position: 'relative',
-  },
-  eventImage: {
-    width: '100%',
-    height: 256,
-    borderTopLeftRadius: 7,
-    borderTopRightRadius: 7,
-  },
-  eventInfo: {
-    padding: 12,
-  },
-  eventTitle: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#3C3C3C',
-    marginBottom: 4,
-  },
-  eventDescription: {
-    fontFamily: 'Caros',
-    fontWeight: '400',
-    fontSize: 10,
-    color: '#3C3C3C',
-    marginBottom: 8,
-    lineHeight: 12,
-  },
-  eventTime: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    fontSize: 16,
-    color: '#FF0000',
-    marginBottom: 8,
-  },
-  ratingContainer: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    backgroundColor: 'rgba(255, 0, 0, 0.8)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#FFFFFF',
-    marginRight: 4,
-  },
-  starText: {
-    fontSize: 16,
-    color: '#FFFFFF',
   },
   askMeButton: {
     backgroundColor: '#FF0000',
