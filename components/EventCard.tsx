@@ -1,6 +1,6 @@
 import { Database } from '@/lib/database.types';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Event = Database['public']['Tables']['event']['Row'];
 
@@ -13,20 +13,36 @@ interface EventCardProps {
 export default function EventCard({ event, onLike, isLiked }: EventCardProps) {
   return (
     <View style={styles.eventCard}>
-      <View style={styles.eventHeader}>
-        <Text style={styles.eventName}>{event.name}</Text>
-        <TouchableOpacity onPress={onLike} style={styles.likeButton}>
-          <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
-            {isLiked ? '❤️' : '🤍'}
-          </Text>
-        </TouchableOpacity>
+      {/* Event Image */}
+      {event.image_url && (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: event.image_url }}
+            style={styles.eventImage}
+            resizeMode="cover"
+            onError={(error) => {
+              console.error('Image failed to load:', event.image_url, error);
+            }}
+          />
+        </View>
+      )}
+      
+      <View style={styles.eventContent}>
+        <View style={styles.eventHeader}>
+          <Text style={styles.eventName}>{event.name}</Text>
+          <TouchableOpacity onPress={onLike} style={styles.likeButton}>
+            <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
+              {isLiked ? '❤️' : '🤍'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.eventAddress}>{event.address}</Text>
+        <Text style={styles.eventGenre}>{event.genre}</Text>
+        <Text style={styles.eventDescription}>{event.description}</Text>
+        <Text style={styles.eventTime}>
+          {new Date(event.start_time).toLocaleDateString()} - {new Date(event.end_time).toLocaleDateString()}
+        </Text>
       </View>
-      <Text style={styles.eventAddress}>{event.address}</Text>
-      <Text style={styles.eventGenre}>{event.genre}</Text>
-      <Text style={styles.eventDescription}>{event.description}</Text>
-      <Text style={styles.eventTime}>
-        {new Date(event.start_time).toLocaleDateString()} - {new Date(event.end_time).toLocaleDateString()}
-      </Text>
     </View>
   );
 }
@@ -37,6 +53,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+    overflow: 'hidden',
   },
   eventHeader: {
     flexDirection: 'row',
@@ -76,5 +93,20 @@ const styles = StyleSheet.create({
   eventTime: {
     fontSize: 12,
     color: '#999',
+  },
+  eventImage: {
+    width: '100%',
+    height: '100%',
+  },
+  eventContent: {
+    // Content area styling
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
 }); 
