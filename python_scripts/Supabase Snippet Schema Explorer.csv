@@ -1,0 +1,47 @@
+table_name,column_name,data_type
+bandit_event,id,uuid
+bandit_event,created_at,timestamp with time zone
+bandit_event,bandit_id,uuid
+bandit_event,event_id,uuid
+bandit_event,personal_tip,text
+bandits,id,uuid
+bandits,name,text
+bandits,age,integer
+bandits,city,text
+bandits,occupation,text
+bandits,image_url,text
+bandits,rating,integer
+bandits,is_liked,boolean
+bandits,icon,text
+bandits,created_at,timestamp with time zone
+bandits,description,text
+bandits,why_follow,text
+bandits,family_name,text
+event,id,uuid
+event,created_at,timestamp with time zone
+event,name,text
+event,genre,text
+event,description,text
+event,rating,integer
+event,image_url,text
+event,link,text
+event,address,text
+event,city,text
+event,neighborhood,text
+event,start_time,timestamp with time zone
+event,end_time,timestamp with time zone
+event,location_lat,double precision
+event,location_lng,double precision
+event,image_gallery,text
+event_user_likes,id,uuid
+event_user_likes,user_id,uuid
+event_user_likes,event_id,uuid
+event_user_likes,created_at,timestamp with time zone
+user_bandit,id,uuid
+user_bandit,user_id,uuid
+user_bandit,bandit_id,uuid
+user_bandit,review,text
+user_bandit,rating,integer
+user_bandit,created_at,timestamp with time zone
+user_bandit,updated_at,timestamp with time zone
+user_bandit,user_name,text

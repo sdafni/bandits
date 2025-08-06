@@ -96,10 +96,10 @@ function App() {
         const fileExt = form.image.name.split('.').pop();
         const fileName = `${form.name}_${Date.now()}.${fileExt}`;
         const { error } = await supabase.storage
-          .from('banditsassets')
+          .from('banditsassets2')
           .upload(fileName, form.image);
         if (error) throw error;
-        image_url = supabase.storage.from('banditsassets').getPublicUrl(fileName).data.publicUrl;
+        image_url = supabase.storage.from('banditsassets2').getPublicUrl(fileName).data.publicUrl;
       }
       const { error: insertError } = await supabase.from('bandits').insert([
         {
