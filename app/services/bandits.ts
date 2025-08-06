@@ -1,11 +1,11 @@
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 
 export async function getBandits(): Promise<Bandit[]> {
   const { data, error } = await supabase
-    .from('bandits')
+    .from('bandit')
     .select('*')
     .order('created_at', { ascending: false });
 
@@ -19,7 +19,7 @@ export async function getBandits(): Promise<Bandit[]> {
 
 export async function toggleBanditLike(id: string, currentLikeStatus: boolean): Promise<void> {
   const { error } = await supabase
-    .from('bandits')
+    .from('bandit')
     .update({ is_liked: !currentLikeStatus })
     .eq('id', id);
 

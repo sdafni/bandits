@@ -101,7 +101,7 @@ function App() {
         if (error) throw error;
         image_url = supabase.storage.from('banditsassets2').getPublicUrl(fileName).data.publicUrl;
       }
-      const { error: insertError } = await supabase.from('bandits').insert([
+      const { error: insertError } = await supabase.from('bandit').insert([
         {
           name: form.name,
           family_name: form.family_name,

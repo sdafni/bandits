@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 type Event = Database['public']['Tables']['event']['Row'];
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -47,7 +47,7 @@ export default function EventDetailScreen() {
         // Fetch bandit data if banditId is provided
         if (banditId) {
           const { data: banditData, error: banditError } = await supabase
-            .from('bandits')
+            .from('bandit')
             .select('*')
             .eq('id', banditId)
             .single();

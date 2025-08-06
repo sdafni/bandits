@@ -1,7 +1,7 @@
 export type Database = {
   public: {
     Tables: {
-      bandits: {
+      bandit: {
         Row: {
           id: string;
           name: string;

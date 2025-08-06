@@ -10,7 +10,7 @@ import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 
 type Event = Database['public']['Tables']['event']['Row'];
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 
 const CustomSearchInput = ({ value, onChangeText, placeholder }: { 
   value: string; 

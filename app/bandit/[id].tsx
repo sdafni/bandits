@@ -9,7 +9,7 @@ import ReviewCard from '@/components/ReviewCard';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 
 interface EventCategory {
   genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
@@ -32,7 +32,7 @@ export default function BanditScreen() {
         
         // Fetch bandit data
         const { data: banditData, error: banditError } = await supabase
-          .from('bandits')
+          .from('bandit')
           .select('*')
           .eq('id', id as string)
           .single();

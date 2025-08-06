@@ -7,7 +7,7 @@ import EventCard from '@/components/EventCard';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 type Event = Database['public']['Tables']['event']['Row'];
 
 interface EventCategory {
@@ -33,7 +33,7 @@ export default function CityGuideScreen() {
         
         // Fetch bandit data
         const { data: banditData, error: banditError } = await supabase
-          .from('bandits')
+          .from('bandit')
           .select('*')
           .eq('id', banditId as string)
           .single();

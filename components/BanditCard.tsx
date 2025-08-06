@@ -4,7 +4,7 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 
 interface BanditCardProps {
   bandit: Bandit;

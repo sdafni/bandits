@@ -31,7 +31,7 @@ export interface EventTable extends BaseTable {
 }
 
 export interface Tables {
-  bandits: BanditTable;
+  bandit: BanditTable;
   event: EventTable;
   bandit_events: BanditEventTable;
   // Add more tables here as needed
@@ -53,7 +53,7 @@ export interface BanditTable extends BaseTable {
 
 // Join table for many-to-many relation between bandits and events
 export interface BanditEventTable extends BaseTable {
-  bandit_id: string; // references bandits.id
+  bandit_id: string; // references bandit.id
   event_id: string;  // references event.id
   personal_tip?: string; // Personal tip from the bandit about this event
 }
@@ -63,7 +63,7 @@ export interface BanditEventTable extends BaseTable {
  * Use this to document additional database constraints or relationships
  */
 export const tableConstraints = {
-  bandits: {
+  bandit: {
     indexes: ['created_at'],
     unique: ['name'],
     constraints: {

@@ -5,7 +5,7 @@ import { getBandits, getUniqueCities, toggleBanditLike } from '@/app/services/ba
 import BanditCard from '@/components/BanditCard';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
-type Bandit = Database['public']['Tables']['bandits']['Row'];
+type Bandit = Database['public']['Tables']['bandit']['Row'];
 
 const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
   cities: string[];
