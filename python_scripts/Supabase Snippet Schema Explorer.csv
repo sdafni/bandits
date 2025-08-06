@@ -4,19 +4,19 @@ bandit_event,created_at,timestamp with time zone
 bandit_event,bandit_id,uuid
 bandit_event,event_id,uuid
 bandit_event,personal_tip,text
-bandits,id,uuid
-bandits,name,text
-bandits,age,integer
-bandits,city,text
-bandits,occupation,text
-bandits,image_url,text
-bandits,rating,integer
-bandits,is_liked,boolean
-bandits,icon,text
-bandits,created_at,timestamp with time zone
-bandits,description,text
-bandits,why_follow,text
-bandits,family_name,text
+bandit,id,uuid
+bandit,name,text
+bandit,age,integer
+bandit,city,text
+bandit,occupation,text
+bandit,image_url,text
+bandit,rating,integer
+bandit,is_liked,boolean
+bandit,icon,text
+bandit,created_at,timestamp with time zone
+bandit,description,text
+bandit,why_follow,text
+bandit,family_name,text
 event,id,uuid
 event,created_at,timestamp with time zone
 event,name,text

@@ -47,8 +47,8 @@ def extract_pdf_with_image_placeholders(pdf_path, output_dir="pdf_output"):
             image_filename = f"{image_id}.{image_ext}"
             image_path = images_dir / image_filename
 
-            image = Image.open(io.BytesIO(image_bytes))
-            image.save(image_path)
+            # image = Image.open(io.BytesIO(image_bytes))
+            # image.save(image_path)
             print(f"💾 Saved image: {image_filename}")
 
             text_with_placeholders += f"[IMAGE_ID: {image_id}]\n"
@@ -85,7 +85,8 @@ def call_deepseek_chat(api_key: str, system_prompt: str, user_input: str, model=
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_input}
         ],
-        "temperature": 0.2
+        "temperature": 0.2,
+        "max_tokens": 8192
     }
 
     print(f"📤 Sending request to DeepSeek API...")
@@ -109,14 +110,29 @@ def main(pdf_path, api_key, output_dir="pdf_output"):
 
     # Phase 2: call DeepSeek-Chat to extract structured JSON
     print(f"\n🤖 Phase 2: Calling DeepSeek API for structured extraction...")
+
+    csv_path = "Supabase Snippet Schema Explorer.csv"
+    with open(csv_path, "r", encoding="utf-8") as f:
+        csv_data = f.read()
+
     system_prompt = (
         "You are a helpful assistant that extracts structured data from documents."
         "the text comes from a file that had images, these where replaced with placeholders in the format [IMAGE_ID: img_123456]."
-        "The text in hand contains sections of Bandits each Bandit starts with an image (noted by IMAGE_ID), than name, than other details"
+        "The text in hand contains sections of Bandits, each Bandit starts with an image (noted by IMAGE_ID), than name, than other details"
         "than comes a list of events related to the current bandit section,  each event starts with a name and ends with an address"
         "produce a structured json with a list of bandits, a list of events , and list of bandit event links"
-        "the json is minimal, every bandit has : name, image_ref, description, age"
-        "every event  has: name, main_image_ref (the first image if exists), description, gallery_refs (list of other images if exists), address"
+        "The json fields should match the target DB schema here:"
+        "\n\nReference CSV data:\n" + csv_data + ""
+
+
+        "Try to infer from the text the matching fields. "
+        "Select unique uuids for all objects"
+        "Bandits have main image: put the image placeholder there"
+        "Events may or may not have images, if they do, the first is the main, th resy are the gallery. in the gallery put a comma separated list of placeholders"
+        "Events may appear twice, in that case if one has images and the other doesnt, fill the missing images. also, create 2 event-bandit links in such case"
+        "Leave null what you can't figure out"
+        "DO not try to geocode"
+        "rating should be random between 1 and 5"
     )
 
     try:
