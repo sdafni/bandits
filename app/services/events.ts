@@ -52,9 +52,14 @@ export async function getEvents(filters: EventFilters = {}): Promise<Event[]> {
     // Apply additional filters to the bandit-filtered results
     if (data && (filters.searchQuery || filters.genre || filters.city || filters.neighborhood)) {
       data = data.filter((event: Event) => {
-        // Text search in description
-        if (filters.searchQuery && !event.description?.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
-          return false;
+        // Text search in name and description
+        if (filters.searchQuery) {
+          const searchTerm = filters.searchQuery.toLowerCase();
+          const nameMatch = event.name?.toLowerCase().includes(searchTerm);
+          const descriptionMatch = event.description?.toLowerCase().includes(searchTerm);
+          if (!nameMatch && !descriptionMatch) {
+            return false;
+          }
         }
         
         // Genre filter
@@ -79,9 +84,9 @@ export async function getEvents(filters: EventFilters = {}): Promise<Event[]> {
     // Regular event query without bandit filter
     query = supabase.from('event').select('*');
 
-    // Text search in description
+    // Text search in name and description
     if (filters.searchQuery) {
-      query = query.ilike('description', `%${filters.searchQuery}%`);
+      query = query.or(`name.ilike.%${filters.searchQuery}%,description.ilike.%${filters.searchQuery}%`);
     }
 
     // Genre filter

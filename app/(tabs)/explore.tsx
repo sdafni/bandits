@@ -323,7 +323,7 @@ export default function ExploreScreen() {
       <CustomSearchInput 
         value={searchQuery}
         onChangeText={setSearchQuery}
-        placeholder="Search description..."
+        placeholder="Search name or description..."
       />
       
       {/* Filters Section */}

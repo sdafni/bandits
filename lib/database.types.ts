@@ -88,6 +88,7 @@ export type Database = {
           created_at: string;
           image_url: string;
           link: string;
+          image_gallery: string | null;
         };
         Insert: {
           id?: string;
@@ -105,6 +106,7 @@ export type Database = {
           created_at?: string;
           image_url: string;
           link: string;
+          image_gallery?: string | null;
         };
         Update: {
           id?: string;
@@ -122,6 +124,7 @@ export type Database = {
           created_at?: string;
           image_url?: string;
           link?: string;
+          image_gallery?: string | null;
         };
       };
       event_user_likes: {

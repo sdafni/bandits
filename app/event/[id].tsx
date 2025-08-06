@@ -5,14 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 type Event = Database['public']['Tables']['event']['Row'];
@@ -103,8 +103,10 @@ export default function EventDetailScreen() {
     );
   }
 
-  // Create gallery images (duplicate the event image for now)
-  const galleryImages = Array(4).fill(event.image_url);
+  // Parse gallery images from comma-separated string
+  const galleryImages = event.image_gallery 
+    ? event.image_gallery.split(',').map(url => url.trim()).filter(url => url)
+    : [];
 
   return (
     <ThemedView style={styles.container}>
@@ -162,24 +164,26 @@ export default function EventDetailScreen() {
         )}
 
         {/* Gallery Section */}
-        <View style={styles.galleryContainer}>
-          <Text style={styles.galleryTitle}>Gallery</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.galleryScrollContainer}
-          >
-            {galleryImages.map((imageUrl, index) => (
-              <View key={index} style={styles.galleryImageContainer}>
-                <Image
-                  source={{ uri: imageUrl }}
-                  style={styles.galleryImage}
-                  resizeMode="cover"
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
+        {galleryImages.length > 0 && (
+          <View style={styles.galleryContainer}>
+            <Text style={styles.galleryTitle}>Gallery</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.galleryScrollContainer}
+            >
+              {galleryImages.map((imageUrl, index) => (
+                <View key={index} style={styles.galleryImageContainer}>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Bottom spacing to avoid tab bar */}
         <View style={styles.bottomSpacing} />
