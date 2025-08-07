@@ -14,6 +14,15 @@ const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Show city name as header text if there's only one city
+  if (cities.length === 1) {
+    return (
+      <View style={styles.searchWrapper}>
+        <Text style={styles.cityHeaderText}>{cities[0]}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.searchWrapper}>
       <TouchableOpacity
@@ -102,6 +111,11 @@ export default function BanditsScreen() {
       ]);
       setBandits(banditsData);
       setCities(citiesData);
+      
+      // Auto-select the city if there's only one
+      if (citiesData.length === 1) {
+        setSelectedCity(citiesData[0]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -187,6 +201,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  cityHeaderText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3C3C3C',
     textAlign: 'center',
   },
   modalOverlay: {

@@ -41,7 +41,7 @@ export default function TabLayout() {
         name="mySpots"
         options={{
         title: 'My Spots',
-          tabBarIcon: () => <IconSymbol name="heart.fill" size={28} color="#FF0000" />,
+          tabBarIcon: () => <IconSymbol name="heart" size={28} color="#000000" />,
         }}
       />
 
