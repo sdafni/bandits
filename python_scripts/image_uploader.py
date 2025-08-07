@@ -1,8 +1,12 @@
 import fitz  # PyMuPDF
 import json
 import os
+import cv2
+import numpy as np
+from PIL import Image
+import io
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple, Optional
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -24,6 +28,90 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("⚠️  Supabase credentials not found in .env file. Upload functionality will be disabled.")
 
+def detect_and_crop_face(image_data: bytes) -> Tuple[bytes, bool]:
+    """
+    Detect faces in image and crop to center the face if found.
+    Maintains original aspect ratio by trimming edges to center the face.
+    
+    Args:
+        image_data: Raw image bytes
+        
+    Returns:
+        Tuple of (processed_image_bytes, face_detected)
+    """
+    try:
+        # Convert bytes to numpy array
+        nparr = np.frombuffer(image_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            print("⚠️  Could not decode image")
+            return image_data, False
+        
+        # Convert to grayscale for face detection
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # Load face cascade classifier
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        
+        # Detect faces
+        faces = face_cascade.detectMultiScale(
+            gray, 
+            scaleFactor=1.1, 
+            minNeighbors=5, 
+            minSize=(30, 30)
+        )
+        
+        if len(faces) == 0:
+            print("📷 No faces detected, using original image")
+            return image_data, False
+        
+        # Get the largest face (most prominent)
+        largest_face = max(faces, key=lambda x: x[2] * x[3])
+        x, y, w, h = largest_face
+        
+        # Calculate face center
+        img_height, img_width = img.shape[:2]
+        face_center_x = x + w // 2
+        face_center_y = y + h // 2
+        
+        # Calculate how much to trim from each side to center the face
+        # We want the face to be in the center of the final image
+        target_center_x = img_width // 2
+        target_center_y = img_height // 2
+        
+        # Calculate the offset needed to center the face
+        offset_x = face_center_x - target_center_x
+        offset_y = face_center_y - target_center_y
+        
+        # Calculate crop boundaries
+        crop_left = max(0, offset_x)
+        crop_right = min(img_width, img_width + offset_x)
+        crop_top = max(0, offset_y)
+        crop_bottom = min(img_height, img_height + offset_y)
+        
+        # Ensure we have a valid crop region
+        if crop_left >= crop_right or crop_top >= crop_bottom:
+            print("⚠️  Invalid crop region, using original image")
+            return image_data, False
+        
+        # Crop the image to center the face
+        cropped_img = img[crop_top:crop_bottom, crop_left:crop_right]
+        
+        # Convert back to bytes
+        success, encoded_img = cv2.imencode('.jpg', cropped_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if success:
+            processed_bytes = encoded_img.tobytes()
+            print(f"✅ Face detected and centered by trimming edges")
+            return processed_bytes, True
+        else:
+            print("⚠️  Failed to encode cropped image, using original")
+            return image_data, False
+            
+    except Exception as e:
+        print(f"⚠️  Error in face detection/cropping: {str(e)}")
+        return image_data, False
+
 def upload_image_to_supabase(image_data: bytes, placeholder_id: str) -> str:
     """
     Upload image data to Supabase storage and return the public URL
@@ -33,17 +121,21 @@ def upload_image_to_supabase(image_data: bytes, placeholder_id: str) -> str:
         return ""
     
     try:
+        # Process image for face detection and cropping
+        processed_image_data, face_detected = detect_and_crop_face(image_data)
+        
         # Upload to Supabase storage
         file_path = f"pdf_images/{placeholder_id}.jpg"
         result = supabase.storage.from_(BUCKET_NAME).upload(
             path=file_path,
-            file=image_data,
+            file=processed_image_data,
             file_options={"content-type": "image/jpeg"}
         )
         
         # Get the public URL
         public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
-        print(f"✅ Uploaded {placeholder_id} to {public_url}")
+        status = "✅ Face cropped and uploaded" if face_detected else "✅ Uploaded"
+        print(f"{status} {placeholder_id} to {public_url}")
         return public_url
         
     except Exception as e:

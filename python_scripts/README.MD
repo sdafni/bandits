@@ -183,7 +183,7 @@ To run the entire workflow:
 python pdf_text_parser.py
 
 Use Web AI 
-python image_uploader.py
+python image_uploader.py # empty the bucket first
 python combine_data.py
 python insert_to_supabase.py
 ```
