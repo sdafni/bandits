@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { EventFilters, getEvents } from '@/app/services/events';
+import { getEvents } from '@/app/services/events';
 import EventCard from '@/components/EventCard';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
@@ -17,11 +17,20 @@ interface EventCategory {
 
 const genres = ['Food', 'Culture', 'Nightlife', 'Shopping', 'Coffee'];
 
+// Genre button images from assets
+const genreImages = {
+  Food: require('@/assets/icons/food_pngwing.png'),
+  Culture: require('@/assets/icons/culture_pngwing.png'),
+  Nightlife: require('@/assets/icons/nightlife_pngwing.png'),
+  Shopping: require('@/assets/icons/shopping_pngwing.png'),
+  Coffee: require('@/assets/icons/coffee_pngwing.png'),
+};
+
 export default function CityGuideScreen() {
   const { banditId } = useLocalSearchParams();
   const router = useRouter();
   const [bandit, setBandit] = useState<Bandit | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]); // All events for this bandit
   const [selectedGenre, setSelectedGenre] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +50,9 @@ export default function CityGuideScreen() {
         if (banditError) throw banditError;
         setBandit(banditData);
 
-        // Load events for this bandit
-        await loadEvents();
+        // Load all events for this bandit once
+        const allEventsData = await getEvents({ banditId: banditId as string });
+        setAllEvents(allEventsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
@@ -53,26 +63,10 @@ export default function CityGuideScreen() {
     fetchData();
   }, [banditId]);
 
-  const loadEvents = async () => {
-    try {
-      const filters: EventFilters = {
-        banditId: banditId as string,
-      };
-      
-      if (selectedGenre) {
-        filters.genre = selectedGenre;
-      }
-      
-      const eventsData = await getEvents(filters);
-      setEvents(eventsData);
-    } catch (error) {
-      console.error('Error loading events:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-  }, [selectedGenre]);
+  // Filter events locally based on selected genre
+  const filteredEvents = selectedGenre 
+    ? allEvents.filter(event => event.genre === selectedGenre)
+    : allEvents;
 
 
 
@@ -123,42 +117,57 @@ export default function CityGuideScreen() {
         
         {/* Bandit Profile Section */}
         <View style={styles.profileSection}>
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: bandit.image_url }}
-              style={styles.profileImage}
-            />
-          </View>
+
           
-          <Text style={styles.descriptionText}>
-            Yo, traveler. Your adventure just got upgraded.{'\n'}
-            Welcome to the side of the city locals don't usually share.{'\n'}
-            You've officially entered the bandiVerse. Let's go rogue.
-          </Text>
+          <View style={styles.descriptionContent}>
+
+            <Text style={styles.descriptionText}>
+              Yo, traveler. Your adventure just got upgraded.{'\n'}
+              Welcome to the side of the city locals don't usually share.{'\n'}
+              You've officially entered the bandiVerse. Let's go rogue.
+            </Text>
+
+            <View style={styles.profileImageContainer}>
+              <Image
+                source={{ uri: bandit.image_url }}
+                style={styles.profileImage}
+              />
+            </View>
+
+          </View>
         </View>
         
-        {/* Genre Selection */}
-        <Text style={styles.interestsText}>Select Your Interests</Text>
-        
-        <View style={styles.genreContainer}>
-          {genres.map((genre) => (
-            <Pressable
-              key={genre}
-              style={[
-                styles.genreButton,
-                selectedGenre === genre && styles.genreButtonSelected
-              ]}
-              onPress={() => setSelectedGenre(selectedGenre === genre ? '' : genre)}
-            >
-              <Text style={[
-                styles.genreText,
-                selectedGenre === genre && styles.genreTextSelected
-              ]}>
-                {genre}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {/* Genre Selection - Only show if there are events in DB */}
+        {allEvents.length > 0 && (
+          <>
+            <Text style={styles.interestsText}>Select Your Interests</Text>
+            
+            <View style={styles.genreContainer}>
+              {genres.map((genre) => (
+                <Pressable
+                  key={genre}
+                  style={[
+                    styles.genreButton,
+                    selectedGenre === genre && styles.genreButtonSelected
+                  ]}
+                  onPress={() => setSelectedGenre(selectedGenre === genre ? '' : genre)}
+                >
+                                <Image 
+                source={genreImages[genre as keyof typeof genreImages]} 
+                style={styles.genreIcon}
+                resizeMode="contain"
+              />
+                  <Text style={[
+                    styles.genreText,
+                    selectedGenre === genre && styles.genreTextSelected
+                  ]}>
+                    {genre}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
         
         {/* Events List */}
         <ScrollView 
@@ -166,7 +175,7 @@ export default function CityGuideScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.eventsContainer}
         >
-          {events.map((event, index) => (
+          {filteredEvents.map((event, index) => (
             <EventCard 
               key={event.id} 
               event={event} 
@@ -229,21 +238,34 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     overflow: 'hidden',
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#FF0000',
+    // Removed red border as requested
   },
   profileImage: {
     width: '100%',
     height: '100%',
+  },
+
+  descriptionContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  banditIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
   },
   descriptionText: {
     fontFamily: 'Caros',
     fontWeight: '400',
     fontSize: 14,
     color: '#3C3C3C',
-    textAlign: 'center',
+    textAlign: 'left', // Left align the text
     lineHeight: 20,
-    marginBottom: 20,
+    flex: 1, // Take up available space
+    marginRight: 16, // Add some space between text and image
   },
   interestsText: {
     fontFamily: 'Caros',
@@ -254,8 +276,10 @@ const styles = StyleSheet.create({
   },
   genreContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Center the group
+    alignItems: 'center',
     marginBottom: 20,
+    gap: 8, // Smaller gap between buttons
   },
   genreButton: {
     width: 52,
@@ -274,6 +298,11 @@ const styles = StyleSheet.create({
   },
   genreButtonSelected: {
     borderColor: '#FF0000',
+  },
+  genreIcon: {
+    width: 16,
+    height: 16,
+    marginBottom: 2,
   },
   genreText: {
     fontFamily: 'Caros',
