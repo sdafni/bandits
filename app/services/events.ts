@@ -351,4 +351,25 @@ export async function getBanditEventPersonalTip(banditId: string, eventId: strin
 
   return data?.personal_tip || null;
 }
- 
+
+// Get bandit recommendations for a specific event (up to 3 bandits)
+export async function getEventBanditRecommendations(eventId: string): Promise<Pick<Database['public']['Tables']['bandit']['Row'], 'id' | 'image_url'>[]> {
+  const { data, error } = await supabase
+    .from('bandit_event')
+    .select(`
+      bandit:bandit(
+        id,
+        image_url
+      )
+    `)
+    .eq('event_id', eventId)
+    .limit(3);
+
+  if (error) {
+    console.error('Error fetching event bandit recommendations:', error);
+    throw error;
+  }
+
+  // Extract bandit data from the joined result
+  return data?.map((item: any) => item.bandit).filter(Boolean) || [];
+} 

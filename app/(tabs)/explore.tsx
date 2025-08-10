@@ -375,6 +375,7 @@ export default function ExploreScreen() {
                 event={event} 
                 onLike={() => handleEventLike(event.id)}
                 isLiked={likedEvents.has(event.id)}
+                showRecommendations={true}
               />
             ))
           )}

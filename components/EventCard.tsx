@@ -1,9 +1,12 @@
 import { Database } from '@/lib/database.types';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { getEventBanditRecommendations } from '@/app/services/events';
+
 type Event = Database['public']['Tables']['event']['Row'];
+type BanditRecommendation = Pick<Database['public']['Tables']['bandit']['Row'], 'id' | 'image_url'>;
 
 interface EventCardProps {
   event: Event;
@@ -17,6 +20,7 @@ interface EventCardProps {
   imageHeight?: number;
   onPress?: () => void;
   banditId?: string; // Optional bandit ID for navigation context
+  showRecommendations?: boolean; // Show bandit recommendation icons
 }
 
 export default function EventCard({ 
@@ -29,10 +33,27 @@ export default function EventCard({
   variant = 'default',
   imageHeight,
   onPress,
-  banditId
+  banditId,
+  showRecommendations = false
 }: EventCardProps) {
   const router = useRouter();
   const isHorizontal = variant === 'horizontal';
+  const [recommendingBandits, setRecommendingBandits] = useState<BanditRecommendation[]>([]);
+
+  // Fetch bandit recommendations when showRecommendations is true
+  useEffect(() => {
+    if (showRecommendations) {
+      const fetchRecommendations = async () => {
+        try {
+          const bandits = await getEventBanditRecommendations(event.id);
+          setRecommendingBandits(bandits);
+        } catch (error) {
+          console.error('Error fetching bandit recommendations:', error);
+        }
+      };
+      fetchRecommendations();
+    }
+  }, [event.id, showRecommendations]);
 
   const handleCardPress = () => {
     if (onPress) {
@@ -72,6 +93,31 @@ export default function EventCard({
             <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
             <Text style={styles.starText}>★</Text>
           </View>
+          
+          {/* Bandit Recommendation Icons */}
+          {showRecommendations && recommendingBandits.length > 0 && (
+            <View style={styles.recommendationsContainer}>
+              {recommendingBandits.map((bandit, index) => (
+                <TouchableOpacity
+                  key={bandit.id}
+                  style={[
+                    styles.banditIcon,
+                    { zIndex: recommendingBandits.length - index } // Stack icons with proper layering
+                  ]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    router.push(`/bandit/${bandit.id}` as any);
+                  }}
+                >
+                  <Image
+                    source={{ uri: bandit.image_url }}
+                    style={styles.banditIconImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       )}
       
@@ -231,6 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 0,
+    paddingTop: 32, // Add space for bandit icons
   },
   imageContainerHorizontal: {
     width: '100%',
@@ -238,6 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     borderTopLeftRadius: 7,
     borderTopRightRadius: 7,
+    paddingTop: 32, // Add space for bandit icons
   },
   ratingContainer: {
     position: 'absolute',
@@ -259,5 +307,25 @@ const styles = StyleSheet.create({
   starText: {
     color: 'white',
     fontSize: 16,
+  },
+  recommendationsContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  banditIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'white',
+    marginLeft: -12, // Overlap icons slightly
+    overflow: 'hidden',
+  },
+  banditIconImage: {
+    width: '100%',
+    height: '100%',
   },
 }); 

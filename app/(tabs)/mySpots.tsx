@@ -87,6 +87,7 @@ export default function MySpotsScreen() {
                 isLiked={true}
                 buttonType="remove"
                 buttonText="Remove"
+                showRecommendations={true}
               />
             ))
           )}
