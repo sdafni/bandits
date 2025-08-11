@@ -1,7 +1,26 @@
-# banditour is an app that exposes unique local toursit attractions
-# base on indie human recommandations. the ones you wouldn't find in google or AI chats.
-# build with react native + Expo + Supabase + a lot of vibe coding
-# demo runs in Athens:
-https://bandits--xfd4hjefqa.expo.app/
+# 🏛️ Banditour
 
-sign up withot validation (currently)
+> **Unique local tourist attractions based on indie human recommendations**  
+> The ones you wouldn't find in Google or AI chats.
+
+---
+
+## 🚀 Tech Stack
+
+Built with:
+- **React Native** + **Expo**
+- **Supabase**
+- A lot of vibe coding ✨
+
+---
+
+## 🌍 Demo
+
+**Currently running in Athens:**  
+🔗 [https://bandits--xfd4hjefqa.expo.app/](https://bandits--xfd4hjefqa.expo.app/)
+
+---
+
+## 📝 Note
+
+Sign up without validation (currently)
