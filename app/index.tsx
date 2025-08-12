@@ -13,6 +13,8 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [isSignIn, setIsSignIn] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -56,8 +58,29 @@ export default function Index() {
     }
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email: email.trim(), password });
-    if (error) setError(error.message);
+    const { error, data } = await supabase.auth.signUp({ email: email.trim(), password });
+    if (error) {
+      setError(error.message);
+    } else if (data.user && !data.session) {
+      // Email confirmation required
+      setEmailSent(true);
+    }
+    setLoading(false);
+  };
+
+  const handleResendEmail = async () => {
+    setLoading(true);
+    setResendSuccess(false);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setError(null);
+      setResendSuccess(true);
+    }
     setLoading(false);
   };
 
@@ -81,81 +104,128 @@ export default function Index() {
           />
         </View>
 
-        {/* Tab Switcher */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity 
-            style={[styles.tab, isSignIn && styles.activeTab]}
-            onPress={() => setIsSignIn(true)}
-          >
-            <Text style={[styles.tabText, isSignIn && styles.activeTabText]}>
-              Sign in
+        {emailSent ? (
+          // Email confirmation screen
+          <View style={styles.formContainer}>
+            <Text style={styles.confirmationTitle}>Check your email</Text>
+            <Text style={styles.confirmationText}>
+              We've sent a confirmation link to {email}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, !isSignIn && styles.activeTab]}
-            onPress={() => setIsSignIn(false)}
-          >
-            <Text style={[styles.tabText, !isSignIn && styles.activeTabText]}>
-              Sign up
+            <Text style={styles.confirmationSubtext}>
+              Click the link in your email to complete your registration
             </Text>
-          </TouchableOpacity>
-        </View>
+            
+            {/* Resend Email Button */}
+            <TouchableOpacity 
+              style={styles.resendButton}
+              onPress={handleResendEmail}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#ff0000" />
+              ) : (
+                <Text style={styles.resendButtonText}>Resend email</Text>
+              )}
+            </TouchableOpacity>
 
-        {/* Form */}
-        <View style={styles.formContainer}>
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Enter Email</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#777777"
-            />
+            {/* Error Message */}
+            {error && <Text style={styles.errorText}>{error}</Text>}
+            
+            {/* Success Message */}
+            {resendSuccess && <Text style={styles.successText}>Email sent successfully!</Text>}
+
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => {
+                setEmailSent(false);
+                setEmail('');
+                setPassword('');
+                setError(null);
+                setResendSuccess(false);
+              }}
+            >
+              <Text style={styles.backButtonText}>Back to sign up</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.textInput, styles.passwordInput]}
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                placeholderTextColor="#777777"
-              />
+        ) : (
+          <>
+            {/* Tab Switcher */}
+            <View style={styles.tabContainer}>
               <TouchableOpacity 
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword(!showPassword)}
+                style={[styles.tab, isSignIn && styles.activeTab]}
+                onPress={() => setIsSignIn(true)}
               >
-                <Text style={styles.eyeIconText}>👁</Text>
+                <Text style={[styles.tabText, isSignIn && styles.activeTabText]}>
+                  Sign in
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, !isSignIn && styles.activeTab]}
+                onPress={() => setIsSignIn(false)}
+              >
+                <Text style={[styles.tabText, !isSignIn && styles.activeTabText]}>
+                  Sign up
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Sign In Button */}
-          <TouchableOpacity 
-            style={styles.signInButton}
-            onPress={isSignIn ? handleEmailLogin : handleEmailSignup}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.signInButtonText}>
-                {isSignIn ? 'Sign in' : 'Sign up'}
-              </Text>
-            )}
-          </TouchableOpacity>
+            {/* Form */}
+            <View style={styles.formContainer}>
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Enter Email</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#777777"
+                />
+              </View>
 
-          {/* Error Message */}
-          {error && <Text style={styles.errorText}>{error}</Text>}
-        </View>
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.textInput, styles.passwordInput]}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#777777"
+                  />
+                  <TouchableOpacity 
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Text style={styles.eyeIconText}>👁</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Sign In Button */}
+              <TouchableOpacity 
+                style={styles.signInButton}
+                onPress={isSignIn ? handleEmailLogin : handleEmailSignup}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.signInButtonText}>
+                    {isSignIn ? 'Sign in' : 'Sign up'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Error Message */}
+              {error && <Text style={styles.errorText}>{error}</Text>}
+            </View>
+          </>
+        )}
       </View>
     );
   }
@@ -283,5 +353,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontSize: 14,
+  },
+  successText: {
+    color: '#28a745',
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  confirmationTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#333333',
+  },
+  confirmationText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#555555',
+  },
+  confirmationSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#777777',
+  },
+  backButton: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#adadad',
+  },
+  backButtonText: {
+    color: '#ff0000',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  resendButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#ff0000',
+  },
+  resendButtonText: {
+    color: '#ff0000',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
