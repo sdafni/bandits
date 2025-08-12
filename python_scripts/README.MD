@@ -59,7 +59,7 @@ CSV 1.3KB
 ill provide a text file. the text had images but now has placeholders ("[IMAGE: img_") i need to populate a db with the contents of this file. to do that i want to produce a structured json.
 ill provide the db schema and some general instructions. try to infer from the text how to populate each column. the file is a list of "bandits". each bandit section starts with a bandit image than some private details. than comes a list of "events". each event ends with its address. starts with its name. some event lists start with a general description of the list, like "art galleries". ignore that for start.
 some events have images. the first image is the main image. if there are others, they are "gallery". 
- image fields of bandits and events should be populated with the image placeholders
+image fields of bandits and events should be populated with the image placeholders
 
 extract all bandits and events.
  leave null what cannot be infered
@@ -67,7 +67,7 @@ dont try to geocode, ill do that later.
 as for genre: ANY (ARRAY['Food'::text, 'Culture'::text, 'Nightlife'::text, 'Shopping'::text, 'Coffee'::text])
 try to infer from "category" if exists, or from a description line befor the list of events, or from event description.
 keep one name field per event 
-pages dont matter only bandit sections (i.e where one bandit ends and the oter begins)
+pages dont matter only bandit sections (i.e where one bandit ends and the other begins)
 ignore event sections within same bandit. they all belong to same bandit. (like "art galleries" "restaurants") i.e list is flattened. 
 duplicate events should appear once in events list, and twice in bandit_event list
 make the ids unique for all objects
