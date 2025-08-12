@@ -58,7 +58,15 @@ export default function Index() {
     }
     setError(null);
     setLoading(true);
-    const { error, data } = await supabase.auth.signUp({ email: email.trim(), password });
+    const { error, data } = await supabase.auth.signUp({ 
+      email: email.trim(), 
+      password,
+      options: {
+        emailRedirectTo: Platform.OS === 'web' 
+          ? `${window.location.origin}/auth/callback`
+          : 'bandits://auth/callback'
+      }
+    });
     if (error) {
       setError(error.message);
     } else if (data.user && !data.session) {
@@ -74,6 +82,11 @@ export default function Index() {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),
+      options: {
+        emailRedirectTo: Platform.OS === 'web' 
+          ? `${window.location.origin}/auth/callback`
+          : 'bandits://auth/callback'
+      }
     });
     if (error) {
       setError(error.message);

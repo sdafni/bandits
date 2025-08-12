@@ -43,3 +43,5 @@ app-example
 scripts/deepSeekExtr.js
 data_uploader/.env
 .env
+
+android/
