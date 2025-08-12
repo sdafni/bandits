@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -82,6 +82,32 @@ export default function Index() {
       setResendSuccess(true);
     }
     setLoading(false);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: Platform.OS === 'web' 
+            ? `${window.location.origin}/auth/callback`
+            : 'bandits://auth/callback'
+        }
+      });
+      
+      if (error) {
+        setError(error.message);
+      }
+      // Note: The OAuth flow will redirect to the callback page automatically
+    } catch (error) {
+      setError('Failed to sign in with Google');
+      console.error('Google sign-in error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (user === undefined) {
@@ -219,6 +245,22 @@ export default function Index() {
                     {isSignIn ? 'Sign in' : 'Sign up'}
                   </Text>
                 )}
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Google Sign In Button */}
+              <TouchableOpacity 
+                style={styles.googleButton}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+              >
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
               </TouchableOpacity>
 
               {/* Error Message */}
@@ -406,5 +448,39 @@ const styles = StyleSheet.create({
     color: '#ff0000',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#adadad',
+  },
+  dividerText: {
+    marginHorizontal: 15,
+    color: '#777777',
+    fontSize: 14,
+  },
+  googleButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#adadad',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  googleButtonText: {
+    color: '#333333',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
