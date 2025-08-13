@@ -16,6 +16,9 @@
       }
     },
     "android": {
+      "android": {
+        "googleServicesFile": "./google-services.json"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/bandiTourMAinLogo.png",
         "backgroundColor": "#ffffff"
@@ -28,7 +31,9 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "bandits"
+              "scheme": "bandits",
+              "host": "auth",
+              "pathPrefix": "/callback"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
