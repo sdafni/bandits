@@ -1,12 +1,7 @@
 import { supabase } from '@/lib/supabase';
-import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-// Ensure WebBrowser redirects work properly
-WebBrowser.maybeCompleteAuthSession();
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,23 +17,7 @@ export default function Index() {
   const [resendSuccess, setResendSuccess] = useState(false);
   const router = useRouter();
 
-  // Create the Google OAuth request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: "238877844764-1evor2qachnda9sv6eup09rbrj4okh2e.apps.googleusercontent.com",
-    androidClientId: "238877844764-59tr5rqvvcgoersb7h4albcunalgtk7c.apps.googleusercontent.com",
-    scopes: ['openid', 'profile', 'email'],
-  });
 
-  // Handle the OAuth response
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      handleGoogleSignInWithToken(authentication);
-    } else if (response?.type === 'error') {
-      setError('Google sign-in was cancelled or failed');
-      setLoading(false);
-    }
-  }, [response]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -120,41 +99,7 @@ export default function Index() {
     setLoading(false);
   };
 
-  const handleGoogleSignInWithToken = async (authentication: any) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Sign in to Supabase with the Google ID token
-      const { data, error } = await supabase.auth.signInWithIdToken({
-        provider: 'google',
-        token: authentication.idToken,
-      });
 
-      if (error) {
-        setError(error.message);
-      } else {
-        console.log('✅ Logged in:', data);
-      }
-    } catch (e) {
-      setError('Failed to complete Google sign-in');
-      console.error('Error in Google sign-in:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setLoading(true);
-    
-    try {
-      await promptAsync();
-    } catch (error) {
-      setError('Failed to start Google sign-in');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (user === undefined) {
     return (
@@ -294,20 +239,20 @@ export default function Index() {
               </TouchableOpacity>
 
               {/* Divider */}
-              <View style={styles.dividerContainer}>
+              {/* <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.dividerLine} />
-              </View>
+              </View> */}
 
               {/* Google Sign In Button */}
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={styles.googleButton}
                 onPress={handleGoogleSignIn}
                 disabled={loading}
               >
                 <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Error Message */}
               {error && <Text style={styles.errorText}>{error}</Text>}
