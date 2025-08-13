@@ -14,7 +14,6 @@ export default function AuthCallback() {
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Auth callback error:', error);
           router.replace('/');
           return;
         }
@@ -27,7 +26,6 @@ export default function AuthCallback() {
           router.replace('/');
         }
       } catch (error) {
-        console.error('Auth callback error:', error);
         router.replace('/');
       }
     };

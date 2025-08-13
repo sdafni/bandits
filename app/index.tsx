@@ -102,22 +102,24 @@ export default function Index() {
     setLoading(true);
     
     try {
+      const redirectUrl = Platform.OS === 'web' 
+        ? `${window.location.origin}/auth/callback`
+        : 'https://auth.expo.io/@yuval-dafni/bandits';
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: Platform.OS === 'web' 
-            ? `${window.location.origin}/auth/callback`
-            : 'bandits://auth/callback'
+          redirectTo: redirectUrl
         }
       });
       
       if (error) {
         setError(error.message);
+      } else {
+        // The OAuth flow will redirect to the callback page automatically
       }
-      // Note: The OAuth flow will redirect to the callback page automatically
     } catch (error) {
       setError('Failed to sign in with Google');
-      console.error('Google sign-in error:', error);
     } finally {
       setLoading(false);
     }
