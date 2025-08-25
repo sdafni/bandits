@@ -31,12 +31,14 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "bandits",
-              "host": "auth",
-              "pathPrefix": "/callback"
+              "scheme": "1225319192681736",
+     
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -54,6 +56,12 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-facebook",
+        {
+          "appID": "1225319192681736"
         }
       ]
     ],

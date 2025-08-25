@@ -25,14 +25,23 @@ Built with:
 
 Sign up without validation (currently)
 
-## 🔐 Google Sign-In Setup
+## 🔐 Social Login Setup
 
-The app includes Google sign-in functionality using Supabase OAuth. To enable it:
+The app includes Facebook login functionality using the Facebook SDK. To enable it:
 
-1. **Supabase Configuration**: Enable Google OAuth in your Supabase project settings
-2. **Redirect URLs**: Add these URLs to your Supabase OAuth redirect URLs:
-   - `bandits://auth/callback` (for mobile)
-   - `https://your-domain.com/auth/callback` (for web - replace with your actual domain)
-3. **Google Console**: Configure your Google OAuth credentials in the Google Cloud Console
+### Facebook Login Setup
 
-The Google sign-in button is available on the login page alongside email/password authentication.
+1. **Facebook App Configuration**: 
+   - Create a Facebook app at [developers.facebook.com](https://developers.facebook.com)
+   - Add Facebook Login product to your app
+   - Get your App ID from the app settings
+
+2. **App Configuration**:
+   - Replace `your_facebook_app_id_here` in `app.json` with your actual Facebook App ID
+   - Or set the `EXPO_PUBLIC_FACEBOOK_APP_ID` environment variable
+
+3. **Supabase Configuration**: 
+   - Enable Facebook OAuth in your Supabase project settings
+   - Add your Facebook App ID and App Secret in the Facebook provider settings
+
+The Facebook login button is available on the login page alongside email/password authentication.
