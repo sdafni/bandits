@@ -7,7 +7,6 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import 'react-native-reanimated';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

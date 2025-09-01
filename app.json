@@ -16,9 +16,6 @@
       }
     },
     "android": {
-      "android": {
-        "googleServicesFile": "./google-services.json"
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/bandiTourMAinLogo.png",
         "backgroundColor": "#ffffff"
@@ -31,8 +28,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "1225319192681736",
-     
+              "scheme": "1225319192681736"
             }
           ],
           "category": [
@@ -56,12 +52,6 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
-        }
-      ],
-      [
-        "expo-facebook",
-        {
-          "appID": "1225319192681736"
         }
       ]
     ],

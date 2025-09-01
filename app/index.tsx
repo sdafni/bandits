@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import * as Facebook from 'expo-facebook';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -7,6 +6,8 @@ import { ActivityIndicator, Dimensions, Image, Platform, StyleSheet, Text, TextI
 const { width, height } = Dimensions.get('window');
 
 export default function Index() {
+  console.log('🚀 Index component rendering...');
+  
   const [user, setUser] = useState<any | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
@@ -17,24 +18,36 @@ export default function Index() {
   const [emailSent, setEmailSent] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const router = useRouter();
+  
+  console.log('📱 Component state initialized, user:', user, 'error:', error);
 
 
 
   useEffect(() => {
+    console.log('🔐 Auth useEffect running...');
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('📋 Session data received:', session);
       setUser(session?.user ?? null);
+    }).catch(err => {
+      console.error('❌ Error getting session:', err);
     });
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('🔄 Auth state changed:', _event, 'session:', session);
       setUser(session?.user ?? null);
     });
     return () => {
+      console.log('🧹 Cleaning up auth listener');
       authListener?.subscription.unsubscribe();
     };
   }, []);
 
   useEffect(() => {
+    console.log('👤 User useEffect running, user:', user);
     if (user) {
+      console.log('🔄 Redirecting to bandits tab...');
       router.replace('/(tabs)/bandits');
+    } else {
+      console.log('⏳ No user yet, staying on login screen');
     }
   }, [user, router]);
 
@@ -100,52 +113,14 @@ export default function Index() {
     setLoading(false);
   };
 
-  const handleFacebookSignIn = async () => {
-    setError(null);
-    setLoading(true);
-    
-    try {
-      // Initialize Facebook SDK
-      await Facebook.initializeAsync({
-        appId: '1225319192681736',
-      });
-
-      // Login with Facebook
-      const result = await Facebook.logInWithReadPermissionsAsync({
-        permissions: ['public_profile', 'email'],
-      });
-
-      if (result.type === 'success') {
-        // Get the access token
-        const { token } = result;
-        
-        // Sign in with Supabase using the Facebook access token
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'facebook',
-          options: {
-            queryParams: {
-              access_token: token,
-            },
-          },
-        });
-        
-        if (error) {
-          setError(error.message);
-        }
-      } else {
-        setError('Facebook login was cancelled');
-      }
-    } catch (error) {
-      console.error('Facebook login error:', error);
-      setError('Facebook sign-in failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
 
+
+  console.log('🎨 Render logic - user:', user, 'user === undefined:', user === undefined);
+  
   if (user === undefined) {
+    console.log('⏳ Showing loading screen...');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#ff0000" />
@@ -154,6 +129,7 @@ export default function Index() {
   }
 
   if (!user) {
+    console.log('🔐 Showing login screen...');
     return (
       <View style={styles.container}>
         {/* Logo */}
@@ -289,14 +265,7 @@ export default function Index() {
                 <View style={styles.dividerLine} />
               </View>
 
-              {/* Facebook Sign In Button */}
-              <TouchableOpacity 
-                style={styles.facebookButton}
-                onPress={handleFacebookSignIn}
-                disabled={loading}
-              >
-                <Text style={styles.facebookButtonText}>Continue with Facebook</Text>
-              </TouchableOpacity>
+
 
               {/* Error Message */}
               {error && <Text style={styles.errorText}>{error}</Text>}
@@ -307,6 +276,7 @@ export default function Index() {
     );
   }
 
+  console.log('❌ Unexpected state - returning null, user:', user);
   return null;
 }
 
