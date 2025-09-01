@@ -74,22 +74,37 @@ export default function Index() {
     }
     setError(null);
     setLoading(true);
-    const { error, data } = await supabase.auth.signUp({ 
-      email: email.trim(), 
-      password,
-      options: {
-        emailRedirectTo: Platform.OS === 'web' 
-          ? `${window.location.origin}/auth/callback`
-          : 'bandits://auth/callback'
+    
+    try {
+      const { error, data } = await supabase.auth.signUp({ 
+        email: email.trim(), 
+        password,
+        options: {
+          emailRedirectTo: Platform.OS === 'web' 
+            ? `${window.location.origin}/auth/callback`
+            : 'bandits://auth/callback'
+        }
+      });
+      
+      if (error) {
+        setError(error.message);
+      } else if (data.user && !data.session) {
+        // Email confirmation required - user cannot sign in until verified
+        setEmailSent(true);
+        setError(null);
+        console.log('📧 Email verification required for user:', data.user.email);
+      } else if (data.user && data.session) {
+        // This shouldn't happen with email verification enabled, but handle it
+        setError('Account created but email verification is required. Please check your email.');
+        // Sign out the user to force verification
+        await supabase.auth.signOut();
       }
-    });
-    if (error) {
-      setError(error.message);
-    } else if (data.user && !data.session) {
-      // Email confirmation required
-      setEmailSent(true);
+    } catch (err) {
+      console.error('❌ Signup error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleResendEmail = async () => {

@@ -32,14 +32,24 @@ export default function RootLayout() {
 
   // Redirect logic: if not on the sign-in page and not authenticated, redirect to "/"
   // If authenticated and on sign-in page, redirect to bandits
+  // Also check if user's email is verified
   useEffect(() => {
     if (user === undefined) return; // still loading
     const inAuthScreen = !segments[0];
     
     if (!user && !inAuthScreen) {
+      // No user, redirect to sign-in
       router.replace('/');
     } else if (user && inAuthScreen) {
-      router.replace('/(tabs)/bandits');
+      // User exists, check if email is verified
+      if (user.email_confirmed_at) {
+        console.log('✅ User email verified, redirecting to app');
+        router.replace('/(tabs)/bandits');
+      } else {
+        console.log('❌ User email not verified, staying on auth screen');
+        // Don't redirect - user needs to verify email first
+        // The signup screen will show the email verification message
+      }
     }
   }, [user, segments, router]);
 

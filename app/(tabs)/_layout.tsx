@@ -1,5 +1,6 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { supabase } from '@/lib/supabase';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
 import { View } from 'react-native';
 
 import ExploreIcon from '@/assets/icons/explore.svg';
@@ -13,6 +14,21 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const iconColor = 'white';
+  const router = useRouter();
+
+  // Check if user's email is verified before allowing access to tabs
+  useEffect(() => {
+    const checkEmailVerification = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !user.email_confirmed_at) {
+        console.log('❌ User trying to access tabs without email verification');
+        // Redirect back to auth screen
+        router.replace('/');
+      }
+    };
+    
+    checkEmailVerification();
+  }, [router]);
 
   return (
     <View style={{ flex: 1 }}>
