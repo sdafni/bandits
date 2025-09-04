@@ -44,4 +44,6 @@ scripts/deepSeekExtr.js
 data_uploader/.env
 .env
 
-android/
+android/app
+android/build
+.vscode

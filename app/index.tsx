@@ -2,8 +2,9 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-const { width, height } = Dimensions.get('window');
+// const { width, height } = Dimensions.get('window');
 
 export default function Index() {
   console.log('🚀 Index component rendering...');
@@ -25,6 +26,13 @@ export default function Index() {
 
   useEffect(() => {
     console.log('🔐 Auth useEffect running...');
+    
+    // Configure Google Sign-In
+    GoogleSignin.configure({
+      scopes: ['email', 'profile'],
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('📋 Session data received:', session);
       setUser(session?.user ?? null);
@@ -126,6 +134,42 @@ export default function Index() {
       setResendSuccess(true);
     }
     setLoading(false);
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      
+      if (userInfo.data?.idToken) {
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: userInfo.data.idToken,
+        });
+        
+        if (error) {
+          setError(error.message);
+        }
+      } else {
+        setError('No Google ID token received');
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // Operation is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError('Google Play Services not available');
+      } else {
+        setError('Google Sign-In failed');
+        console.error('Google Sign-In Error:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -279,6 +323,19 @@ export default function Index() {
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.dividerLine} />
               </View>
+
+              {/* Google Sign In Button */}
+              <TouchableOpacity 
+                style={styles.googleButton}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#333333" />
+                ) : (
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                )}
+              </TouchableOpacity>
 
 
 
