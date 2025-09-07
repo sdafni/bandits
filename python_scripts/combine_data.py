@@ -38,7 +38,11 @@ def replace_image_placeholders(data: Dict[str, Any], image_urls: Dict[str, str])
 def process_image_gallery(gallery: List[str], image_urls: Dict[str, str]) -> str:
     """
     Convert image gallery list to comma-separated URLs
+    Returns empty string for empty lists
     """
+    if not gallery:  # Handle empty lists
+        return ""
+    
     urls = []
     for placeholder in gallery:
         if placeholder.startswith("[IMAGE: ") and placeholder.endswith("]"):
@@ -69,9 +73,11 @@ def main():
         if 'image_url' in event and event['image_url']:
             event['image_url'] = replace_image_placeholders(event['image_url'], image_urls)
         
-        if 'image_gallery' in event and event['image_gallery']:
-            # Convert image_gallery from list to comma-separated string
-            event['image_gallery'] = process_image_gallery(event['image_gallery'], image_urls)
+        if 'image_gallery' in event and event['image_gallery'] is not None:
+            # Convert image_gallery from list to comma-separated string (even if empty)
+            if isinstance(event['image_gallery'], list):
+                event['image_gallery'] = process_image_gallery(event['image_gallery'], image_urls)
+            # If it's already a string, leave it as is
     
     # Save the combined data
     output_path = Path(OUTPUT_FILE)

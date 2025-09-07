@@ -1,6 +1,16 @@
 # Database Population Workflow
 
-This guide describes the complete process of converting a DOCX file to a populated database, including PDF conversion, text extraction, image processing, and data insertion.
+This guide describes the complete process of converting a DOCX file to a populated database in a single script, including PDF conversion, text extraction, AI processing, image upload, and data insertion.
+
+## NEW: Unified Single Script Approach ⭐
+
+Use the new `docx_to_database.py` script for a complete one-command solution:
+
+```bash
+python docx_to_database.py input.docx
+```
+
+This processes **ALL bandits** (no longer limited to 5) and handles the entire pipeline automatically.
 
 ## Prerequisites
 
@@ -9,7 +19,13 @@ This guide describes the complete process of converting a DOCX file to a populat
    pip install -r requirements.txt
    ```
 
-2. **Set up environment variables:**
+2. **Install LibreOffice for DOCX conversion:**
+   ```bash
+   brew install --cask libreoffice  # macOS
+   # or use your system's package manager
+   ```
+
+3. **Set up environment variables:**
    Create a `.env` file in the `python_scripts` directory with:
    ```
    SUPABASE_URL=your_supabase_url
@@ -18,15 +34,22 @@ This guide describes the complete process of converting a DOCX file to a populat
    DEEPSEEK_API_KEY=your_deepseek_api_key
    ```
 
-## Workflow Overview
+## Unified Workflow
 
-The process follows these steps:
-1. **DOCX → PDF**: Convert the source document
-2. **PDF Text Extraction**: Extract text and create image placeholders
-3. **AI Processing**: Use DeepSeek to parse and structure the data
-4. **Image Upload**: Extract and upload images to Supabase storage
+The new script handles everything in one command:
+1. **DOCX → PDF**: Automatic conversion using LibreOffice
+2. **PDF Text Extraction**: Extract text and create image placeholders  
+3. **AI Processing**: Use DeepSeek API to parse ALL bandits and structure the data
+4. **Image Upload**: Extract and upload images to Supabase storage with face detection
 5. **Data Combination**: Merge structured data with image URLs
 6. **Database Population**: Insert all data into Supabase tables
+
+**Key improvements:**
+- ✅ Processes ALL bandits (no 5-bandit limit)
+- ✅ Single command execution
+- ✅ No intermediate file dependencies  
+- ✅ Direct API usage (no web interface needed)
+- ✅ Automatic DOCX conversion
 
 ## Step-by-Step Process
 
@@ -176,7 +199,13 @@ The scripts populate three main tables:
 
 ## Quick Start
 
-To run the entire workflow:
+### NEW Unified Approach (Recommended):
+```bash
+# Single command to process everything:
+python docx_to_database.py bandits.docx
+```
+
+### Legacy Multi-Script Approach:
 ```bash
 # 1. Convert your DOCX to PDF and place as banditsORIG.docx.pdf
 # 2. Run the extraction pipeline
@@ -187,3 +216,5 @@ python image_uploader.py # empty the bucket first
 python combine_data.py
 python insert_to_supabase.py
 ```
+
+**Note:** The unified script is preferred as it processes ALL bandits automatically without manual intervention.
