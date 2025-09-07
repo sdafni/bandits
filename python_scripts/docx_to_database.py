@@ -29,7 +29,7 @@ import subprocess
 import cv2
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import anthropic
@@ -55,40 +55,78 @@ if ANTHROPIC_API_KEY:
 class DocumentProcessor:
     def __init__(self, docx_path: str):
         self.docx_path = Path(docx_path)
-        self.pdf_path = self.docx_path.with_suffix('.pdf')
+        # Always use banditsORIG.docx.pdf
+        self.pdf_path = Path("banditsORIG.docx.pdf")
         self.output_dir = Path("pdf_output")
         self.output_dir.mkdir(exist_ok=True)
         
     def convert_docx_to_pdf(self) -> Path:
-        """Convert DOCX to PDF using LibreOffice"""
-        print(f"📄 Converting {self.docx_path.name} to PDF...")
+        """Use existing banditsORIG.docx.pdf"""
+        print(f"📄 Using existing PDF: {self.pdf_path}")
         
         if self.pdf_path.exists():
-            print(f"✅ PDF already exists: {self.pdf_path}")
+            print(f"✅ PDF found: {self.pdf_path}")
             return self.pdf_path
+        else:
+            raise Exception(f"Required PDF file not found: {self.pdf_path}")
             
+    def empty_bucket(self):
+        """Empty the entire bucket recursively before uploading new images"""
+        print("🗑️  Emptying bucket recursively...")
+        
+        if not supabase:
+            print("❌ Supabase not configured")
+            return
+        
         try:
-            # Use LibreOffice to convert DOCX to PDF
-            cmd = [
-                "libreoffice", 
-                "--headless", 
-                "--convert-to", "pdf", 
-                "--outdir", str(self.docx_path.parent),
-                str(self.docx_path)
-            ]
+            # List all files in the bucket recursively
+            all_files = []
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            # Get root level files
+            root_files = supabase.storage.from_(BUCKET_NAME).list()
+            for file_info in root_files:
+                if 'name' in file_info:
+                    all_files.append(file_info['name'])
             
-            if result.returncode == 0 and self.pdf_path.exists():
-                print(f"✅ Successfully converted to: {self.pdf_path}")
-                return self.pdf_path
-            else:
-                raise Exception(f"LibreOffice conversion failed: {result.stderr}")
+            # Get files from pdf_images folder
+            try:
+                pdf_files = supabase.storage.from_(BUCKET_NAME).list(path="pdf_images/")
+                for file_info in pdf_files:
+                    if 'name' in file_info:
+                        all_files.append(f"pdf_images/{file_info['name']}")
+            except:
+                pass  # Folder might not exist
+            
+            # Get files from vision_images folder
+            try:
+                vision_files = supabase.storage.from_(BUCKET_NAME).list(path="vision_images/")
+                for file_info in vision_files:
+                    if 'name' in file_info:
+                        all_files.append(f"vision_images/{file_info['name']}")
+            except:
+                pass  # Folder might not exist
+            
+            if all_files:
+                print(f"   Found {len(all_files)} files to delete")
                 
-        except subprocess.TimeoutExpired:
-            raise Exception("PDF conversion timed out (5 minutes)")
-        except FileNotFoundError:
-            raise Exception("LibreOffice not found. Install with: brew install --cask libreoffice")
+                # Delete all files at once
+                try:
+                    supabase.storage.from_(BUCKET_NAME).remove(all_files)
+                    print(f"   🗑️  Deleted {len(all_files)} files from bucket")
+                except Exception as e:
+                    print(f"   ❌ Error deleting files: {e}")
+                    # Try deleting individually as fallback
+                    for file_path in all_files:
+                        try:
+                            supabase.storage.from_(BUCKET_NAME).remove([file_path])
+                            print(f"   🗑️  Deleted {file_path}")
+                        except Exception as e2:
+                            print(f"   ❌ Error deleting {file_path}: {e2}")
+            else:
+                print("   ✅ Bucket already empty")
+                
+        except Exception as e:
+            print(f"   ❌ Error emptying bucket: {e}")
 
     def clean_text(self, text: str) -> str:
         """Clean text by removing non-readable characters and normalizing whitespace"""
@@ -106,15 +144,19 @@ class DocumentProcessor:
         return text
 
     def extract_text_with_placeholders(self) -> Dict[str, Any]:
-        """Extract PDF text and replace images with placeholders"""
-        print(f"🔍 Extracting text from PDF: {self.pdf_path}")
+        """Extract PDF text and replace images with placeholders (limited to first 3 bandits)"""
+        print(f"🔍 Extracting text from PDF: {self.pdf_path} (first 5 bandits only)")
         
         doc = fitz.open(str(self.pdf_path))
         readable_text = ""
         image_map = {}
         image_counter = 0
+        bandit_count = 0
+        max_bandits = 5
         
-        for page_num, page in enumerate(doc, 1):
+        # Process pages until we find 5 bandits
+        for page_num in range(1, len(doc) + 1):
+            page = doc[page_num - 1]  # fitz uses 0-based indexing
             print(f"📖 Processing page {page_num}...")
             
             blocks = page.get_text("dict")["blocks"]
@@ -134,6 +176,30 @@ class DocumentProcessor:
                     placeholder_id = f"img_{page_num:03d}_{image_counter:03d}"
                     readable_text += f"[IMAGE: {placeholder_id}]\n"
                     image_map[placeholder_id] = block["image"]  # Store raw image data
+            
+            # Check if we've found enough bandits by looking for bandit patterns
+            if bandit_count < max_bandits:
+                # Count bandits in current text by looking for name + age patterns
+                lines = readable_text.split('\n')
+                current_bandit_count = 0
+                for i, line in enumerate(lines):
+                    line_stripped = line.strip()
+                    if (line_stripped and 
+                        len(line_stripped.split()) <= 3 and 
+                        not any(word.isdigit() for word in line_stripped.split()) and
+                        len(line_stripped) > 2):
+                        # Check if next few lines contain "Age:"
+                        for j in range(i+1, min(i+5, len(lines))):
+                            if 'Age:' in lines[j]:
+                                current_bandit_count += 1
+                                break
+                
+                bandit_count = current_bandit_count
+                print(f"   Found {bandit_count} bandits so far...")
+                
+                if bandit_count >= max_bandits:
+                    print(f"✅ Found {max_bandits} bandits, stopping extraction")
+                    break
         
         doc.close()
         
@@ -211,17 +277,35 @@ class DocumentProcessor:
                 
                 # Upload to Supabase
                 file_path = f"pdf_images/{placeholder_id}.jpg"
-                supabase.storage.from_(BUCKET_NAME).upload(
-                    path=file_path,
-                    file=processed_data,
-                    file_options={"content-type": "image/jpeg"}
-                )
                 
-                public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
-                image_urls[placeholder_id] = public_url
-                
-                status = "Face cropped" if face_detected else "Uploaded"
-                print(f"✅ {status}: {placeholder_id}")
+                try:
+                    # Upload and get the response
+                    upload_response = supabase.storage.from_(BUCKET_NAME).upload(
+                        path=file_path,
+                        file=processed_data,
+                        file_options={"content-type": "image/jpeg"}
+                    )
+                    
+                    # Get public URL from the upload response or construct it
+                    if hasattr(upload_response, 'data') and upload_response.data:
+                        public_url = upload_response.data.get('publicURL')
+                    else:
+                        # Fallback: get public URL using the API
+                        public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+                    
+                    image_urls[placeholder_id] = public_url
+                    status = "Face cropped" if face_detected else "Uploaded"
+                    print(f"✅ {status}: {placeholder_id} -> {public_url}")
+                    
+                except Exception as upload_error:
+                    # If upload fails due to duplicate, still get the public URL
+                    if "already exists" in str(upload_error) or "Duplicate" in str(upload_error):
+                        print(f"⚠️  File already exists, getting URL: {placeholder_id}")
+                        public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+                        image_urls[placeholder_id] = public_url
+                        print(f"✅ Using existing: {placeholder_id} -> {public_url}")
+                    else:
+                        raise upload_error
                 
             except Exception as e:
                 print(f"❌ Failed to upload {placeholder_id}: {str(e)}")
@@ -237,20 +321,44 @@ class DocumentProcessor:
         lines = text.split('\n')
         current_section = []
         
-        for line in lines:
-            # Look for bandit start patterns (name + age + occupation patterns)
+        for i, line in enumerate(lines):
             line_stripped = line.strip()
-            if (line_stripped and 
-                len(line_stripped.split()) <= 5 and  # Short lines that could be names
-                any(word.isdigit() for word in line_stripped.split()) and  # Contains age
-                '[IMAGE:' not in line_stripped):  # Not an image placeholder
-                
+            
+            # Look for bandit start patterns:
+            # 1. Image placeholder followed by a name
+            # 2. A name (short line, no digits, not an image placeholder)
+            # 3. Followed by "Age:" in the next few lines
+            is_bandit_start = False
+            
+            if line_stripped and '[IMAGE:' not in line_stripped:
+                # Check if this looks like a name (short, no digits, not empty)
+                if (len(line_stripped.split()) <= 3 and 
+                    not any(word.isdigit() for word in line_stripped.split()) and
+                    len(line_stripped) > 2):
+                    
+                    # Check if next few lines contain "Age:"
+                    for j in range(i+1, min(i+5, len(lines))):
+                        if 'Age:' in lines[j]:
+                            is_bandit_start = True
+                            break
+            
+            if is_bandit_start:
                 # Save previous section if it has content
                 if current_section and len('\n'.join(current_section).strip()) > 100:
                     sections.append('\n'.join(current_section))
                 
-                # Start new section
-                current_section = [line]
+                # Start new section - look for the image placeholder before the bandit name
+                # Go back a few lines to find the image placeholder
+                bandit_section = []
+                for j in range(max(0, i-3), i):
+                    if '[IMAGE:' in lines[j]:
+                        bandit_section.append(lines[j])
+                        break
+                
+                # Add the bandit name and continue
+                bandit_section.append(line)
+                current_section = bandit_section
+                print(f"🎯 Found bandit start: {line_stripped}")
             else:
                 current_section.append(line)
         
@@ -258,22 +366,25 @@ class DocumentProcessor:
         if current_section and len('\n'.join(current_section).strip()) > 100:
             sections.append('\n'.join(current_section))
         
-        # If automatic splitting didn't work well, use fixed chunks
-        if len(sections) < 5:
-            print("⚠️  Automatic bandit splitting found few sections, using fixed chunks...")
+        print(f"📄 Found {len(sections)} bandit-based sections")
+        
+        # If we found bandit sections, use them; otherwise use fixed chunks
+        if len(sections) >= 1:
+            print("✅ Using bandit-based sections")
+            return sections
+        else:
+            print("⚠️  No bandit sections found, using fixed chunks...")
             chunk_size = len(lines) // 10  # Split into ~10 chunks
             sections = []
             for i in range(0, len(lines), chunk_size):
                 chunk = '\n'.join(lines[i:i + chunk_size])
                 if len(chunk.strip()) > 100:
                     sections.append(chunk)
-        
-        print(f"📄 Split text into {len(sections)} sections")
-        return sections
+            return sections
 
-    def process_with_claude(self, text: str) -> Dict[str, Any]:
-        """Process text with Claude API using chunking to handle ALL bandits"""
-        print("🤖 Processing text with Claude AI...")
+    def process_with_claude(self, text: str, max_bandits: int = 5) -> Dict[str, Any]:
+        """Process text with Claude API using chunking to handle first 5 bandits only"""
+        print(f"🤖 Processing text with Claude AI (first {max_bandits} bandits only)...")
         
         if not claude_client:
             raise Exception("Anthropic API key not configured")
@@ -297,21 +408,23 @@ Database schema:
 - event: id (uuid), name, genre (single string, exactly one of: Food, Culture, Nightlife, Shopping, Coffee), description, rating (0-5), image_url, link, address, city, neighborhood, start_time, end_time, image_gallery (comma-separated string)
 - bandit_event: id (uuid), bandit_id, event_id, personal_tip
 
-Instructions:
-1. Extract ALL bandits and events from this chunk - do not limit the number
-2. Each bandit section starts with a bandit image then personal details
-3. Events follow, ending with addresses. Some events have multiple images - first is main, others go in image_gallery  
-4. For genre: return exactly one of: "Food", "Culture", "Nightlife", "Shopping", "Coffee"
-5. Use image placeholders for image_url and image_gallery fields
-6. Create unique UUIDs for all objects (use chunk_{i}_ prefix for uniqueness)
-7. Create bandit_event relationships linking bandits to their recommended events
-8. Leave fields null if they cannot be inferred
-9. Return structured JSON with "bandit", "events", and "bandit_events" arrays
+CRITICAL INSTRUCTIONS:
+1. Look for BANDIT sections that start with [IMAGE: img_xxx_xxx] followed by a person's name
+2. Each bandit has: name, Age: XX, Profession: XXX, bandiVibe: description
+3. After bandit details, there are EVENTS they recommend (venues, cafes, etc.)
+4. Events have: name, Type: XXX, description, Address: XXX
+5. Extract EVERY bandit and event you find - do not skip any
+6. For bandits: use the first image placeholder as image_url
+7. For events: use subsequent image placeholders as image_url and image_gallery
+8. Set rating to 4 for all bandits and events
+9. Set city to "Athens" for all
+10. Create bandit_event relationships linking each bandit to their events
+11. Use chunk_{i}_ prefix for all UUIDs
 
 Text chunk:
 {chunk}
 
-Return only valid JSON without explanation or markdown formatting.
+Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
 """
 
             try:
@@ -339,7 +452,7 @@ Return only valid JSON without explanation or markdown formatting.
                 chunk_data = json.loads(response_text)
                 
                 # Accumulate results
-                chunk_bandits = chunk_data.get('bandit', [])
+                chunk_bandits = chunk_data.get('bandits', []) or chunk_data.get('bandit', [])
                 chunk_events = chunk_data.get('events', [])
                 chunk_relationships = chunk_data.get('bandit_events', [])
                 
@@ -349,6 +462,11 @@ Return only valid JSON without explanation or markdown formatting.
                 
                 print(f"   ✅ Chunk {i}: {len(chunk_bandits)} bandits, {len(chunk_events)} events, {len(chunk_relationships)} relationships")
                 
+                # Stop if we've reached the maximum number of bandits
+                if len(all_bandits) >= max_bandits:
+                    print(f"✅ Reached maximum of {max_bandits} bandits, stopping processing")
+                    break
+                
             except json.JSONDecodeError as e:
                 print(f"   ❌ Chunk {i} - Invalid JSON: {e}")
                 continue  # Skip this chunk but continue with others
@@ -356,17 +474,35 @@ Return only valid JSON without explanation or markdown formatting.
                 print(f"   ❌ Chunk {i} - API error: {str(e)}")
                 continue  # Skip this chunk but continue with others
         
+        # Limit results to max_bandits
+        all_bandits = all_bandits[:max_bandits]
+        
+        # Filter events and relationships to only include those related to the first max_bandits
+        bandit_ids = [bandit.get('id') for bandit in all_bandits]
+        filtered_events = []
+        filtered_relationships = []
+        
+        for relationship in all_bandit_events:
+            if relationship.get('bandit_id') in bandit_ids:
+                filtered_relationships.append(relationship)
+                # Find the corresponding event
+                event_id = relationship.get('event_id')
+                for event in all_events:
+                    if event.get('id') == event_id:
+                        filtered_events.append(event)
+                        break
+        
         # Combine all results
         structured_data = {
             'bandit': all_bandits,
-            'events': all_events,
-            'bandit_events': all_bandit_events
+            'events': filtered_events,
+            'bandit_events': filtered_relationships
         }
         
         print(f"🎯 Total AI processing complete:")
         print(f"   👥 Bandits: {len(all_bandits)}")
-        print(f"   🎉 Events: {len(all_events)}")
-        print(f"   🔗 Relationships: {len(all_bandit_events)}")
+        print(f"   🎉 Events: {len(filtered_events)}")
+        print(f"   🔗 Relationships: {len(filtered_relationships)}")
         
         return structured_data
 
@@ -375,17 +511,28 @@ Return only valid JSON without explanation or markdown formatting.
         print("🔗 Combining structured data with image URLs...")
         
         def replace_placeholders(value):
-            if isinstance(value, str) and value.startswith("[IMAGE: ") and value.endswith("]"):
-                placeholder_id = value[8:-1]
-                return image_urls.get(placeholder_id, value)
+            if isinstance(value, str):
+                # Handle [IMAGE: placeholder_id] format
+                if value.startswith("[IMAGE: ") and value.endswith("]"):
+                    placeholder_id = value[8:-1]
+                    return image_urls.get(placeholder_id, value)
+                # Handle direct placeholder_id format (img_xxx_xxx)
+                elif value.startswith("img_") and value in image_urls:
+                    return image_urls.get(value, value)
             elif isinstance(value, list):
                 # Process image galleries - convert list to comma-separated string
                 urls = []
                 for item in value:
-                    if isinstance(item, str) and item.startswith("[IMAGE: ") and item.endswith("]"):
-                        placeholder_id = item[8:-1]
-                        url = image_urls.get(placeholder_id, item)
-                        urls.append(url)
+                    if isinstance(item, str):
+                        if item.startswith("[IMAGE: ") and item.endswith("]"):
+                            placeholder_id = item[8:-1]
+                            url = image_urls.get(placeholder_id, item)
+                            urls.append(url)
+                        elif item.startswith("img_") and item in image_urls:
+                            url = image_urls.get(item, item)
+                            urls.append(url)
+                        else:
+                            urls.append(str(item))
                     else:
                         urls.append(str(item))
                 return ", ".join(urls) if urls else ""
@@ -540,32 +687,29 @@ Return only valid JSON without explanation or markdown formatting.
         print(f"🚀 Starting complete pipeline for: {self.docx_path}")
         
         try:
-            # Step 1: Convert DOCX to PDF (or use existing PDF)
-            if self.docx_path.suffix.lower() == '.pdf':
-                # Input is already a PDF
-                pdf_path = self.docx_path
-                print(f"✅ Using existing PDF: {pdf_path}")
-            else:
-                # Convert DOCX to PDF
-                pdf_path = self.convert_docx_to_pdf()
+            # Step 1: Use existing PDF
+            pdf_path = self.convert_docx_to_pdf()
             
-            # Step 2: Extract text with image placeholders
+            # Step 2: Empty bucket before uploading new images
+            self.empty_bucket()
+            
+            # Step 3: Extract text with image placeholders (first 10 pages)
             extraction_result = self.extract_text_with_placeholders()
             
-            # Step 3: Upload images to Supabase
+            # Step 4: Upload images to Supabase
             image_urls = self.upload_images_to_supabase(extraction_result["image_data"])
             
-            # Step 4: Process with Claude AI (all bandits)
-            structured_data = self.process_with_claude(extraction_result["readable_text"])
+            # Step 5: Process with Claude AI (first 5 bandits only)
+            structured_data = self.process_with_claude(extraction_result["readable_text"], max_bandits=5)
             
-            # Step 5: Combine data with image URLs
+            # Step 6: Combine data with image URLs
             final_data = self.combine_data_with_images(structured_data, image_urls)
             
-            # Step 6: Insert into database
+            # Step 7: Insert into database
             self.insert_to_database(final_data)
             
             print("✅ Complete pipeline finished successfully!")
-            print(f"🎯 Processed ALL bandits from {self.docx_path.name}")
+            print(f"🎯 Processed first 5 bandits from {self.pdf_path.name}")
             
         except Exception as e:
             print(f"❌ Pipeline failed: {str(e)}")
@@ -574,18 +718,12 @@ Return only valid JSON without explanation or markdown formatting.
 
 def main():
     """Main function"""
-    # Default to bandits.docx if no argument provided
-    if len(sys.argv) == 1:
-        docx_path = "bandits.docx"
-    elif len(sys.argv) == 2:
-        docx_path = sys.argv[1]
-    else:
-        print("Usage: python docx_to_database.py [input.docx]")
-        print("If no file specified, defaults to 'bandits.docx'")
-        sys.exit(1)
+    # Always use banditsORIG.docx.pdf
+    docx_path = "banditsORIG.docx.pdf"
     
     if not Path(docx_path).exists():
-        print(f"❌ File not found: {docx_path}")
+        print(f"❌ Required PDF file not found: {docx_path}")
+        print("Please ensure banditsORIG.docx.pdf exists in the current directory")
         sys.exit(1)
     
     # Verify environment setup
