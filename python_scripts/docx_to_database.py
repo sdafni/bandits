@@ -43,6 +43,9 @@ SUPABASE_KEY = os.getenv('SUPABASE_ANON_KEY')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'banditsassets4')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 
+# Pipeline settings
+EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
+
 # Initialize clients
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -261,55 +264,80 @@ class DocumentProcessor:
             return image_data, False
 
     def upload_images_to_supabase(self, image_data: Dict[str, bytes]) -> Dict[str, str]:
-        """Upload all images to Supabase storage"""
-        print(f"📤 Uploading {len(image_data)} images to Supabase...")
+        """Upload images to Supabase storage, checking for existing files first"""
+        print(f"📤 Processing {len(image_data)} images to Supabase...")
         
         if not supabase:
             print("⚠️  Supabase not configured, skipping upload")
             return {}
         
+        # First, get list of existing files in the pdf_images folder
+        print("🔍 Checking for existing images in bucket...")
+        existing_files = set()
+        try:
+            existing_files_list = supabase.storage.from_(BUCKET_NAME).list(path="pdf_images/")
+            for file_info in existing_files_list:
+                if 'name' in file_info:
+                    existing_files.add(file_info['name'])
+            print(f"   Found {len(existing_files)} existing images")
+        except Exception as e:
+            print(f"   ⚠️  Could not list existing files: {e}")
+        
         image_urls = {}
+        uploaded_count = 0
+        existing_count = 0
         
         for placeholder_id, raw_image_data in image_data.items():
             try:
-                # Process image for face detection
-                processed_data, face_detected = self.detect_and_crop_face(raw_image_data)
+                file_name = f"{placeholder_id}.jpg"
+                file_path = f"pdf_images/{file_name}"
                 
-                # Upload to Supabase
-                file_path = f"pdf_images/{placeholder_id}.jpg"
-                
-                try:
-                    # Upload and get the response
-                    upload_response = supabase.storage.from_(BUCKET_NAME).upload(
-                        path=file_path,
-                        file=processed_data,
-                        file_options={"content-type": "image/jpeg"}
-                    )
-                    
-                    # Get public URL from the upload response or construct it
-                    if hasattr(upload_response, 'data') and upload_response.data:
-                        public_url = upload_response.data.get('publicURL')
-                    else:
-                        # Fallback: get public URL using the API
-                        public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
-                    
+                # Check if file already exists
+                if file_name in existing_files:
+                    # File exists, just get the public URL
+                    public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
                     image_urls[placeholder_id] = public_url
-                    status = "Face cropped" if face_detected else "Uploaded"
-                    print(f"✅ {status}: {placeholder_id} -> {public_url}")
+                    existing_count += 1
+                    print(f"✅ Using existing: {placeholder_id} -> {public_url}")
+                else:
+                    # File doesn't exist, process and upload
+                    processed_data, face_detected = self.detect_and_crop_face(raw_image_data)
                     
-                except Exception as upload_error:
-                    # If upload fails due to duplicate, still get the public URL
-                    if "already exists" in str(upload_error) or "Duplicate" in str(upload_error):
-                        print(f"⚠️  File already exists, getting URL: {placeholder_id}")
-                        public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+                    try:
+                        # Upload and get the response
+                        upload_response = supabase.storage.from_(BUCKET_NAME).upload(
+                            path=file_path,
+                            file=processed_data,
+                            file_options={"content-type": "image/jpeg"}
+                        )
+                        
+                        # Get public URL from the upload response or construct it
+                        if hasattr(upload_response, 'data') and upload_response.data:
+                            public_url = upload_response.data.get('publicURL')
+                        else:
+                            # Fallback: get public URL using the API
+                            public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+                        
                         image_urls[placeholder_id] = public_url
-                        print(f"✅ Using existing: {placeholder_id} -> {public_url}")
-                    else:
-                        raise upload_error
+                        uploaded_count += 1
+                        status = "Face cropped" if face_detected else "Uploaded"
+                        print(f"✅ {status}: {placeholder_id} -> {public_url}")
+                        
+                    except Exception as upload_error:
+                        # If upload fails due to duplicate, still get the public URL
+                        if "already exists" in str(upload_error) or "Duplicate" in str(upload_error):
+                            print(f"⚠️  File already exists, getting URL: {placeholder_id}")
+                            public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+                            image_urls[placeholder_id] = public_url
+                            existing_count += 1
+                            print(f"✅ Using existing: {placeholder_id} -> {public_url}")
+                        else:
+                            raise upload_error
                 
             except Exception as e:
-                print(f"❌ Failed to upload {placeholder_id}: {str(e)}")
+                print(f"❌ Failed to process {placeholder_id}: {str(e)}")
         
+        print(f"📊 Upload summary: {uploaded_count} uploaded, {existing_count} existing")
         return image_urls
 
     def split_text_by_bandits(self, text: str) -> List[str]:
@@ -420,6 +448,8 @@ CRITICAL INSTRUCTIONS:
 9. Set city to "Athens" for all
 10. Create bandit_event relationships linking each bandit to their events
 11. Use chunk_{i}_ prefix for all UUIDs
+12. IMPORTANT: Only include image_gallery field if there are actual images. If no additional images exist for an event, omit the image_gallery field entirely (do not include empty arrays or empty strings)
+13. For image_gallery: return as an array of image placeholder IDs (e.g., ["img_001_002", "img_001_003"]) - the system will convert these to comma-separated URLs
 
 Text chunk:
 {chunk}
@@ -527,14 +557,17 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                         if item.startswith("[IMAGE: ") and item.endswith("]"):
                             placeholder_id = item[8:-1]
                             url = image_urls.get(placeholder_id, item)
-                            urls.append(url)
+                            if url and url != item and url.startswith("http"):  # Only add valid URLs
+                                urls.append(url)
                         elif item.startswith("img_") and item in image_urls:
                             url = image_urls.get(item, item)
-                            urls.append(url)
-                        else:
-                            urls.append(str(item))
+                            if url and url != item and url.startswith("http"):  # Only add valid URLs
+                                urls.append(url)
+                        elif item.startswith("http"):  # Already a valid URL
+                            urls.append(item)
                     else:
-                        urls.append(str(item))
+                        # Skip non-string items
+                        pass
                 return ", ".join(urls) if urls else ""
             elif isinstance(value, dict):
                 return {k: replace_placeholders(v) for k, v in value.items()}
@@ -559,6 +592,14 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             processed_event = {}
             for key, value in event.items():
                 processed_event[key] = replace_placeholders(value)
+            
+            # Remove empty image_gallery fields
+            if 'image_gallery' in processed_event:
+                gallery_value = processed_event['image_gallery']
+                # Remove if None, empty, empty string, or just whitespace
+                if gallery_value is None or not gallery_value or (isinstance(gallery_value, str) and not gallery_value.strip()):
+                    del processed_event['image_gallery']
+            
             combined_data['events'].append(processed_event)
         
         return combined_data
@@ -639,9 +680,12 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                     "city": event.get("city"),
                     "neighborhood": event.get("neighborhood"),
                     "start_time": event.get("start_time") or "2024-01-01T18:00:00Z",
-                    "end_time": event.get("end_time") or "2024-01-01T23:00:00Z",
-                    "image_gallery": event.get("image_gallery") or ""
+                    "end_time": event.get("end_time") or "2024-01-01T23:00:00Z"
                 }
+                
+                # Only include image_gallery if it exists and is not empty/None
+                if "image_gallery" in event and event.get("image_gallery") is not None and event.get("image_gallery"):
+                    event_data["image_gallery"] = event.get("image_gallery")
                 
                 supabase.table("event").insert(event_data).execute()
                 event_id_mapping[old_id] = new_id
@@ -690,8 +734,11 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             # Step 1: Use existing PDF
             pdf_path = self.convert_docx_to_pdf()
             
-            # Step 2: Empty bucket before uploading new images
-            self.empty_bucket()
+            # Step 2: Empty bucket before uploading new images (if enabled)
+            if EMPTY_BUCKET_BEFORE_UPLOAD:
+                self.empty_bucket()
+            else:
+                print("⏭️  Skipping bucket emptying (EMPTY_BUCKET_BEFORE_UPLOAD=False)")
             
             # Step 3: Extract text with image placeholders (first 10 pages)
             extraction_result = self.extract_text_with_placeholders()
