@@ -74,52 +74,52 @@ export default function EventCard({
 
   const cardContent = (
     <>
-      {/* Event Image */}
-      {event.image_url && (
-        <View style={[
-          styles.imageContainer, 
-          isHorizontal && styles.imageContainerHorizontal,
-          ...(imageHeight ? [{ height: imageHeight }] : [])
-        ]}>
-          <Image
-            source={{ uri: event.image_url }}
-            style={styles.eventImage}
-            resizeMode="cover"
-            onError={(error) => {
-              console.error('Image failed to load:', event.image_url, error);
-            }}
-          />
-          <View style={styles.ratingContainer}>
-            <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
-            <Text style={styles.starText}>★</Text>
-          </View>
-          
-          {/* Bandit Recommendation Icons */}
-          {showRecommendations && recommendingBandits.length > 0 && (
-            <View style={styles.recommendationsContainer}>
-              {recommendingBandits.map((bandit, index) => (
-                <TouchableOpacity
-                  key={bandit.id}
-                  style={[
-                    styles.banditIcon,
-                    { zIndex: recommendingBandits.length - index } // Stack icons with proper layering
-                  ]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    router.push(`/bandit/${bandit.id}` as any);
-                  }}
-                >
-                  <Image
-                    source={{ uri: bandit.image_url }}
-                    style={styles.banditIconImage}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+      {/* Event Image - Always show container so bandit icons are visible */}
+      <View style={[
+        styles.imageContainer, 
+        isHorizontal && styles.imageContainerHorizontal,
+        ...(imageHeight ? [{ height: imageHeight }] : [])
+      ]}>
+        <Image
+          source={{ 
+            uri: event.image_url || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/bandiTourMAinLogo.png'
+          }}
+          style={styles.eventImage}
+          resizeMode="cover"
+          onError={(error) => {
+            console.error('Image failed to load:', event.image_url || 'default image', error);
+          }}
+        />
+        <View style={styles.ratingContainer}>
+          <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
+          <Text style={styles.starText}>★</Text>
         </View>
-      )}
+        
+        {/* Bandit Recommendation Icons - Now always visible */}
+        {showRecommendations && recommendingBandits.length > 0 && (
+          <View style={styles.recommendationsContainer}>
+            {recommendingBandits.map((bandit, index) => (
+              <TouchableOpacity
+                key={bandit.id}
+                style={[
+                  styles.banditIcon,
+                  { zIndex: recommendingBandits.length - index } // Stack icons with proper layering
+                ]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push(`/bandit/${bandit.id}` as any);
+                }}
+              >
+                <Image
+                  source={{ uri: bandit.image_url }}
+                  style={styles.banditIconImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
       
       <View style={[
         styles.eventContent,
