@@ -44,24 +44,30 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_ANON_KEY')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'banditsassets4')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')  # For DeepSeek API
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')  # For geocoding
 
 # Pipeline settings
 EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
-MAX_BANDITS = 100  # Maximum number of bandits to process
+MAX_BANDITS = 5  # Maximum number of bandits to process
 
 # Geocoding settings
 GEOCODING_CACHE_FILE = "geocoding_cache.json"  # Cache file for geocoding results
 USE_FREE_GEOCODING = True  # Use free Nominatim service instead of Google Maps
+
+# AI Model settings
+USE_DEEPSEEK = True  # Set to True to use DeepSeek instead of Claude
 
 # Initialize clients
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-claude_client = None
-if ANTHROPIC_API_KEY:
-    claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+ai_client = None
+if USE_DEEPSEEK and DEEPSEEK_API_KEY:
+    ai_client = requests  # DeepSeek uses direct HTTP requests
+elif ANTHROPIC_API_KEY:
+    ai_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 class DocumentProcessor:
     def __init__(self, docx_path: str):
@@ -795,11 +801,43 @@ class DocumentProcessor:
             print(f"📄 Created {len(sections)} fixed chunks")
             return sections
 
-    def process_with_claude(self, text: str, detected_bandits: List[str], max_bandits: int = MAX_BANDITS) -> Dict[str, Any]:
-        """Process text with Claude API using the pre-detected bandits list for accuracy"""
-        print(f"🤖 Processing text with Claude AI using {len(detected_bandits)} pre-detected bandits...")
+    def call_deepseek_api(self, prompt: str) -> str:
+        """Call DeepSeek API for text processing"""
+        url = "https://api.deepseek.com/chat/completions"
         
-        if not claude_client:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}"
+        }
+        
+        data = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": "You are a data extraction expert. Extract ALL bandits and events from the provided text chunk. For timing info, only extract specific hours, days, or dates - ignore vague time descriptions. Return only valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.1,
+            "max_tokens": 4000
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=data, timeout=60)
+            response.raise_for_status()
+            
+            result = response.json()
+            return result['choices'][0]['message']['content']
+            
+        except Exception as e:
+            raise Exception(f"DeepSeek API error: {str(e)}")
+
+    def process_with_ai(self, text: str, detected_bandits: List[str], max_bandits: int = MAX_BANDITS) -> Dict[str, Any]:
+        """Process text with AI (Claude or DeepSeek) using the pre-detected bandits list for accuracy"""
+        service_name = "DeepSeek" if USE_DEEPSEEK else "Claude"
+        print(f"🤖 Processing text with {service_name} AI using {len(detected_bandits)} pre-detected bandits...")
+        
+        if USE_DEEPSEEK and not DEEPSEEK_API_KEY:
+            raise Exception("DeepSeek API key not configured")
+        elif not USE_DEEPSEEK and not ai_client:
             raise Exception("Anthropic API key not configured")
         
         # Create a formatted list of detected bandits for the prompt
@@ -884,18 +922,20 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
 """
 
             try:
-                # Make API call to Claude for this chunk
-                response = claude_client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=4000,  # Smaller limit per chunk
-                    temperature=0.1,
-                    system="You are a data extraction expert. Extract ALL bandits and events from the provided text chunk. For timing info, only extract specific hours, days, or dates - ignore vague time descriptions. Return only valid JSON.",
-                    messages=[
-                        {"role": "user", "content": chunk_prompt}
-                    ]
-                )
-                
-                response_text = response.content[0].text.strip()
+                # Make API call to AI service for this chunk
+                if USE_DEEPSEEK:
+                    response_text = self.call_deepseek_api(chunk_prompt)
+                else:
+                    response = ai_client.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=4000,  # Smaller limit per chunk
+                        temperature=0.1,
+                        system="You are a data extraction expert. Extract ALL bandits and events from the provided text chunk. For timing info, only extract specific hours, days, or dates - ignore vague time descriptions. Return only valid JSON.",
+                        messages=[
+                            {"role": "user", "content": chunk_prompt}
+                        ]
+                    )
+                    response_text = response.content[0].text.strip()
                 
                 # Clean up response to ensure it's valid JSON
                 if response_text.startswith("```json"):
@@ -1312,9 +1352,9 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             # Step 4: Upload images to Supabase
             image_urls = self.upload_images_to_supabase(extraction_result["image_data"])
             
-            # Step 5: Process with Claude AI using pre-detected bandits
+            # Step 5: Process with AI using pre-detected bandits
             detected_bandits = extraction_result["detected_bandits_list"]
-            structured_data = self.process_with_claude(extraction_result["readable_text"], detected_bandits, max_bandits=MAX_BANDITS)
+            structured_data = self.process_with_ai(extraction_result["readable_text"], detected_bandits, max_bandits=MAX_BANDITS)
             
             # Step 6: Combine data with image URLs
             final_data = self.combine_data_with_images(structured_data, image_urls)
@@ -1354,7 +1394,9 @@ def main():
         missing_vars.append("SUPABASE_URL")
     if not SUPABASE_KEY:
         missing_vars.append("SUPABASE_ANON_KEY")
-    if not ANTHROPIC_API_KEY:
+    if USE_DEEPSEEK and not DEEPSEEK_API_KEY:
+        missing_vars.append("DEEPSEEK_API_KEY")
+    elif not USE_DEEPSEEK and not ANTHROPIC_API_KEY:
         missing_vars.append("ANTHROPIC_API_KEY")
     if not BUCKET_NAME:
         missing_vars.append("BUCKET_NAME")
@@ -1379,6 +1421,10 @@ def main():
             print("⚠️  No Google Maps API key - falling back to Nominatim (free)")
     
     print(f"💾 Geocoding cache file: {GEOCODING_CACHE_FILE}")
+    
+    # Show AI service configuration
+    ai_service = "DeepSeek" if USE_DEEPSEEK else "Claude"
+    print(f"🤖 Using {ai_service} for AI text processing")
     
     # Process the document
     processor = DocumentProcessor(docx_path)
