@@ -214,7 +214,7 @@ class DocumentProcessor:
         }
 
     def detect_and_crop_face(self, image_data: bytes) -> Tuple[bytes, bool]:
-        """Detect faces and crop to center the face if found"""
+        """Improved face detection and cropping algorithm"""
         try:
             nparr = np.frombuffer(image_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -222,36 +222,63 @@ class DocumentProcessor:
             if img is None:
                 return image_data, False
             
+            img_height, img_width = img.shape[:2]
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
             
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            # Use improved face detection parameters
+            faces = face_cascade.detectMultiScale(
+                gray, 
+                scaleFactor=1.02,  # More sensitive
+                minNeighbors=2,    # More sensitive  
+                minSize=(15, 15)   # Smaller minimum size
+            )
             
             if len(faces) == 0:
                 return image_data, False
             
-            # Get largest face and center it
+            # Get largest face
             largest_face = max(faces, key=lambda x: x[2] * x[3])
             x, y, w, h = largest_face
             
-            img_height, img_width = img.shape[:2]
+            # Validate face size
+            face_area_percentage = (w * h) / (img_width * img_height) * 100
+            if face_area_percentage < 0.5 or face_area_percentage > 60:
+                return image_data, False
+            
+            # Calculate face center
             face_center_x = x + w // 2
             face_center_y = y + h // 2
             
-            target_center_x = img_width // 2
-            target_center_y = img_height // 2
+            # Create square crop centered on face
+            face_size = max(w, h)
+            padding_factor = 2.0
+            crop_size = int(face_size * padding_factor)
+            crop_size = min(crop_size, min(img_width, img_height))
             
-            offset_x = face_center_x - target_center_x
-            offset_y = face_center_y - target_center_y
+            half_crop = crop_size // 2
+            crop_left = max(0, face_center_x - half_crop)
+            crop_right = min(img_width, face_center_x + half_crop)
+            crop_top = max(0, face_center_y - half_crop)
+            crop_bottom = min(img_height, face_center_y + half_crop)
             
-            crop_left = max(0, offset_x)
-            crop_right = min(img_width, img_width + offset_x)
-            crop_top = max(0, offset_y)
-            crop_bottom = min(img_height, img_height + offset_y)
+            # Adjust boundaries if needed
+            if crop_right - crop_left < crop_size:
+                if crop_left == 0:
+                    crop_right = min(img_width, crop_size)
+                else:
+                    crop_left = max(0, img_width - crop_size)
+            
+            if crop_bottom - crop_top < crop_size:
+                if crop_top == 0:
+                    crop_bottom = min(img_height, crop_size)
+                else:
+                    crop_top = max(0, img_height - crop_size)
             
             if crop_left >= crop_right or crop_top >= crop_bottom:
                 return image_data, False
             
+            # Perform crop
             cropped_img = img[crop_top:crop_bottom, crop_left:crop_right]
             success, encoded_img = cv2.imencode('.jpg', cropped_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
             
@@ -261,9 +288,8 @@ class DocumentProcessor:
                 return image_data, False
                 
         except Exception as e:
-            print(f"⚠️  Error in face detection: {str(e)}")
+            print(f"⚠️  Error in improved face detection: {str(e)}")
             return image_data, False
-
     def upload_images_to_supabase(self, image_data: Dict[str, bytes]) -> Dict[str, str]:
         """Upload images to Supabase storage, checking for existing files first"""
         print(f"📤 Processing {len(image_data)} images to Supabase...")
