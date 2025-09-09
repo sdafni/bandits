@@ -29,10 +29,12 @@ import subprocess
 import cv2
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import anthropic
+import requests
+import time
 
 # Load environment variables
 load_dotenv()
@@ -42,10 +44,15 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_ANON_KEY')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'banditsassets4')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')  # For geocoding
 
 # Pipeline settings
 EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
 MAX_BANDITS = 100  # Maximum number of bandits to process
+
+# Geocoding settings
+GEOCODING_CACHE_FILE = "geocoding_cache.json"  # Cache file for geocoding results
+USE_FREE_GEOCODING = True  # Use free Nominatim service instead of Google Maps
 
 # Initialize clients
 supabase: Client = None
@@ -358,6 +365,235 @@ class DocumentProcessor:
         except Exception as e:
             print(f"⚠️  Error in improved face detection: {str(e)}")
             return image_data, False
+
+    def load_geocoding_cache(self) -> Dict[str, Dict[str, Any]]:
+        """Load geocoding cache from file"""
+        cache_path = Path(GEOCODING_CACHE_FILE)
+        if cache_path.exists():
+            try:
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                print(f"📂 Loaded geocoding cache with {len(cache)} entries")
+                return cache
+            except Exception as e:
+                print(f"⚠️  Error loading geocoding cache: {str(e)}")
+                return {}
+        else:
+            print(f"📂 No existing geocoding cache found, will create new one")
+            return {}
+    
+    def save_geocoding_cache(self, cache: Dict[str, Dict[str, Any]]):
+        """Save geocoding cache to file"""
+        try:
+            cache_path = Path(GEOCODING_CACHE_FILE)
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(cache, f, indent=2, ensure_ascii=False)
+            print(f"💾 Saved geocoding cache with {len(cache)} entries")
+        except Exception as e:
+            print(f"❌ Error saving geocoding cache: {str(e)}")
+    
+    def geocode_with_nominatim(self, full_address: str) -> Tuple[Optional[float], Optional[float]]:
+        """Use free Nominatim (OpenStreetMap) geocoding service"""
+        try:
+            # Nominatim API (free, no API key required)
+            url = "https://nominatim.openstreetmap.org/search"
+            params = {
+                'q': full_address,
+                'format': 'json',
+                'limit': 1,
+                'addressdetails': 1
+            }
+            
+            headers = {
+                'User-Agent': 'BanditsApp/1.0 (geocoding for Athens events)'
+            }
+            
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data and len(data) > 0:
+                result = data[0]
+                lat = float(result['lat'])
+                lng = float(result['lon'])
+                return lat, lng
+            else:
+                return None, None
+                
+        except Exception as e:
+            print(f"   ❌ Nominatim geocoding error: {str(e)}")
+            return None, None
+    
+    def geocode_with_google(self, full_address: str) -> Tuple[Optional[float], Optional[float]]:
+        """Use Google Maps geocoding service (requires API key)"""
+        if not GOOGLE_MAPS_API_KEY:
+            return None, None
+            
+        try:
+            url = "https://maps.googleapis.com/maps/api/geocode/json"
+            params = {
+                'address': full_address,
+                'key': GOOGLE_MAPS_API_KEY
+            }
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data['status'] == 'OK' and len(data['results']) > 0:
+                location = data['results'][0]['geometry']['location']
+                lat = location['lat']
+                lng = location['lng']
+                return lat, lng
+            elif data['status'] == 'ZERO_RESULTS':
+                return None, None
+            elif data['status'] == 'OVER_QUERY_LIMIT':
+                print(f"   ❌ Google Maps API quota exceeded")
+                return None, None
+            else:
+                print(f"   ❌ Google geocoding failed: {data['status']}")
+                return None, None
+                
+        except Exception as e:
+            print(f"   ❌ Google geocoding error: {str(e)}")
+            return None, None
+    
+    def geocode_address(self, address: str, city: str = "Athens, Greece", cache: Dict[str, Dict[str, Any]] = None) -> Tuple[Optional[float], Optional[float]]:
+        """Geocode an address to get latitude and longitude coordinates with caching"""
+        if not address or not address.strip():
+            return None, None
+        
+        # Clean and format the address
+        full_address = f"{address.strip()}, {city}"
+        cache_key = full_address.lower()
+        
+        # Check cache first
+        if cache and cache_key in cache:
+            cached_result = cache[cache_key]
+            lat = cached_result.get('latitude')
+            lng = cached_result.get('longitude')
+            if lat is not None and lng is not None:
+                print(f"📋 Using cached coordinates for: {full_address} -> {lat}, {lng}")
+                return lat, lng
+            else:
+                print(f"📋 Found cached negative result for: {full_address}")
+                return None, None
+        
+        print(f"🌍 Geocoding address: {full_address}")
+        
+        # Try geocoding services
+        lat, lng = None, None
+        
+        if USE_FREE_GEOCODING:
+            print(f"   🆓 Trying Nominatim (free)...")
+            lat, lng = self.geocode_with_nominatim(full_address)
+            
+            # If Nominatim fails and Google API is available, try Google as fallback
+            if (lat is None or lng is None) and GOOGLE_MAPS_API_KEY:
+                print(f"   🔄 Nominatim failed, trying Google Maps as fallback...")
+                lat, lng = self.geocode_with_google(full_address)
+        else:
+            # Use Google first, fallback to Nominatim
+            if GOOGLE_MAPS_API_KEY:
+                print(f"   🗺️  Trying Google Maps...")
+                lat, lng = self.geocode_with_google(full_address)
+            
+            if (lat is None or lng is None):
+                print(f"   🔄 Google failed, trying Nominatim as fallback...")
+                lat, lng = self.geocode_with_nominatim(full_address)
+        
+        # Cache the result (both success and failure) and save immediately
+        if cache is not None:
+            cache[cache_key] = {
+                'address': full_address,
+                'latitude': lat,
+                'longitude': lng,
+                'timestamp': time.time()
+            }
+            # Save cache immediately after each geocoding attempt
+            self.save_geocoding_cache(cache)
+        
+        if lat is not None and lng is not None:
+            print(f"   ✅ Geocoded to: {lat}, {lng}")
+            return lat, lng
+        else:
+            print(f"   ❌ Geocoding failed for: {full_address}")
+            return None, None
+    
+    def geocode_events_batch(self, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Geocode all events with addresses in a batch, with caching and rate limiting"""
+        print(f"\n🌍 Geocoding {len(events)} events...")
+        
+        # Load cache
+        cache = self.load_geocoding_cache()
+        
+        geocoded_events = []
+        geocoded_count = 0
+        cached_count = 0
+        skipped_count = 0
+        api_calls = 0
+        
+        service_name = "Nominatim (free)" if USE_FREE_GEOCODING else "Google Maps"
+        print(f"🔧 Using {service_name} as primary geocoding service")
+        
+        for i, event in enumerate(events, 1):
+            address = event.get('address', '').strip()
+            
+            if address:
+                print(f"📍 Event {i}/{len(events)}: {event.get('name', 'Unknown')}")
+                
+                # Check if we need rate limiting (only for API calls, not cached results)
+                full_address = f"{address.strip()}, Athens, Greece"
+                cache_key = full_address.lower()
+                needs_api_call = cache_key not in cache
+                
+                if needs_api_call and api_calls > 0:
+                    # Rate limiting: Nominatim allows 1 request per second, Google allows more
+                    delay = 1.1 if USE_FREE_GEOCODING else 0.2
+                    time.sleep(delay)
+                
+                lat, lng = self.geocode_address(address, city="Athens, Greece", cache=cache)
+                
+                if needs_api_call:
+                    api_calls += 1
+                
+                # Create updated event with coordinates
+                updated_event = event.copy()
+                if lat is not None and lng is not None:
+                    updated_event['latitude'] = lat
+                    updated_event['longitude'] = lng
+                    if cache_key in cache and cache[cache_key].get('timestamp', 0) < time.time() - 1:
+                        cached_count += 1
+                    else:
+                        geocoded_count += 1
+                else:
+                    # Keep the event but without coordinates
+                    updated_event['latitude'] = None
+                    updated_event['longitude'] = None
+                    skipped_count += 1
+                
+                geocoded_events.append(updated_event)
+            else:
+                # Event has no address, keep as-is
+                updated_event = event.copy()
+                updated_event['latitude'] = None
+                updated_event['longitude'] = None
+                geocoded_events.append(updated_event)
+                skipped_count += 1
+                print(f"📍 Event {i}/{len(events)}: {event.get('name', 'Unknown')} - No address")
+        
+        # Cache is already saved after each geocoding attempt
+        
+        print(f"\n📊 Geocoding Summary:")
+        print(f"   ✅ Successfully geocoded (new): {geocoded_count} events")
+        print(f"   📋 Used cached results: {cached_count} events")
+        print(f"   ⚠️  Skipped (no address/failed): {skipped_count} events")
+        print(f"   🔗 API calls made: {api_calls}")
+        print(f"   💾 Cache now contains: {len(cache)} entries")
+        
+        return geocoded_events
     def upload_images_to_supabase(self, image_data: Dict[str, bytes]) -> Dict[str, str]:
         """Upload images to Supabase storage, checking for existing files first"""
         print(f"📤 Processing {len(image_data)} images to Supabase...")
@@ -871,7 +1107,9 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                     "neighborhood": event.get("neighborhood"),
                     "start_time": event.get("start_time") or "2024-01-01T18:00:00Z",
                     "end_time": event.get("end_time") or "2024-01-01T23:00:00Z",
-                    "timing_info": event.get("timing_info", "")
+                    "timing_info": event.get("timing_info", ""),
+                    "location_lat": event.get("latitude"),
+                    "location_lng": event.get("longitude")
                 }
                 
                 # Only include image_gallery if it exists and is not empty/None
@@ -881,12 +1119,19 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                 supabase.table("event").insert(event_data).execute()
                 event_id_mapping[old_id] = new_id
                 
-                # Log timing info status
+                # Log timing info and geocoding status
                 timing_info = event.get("timing_info", "")
+                lat = event.get("latitude")  # Internal field name
+                lng = event.get("longitude")  # Internal field name
+                
+                status_parts = []
                 if timing_info and timing_info.strip():
-                    print(f"   ✅ Event {i}: {event.get('name')} - TIMING INFO: {timing_info}")
-                else:
-                    print(f"   ✅ Event {i}: {event.get('name')} - No timing info")
+                    status_parts.append(f"TIMING: {timing_info}")
+                if lat is not None and lng is not None:
+                    status_parts.append(f"GEO: {lat:.6f}, {lng:.6f}")
+                
+                status_str = " | ".join(status_parts) if status_parts else "No timing info or coordinates"
+                print(f"   ✅ Event {i}: {event.get('name')} - {status_str}")
                 
             except Exception as e:
                 print(f"   ❌ Error inserting event: {str(e)}")
@@ -1009,6 +1254,38 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                 for event in events_without_gallery:
                     print(f"   - {event['name']}")
             
+            # Events with geocoding coordinates
+            events_with_coordinates = [e for e in events if e.get('latitude') is not None and e.get('longitude') is not None]
+            events_without_coordinates = [e for e in events if e.get('latitude') is None or e.get('longitude') is None]
+            print(f"\n🌍 NUMBER OF EVENTS WITH COORDINATES (GEOCODED): {len(events_with_coordinates)}")
+            if events_with_coordinates:
+                print("   Events with coordinates:")
+                for event in events_with_coordinates:
+                    lat = event.get('latitude')
+                    lng = event.get('longitude')
+                    print(f"   - {event['name']}: {lat:.6f}, {lng:.6f}")
+            
+            print(f"\n📍 NUMBER OF EVENTS WITHOUT COORDINATES: {len(events_without_coordinates)}")
+            if events_without_coordinates:
+                print("   Events without coordinates:")
+                for event in events_without_coordinates:
+                    print(f"   - {event['name']}")
+            
+            # Show geocoding cache information
+            try:
+                cache_path = Path(GEOCODING_CACHE_FILE)
+                if cache_path.exists():
+                    with open(cache_path, 'r', encoding='utf-8') as f:
+                        cache = json.load(f)
+                    cache_entries = len(cache)
+                    successful_cache_entries = sum(1 for entry in cache.values() if entry.get('latitude') is not None)
+                    print(f"\n💾 GEOCODING CACHE STATUS:")
+                    print(f"   📋 Total cached addresses: {cache_entries}")
+                    print(f"   ✅ Successfully geocoded in cache: {successful_cache_entries}")
+                    print(f"   ❌ Failed geocoding attempts in cache: {cache_entries - successful_cache_entries}")
+            except Exception:
+                pass  # Don't fail statistics if cache can't be read
+            
             print("\n" + "=" * 50)
             print("📊 STATISTICS COMPLETE")
             
@@ -1042,10 +1319,15 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             # Step 6: Combine data with image URLs
             final_data = self.combine_data_with_images(structured_data, image_urls)
             
-            # Step 7: Insert into database
+            # Step 7: Geocode events with addresses
+            if final_data.get('events'):
+                geocoded_events = self.geocode_events_batch(final_data['events'])
+                final_data['events'] = geocoded_events
+            
+            # Step 8: Insert into database
             self.insert_to_database(final_data)
             
-            # Step 8: Print statistics
+            # Step 9: Print statistics
             self.print_statistics()
             
             print("✅ Complete pipeline finished successfully!")
@@ -1081,6 +1363,22 @@ def main():
         print(f"❌ Missing environment variables: {', '.join(missing_vars)}")
         print("Please set them in your .env file")
         sys.exit(1)
+    
+    # Check geocoding configuration
+    if USE_FREE_GEOCODING:
+        print("🆓 Using Nominatim (free) geocoding service")
+        if GOOGLE_MAPS_API_KEY:
+            print("   📋 Google Maps API available as fallback")
+        else:
+            print("   ⚠️  No Google Maps API key - Nominatim only")
+    else:
+        if GOOGLE_MAPS_API_KEY:
+            print("🗺️  Using Google Maps geocoding service")
+            print("   📋 Nominatim (free) available as fallback")
+        else:
+            print("⚠️  No Google Maps API key - falling back to Nominatim (free)")
+    
+    print(f"💾 Geocoding cache file: {GEOCODING_CACHE_FILE}")
     
     # Process the document
     processor = DocumentProcessor(docx_path)
