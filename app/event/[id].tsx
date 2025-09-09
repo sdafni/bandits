@@ -155,6 +155,14 @@ export default function EventDetailScreen() {
           <Text style={styles.descriptionText}>{event.description}</Text>
         </View>
 
+        {/* Timing Information */}
+        {event.timing_info && event.timing_info.trim() && (
+          <View style={styles.timingContainer}>
+            <Text style={styles.timingTitle}>Hours</Text>
+            <Text style={styles.timingText}>{event.timing_info}</Text>
+          </View>
+        )}
+
         {/* Personal Tip Section (only shown if navigated from bandit's city guide) */}
         {bandit && personalTip && (
           <View style={styles.personalTipContainer}>
@@ -303,6 +311,23 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   descriptionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#3C3C3C',
+    fontFamily: 'Caros',
+  },
+  timingContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  timingTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#3C3C3C',
+    marginBottom: 10,
+    fontFamily: 'Caros',
+  },
+  timingText: {
     fontSize: 14,
     lineHeight: 20,
     color: '#3C3C3C',

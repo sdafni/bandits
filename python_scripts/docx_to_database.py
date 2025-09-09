@@ -45,6 +45,7 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 
 # Pipeline settings
 EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
+MAX_BANDITS = 100  # Maximum number of bandits to process
 
 # Initialize clients
 supabase: Client = None
@@ -148,16 +149,16 @@ class DocumentProcessor:
 
     def extract_text_with_placeholders(self) -> Dict[str, Any]:
         """Extract PDF text and replace images with placeholders (limited to first 3 bandits)"""
-        print(f"🔍 Extracting text from PDF: {self.pdf_path} (first 5 bandits only)")
+        print(f"🔍 Extracting text from PDF: {self.pdf_path} (first {MAX_BANDITS} bandits only)")
         
         doc = fitz.open(str(self.pdf_path))
         readable_text = ""
         image_map = {}
         image_counter = 0
         bandit_count = 0
-        max_bandits = 5
+        max_bandits = MAX_BANDITS
         
-        # Process pages until we find 5 bandits
+        # Process pages until we find the maximum number of bandits
         for page_num in range(1, len(doc) + 1):
             page = doc[page_num - 1]  # fitz uses 0-based indexing
             print(f"📖 Processing page {page_num}...")
@@ -410,8 +411,8 @@ class DocumentProcessor:
                     sections.append(chunk)
             return sections
 
-    def process_with_claude(self, text: str, max_bandits: int = 5) -> Dict[str, Any]:
-        """Process text with Claude API using chunking to handle first 5 bandits only"""
+    def process_with_claude(self, text: str, max_bandits: int = MAX_BANDITS) -> Dict[str, Any]:
+        """Process text with Claude API using chunking to handle first MAX_BANDITS bandits only"""
         print(f"🤖 Processing text with Claude AI (first {max_bandits} bandits only)...")
         
         if not claude_client:
@@ -433,7 +434,7 @@ Extract bandits and events from this text chunk. This is part {i} of {len(text_c
 
 Database schema:
 - bandit: id (uuid), name, age, city, occupation, rating (0-5), image_url, description, family_name
-- event: id (uuid), name, genre (single string, exactly one of: Food, Culture, Nightlife, Shopping, Coffee), description, rating (0-5), image_url, link, address, city, neighborhood, start_time, end_time, image_gallery (comma-separated string)
+- event: id (uuid), name, genre (single string, exactly one of: Food, Culture, Nightlife, Shopping, Coffee), description, rating (0-5), image_url, link, address, city, neighborhood, start_time, end_time, timing_info (raw timing text from document), image_gallery (comma-separated string)
 - bandit_event: id (uuid), bandit_id, event_id, personal_tip
 
 CRITICAL INSTRUCTIONS:
@@ -450,6 +451,13 @@ CRITICAL INSTRUCTIONS:
 11. Use chunk_{i}_ prefix for all UUIDs
 12. IMPORTANT: Only include image_gallery field if there are actual images. If no additional images exist for an event, omit the image_gallery field entirely (do not include empty arrays or empty strings)
 13. For image_gallery: return as an array of image placeholder IDs (e.g., ["img_001_002", "img_001_003"]) - the system will convert these to comma-separated URLs
+14. TIMING INFO: Look for specific timing information in the event text. Extract ONLY:
+    - Specific opening hours (e.g., "9 AM - 5 PM", "Monday-Friday 8:00-18:00")
+    - Day names (e.g., "Monday", "Tuesday", "Weekends", "Daily")
+    - Specific times (e.g., "8:00 AM", "6 PM", "Happy hour 5-7 PM")
+    - Date ranges (e.g., "March 15-20", "Every Friday")
+    DO NOT extract vague time descriptions like "nighttime", "daytime", "evening vibes", "late night", "early morning"
+    If found, extract the raw text and put it in the timing_info field. If no specific timing info is found, set timing_info to an empty string ""
 
 Text chunk:
 {chunk}
@@ -463,7 +471,7 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                     model="claude-3-5-sonnet-20241022",
                     max_tokens=4000,  # Smaller limit per chunk
                     temperature=0.1,
-                    system="You are a data extraction expert. Extract ALL bandits and events from the provided text chunk. Return only valid JSON.",
+                    system="You are a data extraction expert. Extract ALL bandits and events from the provided text chunk. For timing info, only extract specific hours, days, or dates - ignore vague time descriptions. Return only valid JSON.",
                     messages=[
                         {"role": "user", "content": chunk_prompt}
                     ]
@@ -680,7 +688,8 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                     "city": event.get("city"),
                     "neighborhood": event.get("neighborhood"),
                     "start_time": event.get("start_time") or "2024-01-01T18:00:00Z",
-                    "end_time": event.get("end_time") or "2024-01-01T23:00:00Z"
+                    "end_time": event.get("end_time") or "2024-01-01T23:00:00Z",
+                    "timing_info": event.get("timing_info", "")
                 }
                 
                 # Only include image_gallery if it exists and is not empty/None
@@ -689,7 +698,13 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                 
                 supabase.table("event").insert(event_data).execute()
                 event_id_mapping[old_id] = new_id
-                print(f"   ✅ Event {i}: {event.get('name')}")
+                
+                # Log timing info status
+                timing_info = event.get("timing_info", "")
+                if timing_info and timing_info.strip():
+                    print(f"   ✅ Event {i}: {event.get('name')} - TIMING INFO: {timing_info}")
+                else:
+                    print(f"   ✅ Event {i}: {event.get('name')} - No timing info")
                 
             except Exception as e:
                 print(f"   ❌ Error inserting event: {str(e)}")
@@ -746,8 +761,8 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             # Step 4: Upload images to Supabase
             image_urls = self.upload_images_to_supabase(extraction_result["image_data"])
             
-            # Step 5: Process with Claude AI (first 5 bandits only)
-            structured_data = self.process_with_claude(extraction_result["readable_text"], max_bandits=5)
+            # Step 5: Process with Claude AI (first MAX_BANDITS bandits only)
+            structured_data = self.process_with_claude(extraction_result["readable_text"], max_bandits=MAX_BANDITS)
             
             # Step 6: Combine data with image URLs
             final_data = self.combine_data_with_images(structured_data, image_urls)
@@ -756,7 +771,7 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             self.insert_to_database(final_data)
             
             print("✅ Complete pipeline finished successfully!")
-            print(f"🎯 Processed first 5 bandits from {self.pdf_path.name}")
+            print(f"🎯 Processed first {MAX_BANDITS} bandits from {self.pdf_path.name}")
             
         except Exception as e:
             print(f"❌ Pipeline failed: {str(e)}")

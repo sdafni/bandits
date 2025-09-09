@@ -78,6 +78,7 @@ export type Database = {
           genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
           start_time: string;
           end_time: string;
+          timing_info: string;
           location_lat: number;
           location_lng: number;
           address: string;
@@ -96,6 +97,7 @@ export type Database = {
           genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
           start_time: string;
           end_time: string;
+          timing_info: string;
           location_lat: number;
           location_lng: number;
           address: string;
@@ -114,6 +116,7 @@ export type Database = {
           genre?: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
           start_time?: string;
           end_time?: string;
+          timing_info?: string;
           location_lat?: number;
           location_lng?: number;
           address?: string;

@@ -146,14 +146,13 @@ export default function EventCard({
         <Text style={styles.eventDescription} numberOfLines={3} ellipsizeMode="tail">{event.description}</Text>
         <View style={styles.bottomInfo}>
           <Text style={styles.eventAddress}>{event.address}</Text>
-          <View style={styles.timeContainer}>
-            <Text style={styles.eventDate}>
-              {new Date(event.start_time).getDate()}/{new Date(event.start_time).getMonth() + 1}
-            </Text>
-            <Text style={styles.eventTime}>
-              {new Date(event.start_time).getHours().toString().padStart(2, '0')}:{new Date(event.start_time).getMinutes().toString().padStart(2, '0')}-{new Date(event.end_time).getHours().toString().padStart(2, '0')}:{new Date(event.end_time).getMinutes().toString().padStart(2, '0')}
-            </Text>
-          </View>
+          {event.timing_info && event.timing_info.trim() && (
+            <View style={styles.timeContainer}>
+              <Text style={styles.eventTime}>
+                {event.timing_info}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </>
@@ -250,11 +249,6 @@ const styles = StyleSheet.create({
   },
   timeContainer: {
     marginTop: 4,
-  },
-  eventDate: {
-    fontSize: 10,
-    color: '#999',
-    marginBottom: 1,
   },
   eventImage: {
     width: '100%',

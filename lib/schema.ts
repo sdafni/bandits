@@ -18,6 +18,7 @@ export interface EventTable extends BaseTable {
   genre: EventGenre;
   start_time: string; // ISO string or timestamp
   end_time: string;   // ISO string or timestamp
+  timing_info: string; // Raw timing information from document (opening hours, days, etc.)
   location_lat: number;
   location_lng: number;
   address: string;      // Full readable address
