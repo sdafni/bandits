@@ -899,15 +899,17 @@ CRITICAL INSTRUCTIONS:
 4. After bandit details, there are EVENTS they recommend (venues, cafes, etc.)
 5. Events have: name, Type: XXX, description, Address: XXX
 6. Extract EVERY event you find for the pre-identified bandits
-7. For bandits: use the first image placeholder as image_url
-8. For events: use subsequent image placeholders as image_url and image_gallery
-9. Set rating to 4 for all bandits and events
-10. Set city to "Athens" for all
-11. Create bandit_event relationships linking each bandit to their events
-12. Use chunk_{i}_ prefix for all UUIDs
-13. IMPORTANT: Only include image_gallery field if there are actual images. If no additional images exist for an event, omit the image_gallery field entirely (do not include empty arrays or empty strings)
-14. For image_gallery: return as an array of image placeholder IDs (e.g., ["img_001_002", "img_001_003"]) - the system will convert these to comma-separated URLs
-15. TIMING INFO: Look for specific timing information in the event text. Extract ONLY:
+7. For bandits: use the specific image placeholder that appears immediately BEFORE their name as image_url
+8. For events: use image placeholders that appear within the same bandit's section AFTER the bandit's details as image_url and image_gallery
+9. IMPORTANT: Each bandit section starts with [IMAGE: bandit_photo] followed by bandit details, then their recommended events with event images
+10. DO NOT assign bandit images to events - only use images that clearly belong to the event venue/location
+11. Set rating to 4 for all bandits and events
+12. Set city to "Athens" for all
+13. Create bandit_event relationships linking each bandit to their events
+14. Use chunk_{i}_ prefix for all UUIDs
+15. IMPORTANT: Only include image_gallery field if there are actual images. If no additional images exist for an event, omit the image_gallery field entirely (do not include empty arrays or empty strings)
+16. For image_gallery: return as an array of image placeholder IDs (e.g., ["img_001_002", "img_001_003"]) - the system will convert these to comma-separated URLs
+17. TIMING INFO: Look for specific timing information in the event text. Extract ONLY:
     - Specific opening hours (e.g., "9 AM - 5 PM", "Monday-Friday 8:00-18:00")
     - Day names (e.g., "Monday", "Tuesday", "Weekends", "Daily")
     - Specific times (e.g., "8:00 AM", "6 PM", "Happy hour 5-7 PM")
