@@ -194,7 +194,10 @@ class DocumentProcessor:
             
             # Look for IMAGE placeholders
             if '[IMAGE:' in line_stripped:
-                print(f"🖼️  Found image at line {i}: {line_stripped}")
+                # Extract image placeholder ID
+                image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
+                image_id = image_match.group(1) if image_match else f"img_unknown_{i}"
+                print(f"🖼️  Found image at line {i}: {line_stripped} -> ID: {image_id}")
                 
                 # Look for a potential bandit name in the next few lines
                 for j in range(i+1, min(i+5, len(lines))):
@@ -229,18 +232,19 @@ class DocumentProcessor:
                             if age_pattern:
                                 age_match = age_pattern.group(1)
                             
-                            # Create a unique identifier to avoid duplicates
-                            bandit_key = f"{name_line}_{age_match}"
+                            # Create a unique identifier: name_age_imageid
+                            bandit_key = f"{name_line}_{age_match}_{image_id}"
                             
+                            # Check for duplicates (same name+age+image combination)
                             if bandit_key not in found_bandits:
                                 found_bandits.append(bandit_key)
-                                print(f"🎯 CONFIRMED BANDIT #{len(found_bandits)}: {name_line}, Age: {age_match}")
+                                print(f"🎯 CONFIRMED BANDIT #{len(found_bandits)}: {name_line}, Age: {age_match}, Image: {image_id}")
                                 
                                 if len(found_bandits) >= max_bandits:
                                     print(f"✅ Reached maximum of {max_bandits} bandits, stopping analysis")
                                     break
                             else:
-                                print(f"   ⚠️  Duplicate bandit ignored: {name_line}")
+                                print(f"   ⚠️  Duplicate bandit ignored: {name_line} (same name+age+image)")
                             
                             # Found a valid bandit, break out of name search loop
                             break
@@ -256,10 +260,18 @@ class DocumentProcessor:
         print(f"   Total bandits found: {len(found_bandits)}")
         print(f"   Bandits list:")
         for i, bandit_key in enumerate(found_bandits, 1):
-            name_age = bandit_key.split('_')
-            name = name_age[0]
-            age = name_age[1] if len(name_age) > 1 else "Unknown"
-            print(f"   {i:2d}. {name} (Age: {age})")
+            parts = bandit_key.split('_')
+            if len(parts) >= 3:
+                # New format: name_age_imageid
+                name = parts[0]
+                age = parts[1] if parts[1] and parts[1] != 'None' else "Unknown"
+                image_id = '_'.join(parts[2:])  # Join remaining parts for image ID
+                print(f"   {i:2d}. {name} (Age: {age}) [Image: {image_id}]")
+            else:
+                # Fallback for old format
+                name = parts[0] if len(parts) > 0 else "Unknown"
+                age = parts[1] if len(parts) > 1 else "Unknown"
+                print(f"   {i:2d}. {name} (Age: {age})")
         
         return {
             "readable_text": readable_text,
@@ -431,40 +443,83 @@ class DocumentProcessor:
         sections = []
         current_section = []
         
-        # Extract just the names from detected_bandits for matching
-        detected_names = [bandit.split('_')[0] for bandit in detected_bandits]
-        print(f"📝 Looking for these bandit names: {detected_names}")
+        # Parse detected bandits: name_age_imageid format
+        bandit_info = []
+        for bandit in detected_bandits:
+            parts = bandit.split('_')
+            if len(parts) >= 3:
+                name = parts[0]
+                age = parts[1] if parts[1] and parts[1] != 'None' else None
+                image_id = '_'.join(parts[2:])  # Join remaining parts for image ID
+                bandit_info.append({'name': name, 'age': age, 'image_id': image_id, 'full_key': bandit})
+            else:
+                # Fallback for old format
+                name = parts[0] if len(parts) > 0 else "Unknown"
+                age = parts[1] if len(parts) > 1 else None
+                bandit_info.append({'name': name, 'age': age, 'image_id': None, 'full_key': bandit})
+        
+        print(f"📝 Looking for these bandit combinations:")
+        for info in bandit_info:
+            age_str = f", Age: {info['age']}" if info['age'] else ""
+            image_str = f", Image: {info['image_id']}" if info['image_id'] else ""
+            print(f"   - {info['name']}{age_str}{image_str}")
+        
+        import re
         
         for i, line in enumerate(lines):
             line_stripped = line.strip()
             
             # Look for IMAGE placeholders that start bandit sections
             if '[IMAGE:' in line_stripped:
-                print(f"🖼️  Found image at line {i}: {line_stripped}")
+                # Extract image ID from this line
+                image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
+                current_image_id = image_match.group(1) if image_match else None
+                print(f"🖼️  Found image at line {i}: {line_stripped} -> ID: {current_image_id}")
                 
-                # Look for one of our detected bandit names in the next few lines
-                is_detected_bandit_start = False
-                bandit_name_found = ""
+                # Look for a bandit name + age combination in the next few lines
+                detected_bandit = None
+                found_name = ""
+                found_age = None
                 
-                for j in range(i+1, min(i+5, len(lines))):
+                for j in range(i+1, min(i+8, len(lines))):
                     name_line = lines[j].strip()
                     
                     # Skip empty lines and other image placeholders
                     if not name_line or '[IMAGE:' in name_line:
                         continue
                     
-                    # Check if this matches one of our detected bandit names
-                    for detected_name in detected_names:
-                        if detected_name.lower() == name_line.lower() or detected_name in name_line:
-                            is_detected_bandit_start = True
-                            bandit_name_found = detected_name
-                            print(f"   ✅ Found detected bandit: {detected_name}")
+                    # Check if this looks like a name
+                    if (len(name_line.split()) <= 4 and
+                        not any(word.isdigit() for word in name_line.split()) and
+                        len(name_line) > 2 and
+                        len(name_line) < 50):
+                        
+                        found_name = name_line
+                        
+                        # Look for age in following lines
+                        for k in range(j+1, min(j+8, len(lines))):
+                            if 'Age:' in lines[k]:
+                                age_pattern = re.search(r'Age:\s*(\d+)', lines[k])
+                                if age_pattern:
+                                    found_age = age_pattern.group(1)
+                                break
+                        
+                        # Now check if this name+age+image combination matches any detected bandit
+                        for info in bandit_info:
+                            name_match = (info['name'].lower() == found_name.lower() or 
+                                        info['name'] in found_name or found_name in info['name'])
+                            age_match = (info['age'] == found_age)
+                            image_match = (info['image_id'] == current_image_id) if info['image_id'] else True
+                            
+                            if name_match and age_match and image_match:
+                                detected_bandit = info
+                                print(f"   ✅ Found detected bandit: {info['name']}, Age: {info['age']}, Image: {info['image_id']}")
+                                break
+                        
+                        if detected_bandit:
                             break
-                    
-                    if is_detected_bandit_start:
-                        break
                 
-                if is_detected_bandit_start:
+                if detected_bandit:
                     # Save previous section if it has content
                     if current_section and len('\n'.join(current_section).strip()) > 100:
                         sections.append('\n'.join(current_section))
@@ -472,10 +527,12 @@ class DocumentProcessor:
                     
                     # Start new section with the image
                     current_section = [line]
-                    print(f"🎯 Starting new section for bandit: {bandit_name_found}")
+                    print(f"🎯 Starting new section for bandit: {detected_bandit['name']} (Age: {detected_bandit['age']})")
                 else:
-                    # Not a bandit image, add to current section
+                    # Not a detected bandit image, add to current section
                     current_section.append(line)
+                    if current_image_id:
+                        print(f"   ❌ Image {current_image_id} not associated with any detected bandit")
             else:
                 # Regular text line, add to current section
                 current_section.append(line)
@@ -510,14 +567,34 @@ class DocumentProcessor:
             raise Exception("Anthropic API key not configured")
         
         # Create a formatted list of detected bandits for the prompt
-        bandits_list = "\n".join([f"- {bandit.replace('_', ', Age: ')}" for bandit in detected_bandits[:max_bandits]])
+        bandits_list = []
+        for bandit in detected_bandits[:max_bandits]:
+            parts = bandit.split('_')
+            if len(parts) >= 3:
+                name = parts[0]
+                age = parts[1] if parts[1] and parts[1] != 'None' else "Unknown"
+                image_id = '_'.join(parts[2:])
+                bandits_list.append(f"- {name}, Age: {age}, Image: {image_id}")
+            else:
+                # Fallback for old format
+                name = parts[0] if len(parts) > 0 else "Unknown"
+                age = parts[1] if len(parts) > 1 else "Unknown"
+                bandits_list.append(f"- {name}, Age: {age}")
+        
+        bandits_list_str = "\n".join(bandits_list)
         
         print(f"📋 Pre-detected bandits to process:")
         for i, bandit in enumerate(detected_bandits[:max_bandits], 1):
-            name_age = bandit.split('_')
-            name = name_age[0]
-            age = name_age[1] if len(name_age) > 1 else "Unknown"
-            print(f"   {i:2d}. {name} (Age: {age})")
+            parts = bandit.split('_')
+            if len(parts) >= 3:
+                name = parts[0]
+                age = parts[1] if parts[1] and parts[1] != 'None' else "Unknown"
+                image_id = '_'.join(parts[2:])
+                print(f"   {i:2d}. {name} (Age: {age}) [Image: {image_id}]")
+            else:
+                name = parts[0] if len(parts) > 0 else "Unknown"
+                age = parts[1] if len(parts) > 1 else "Unknown"
+                print(f"   {i:2d}. {name} (Age: {age})")
         
         # Split text into manageable chunks based on detected bandits
         text_chunks = self.split_text_by_bandits(text, detected_bandits)
@@ -534,7 +611,7 @@ class DocumentProcessor:
 Extract bandits and events from this text chunk. This is part {i} of {len(text_chunks)} chunks from a larger document.
 
 IMPORTANT: You must ONLY extract the following PRE-IDENTIFIED bandits (ignore any others):
-{bandits_list}
+{bandits_list_str}
 
 Database schema:
 - bandit: id (uuid), name, age, city, occupation, rating (0-5), image_url, description, family_name
