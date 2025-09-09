@@ -148,17 +148,17 @@ class DocumentProcessor:
         return text
 
     def extract_text_with_placeholders(self) -> Dict[str, Any]:
-        """Extract PDF text and replace images with placeholders (limited to first 3 bandits)"""
+        """Extract PDF text and replace images with placeholders (limited to first MAX_BANDITS bandits)"""
         print(f"🔍 Extracting text from PDF: {self.pdf_path} (first {MAX_BANDITS} bandits only)")
         
         doc = fitz.open(str(self.pdf_path))
         readable_text = ""
         image_map = {}
         image_counter = 0
-        bandit_count = 0
         max_bandits = MAX_BANDITS
+        found_bandits = []  # Track found bandits to avoid duplicates
         
-        # Process pages until we find the maximum number of bandits
+        # Process all pages to extract text and images
         for page_num in range(1, len(doc) + 1):
             page = doc[page_num - 1]  # fitz uses 0-based indexing
             print(f"📖 Processing page {page_num}...")
@@ -180,37 +180,93 @@ class DocumentProcessor:
                     placeholder_id = f"img_{page_num:03d}_{image_counter:03d}"
                     readable_text += f"[IMAGE: {placeholder_id}]\n"
                     image_map[placeholder_id] = block["image"]  # Store raw image data
-            
-            # Check if we've found enough bandits by looking for bandit patterns
-            if bandit_count < max_bandits:
-                # Count bandits in current text by looking for name + age patterns
-                lines = readable_text.split('\n')
-                current_bandit_count = 0
-                for i, line in enumerate(lines):
-                    line_stripped = line.strip()
-                    if (line_stripped and 
-                        len(line_stripped.split()) <= 3 and 
-                        not any(word.isdigit() for word in line_stripped.split()) and
-                        len(line_stripped) > 2):
-                        # Check if next few lines contain "Age:"
-                        for j in range(i+1, min(i+5, len(lines))):
-                            if 'Age:' in lines[j]:
-                                current_bandit_count += 1
-                                break
-                
-                bandit_count = current_bandit_count
-                print(f"   Found {bandit_count} bandits so far...")
-                
-                if bandit_count >= max_bandits:
-                    print(f"✅ Found {max_bandits} bandits, stopping extraction")
-                    break
         
         doc.close()
+        
+        # Now analyze the complete text to find bandits with debugging
+        # Pattern: [IMAGE: xxx] followed by name, followed by "Age:" 
+        print(f"\n🔍 Analyzing complete text for bandit patterns (IMAGE -> Name -> Age)...")
+        lines = readable_text.split('\n')
+        import re
+        
+        for i, line in enumerate(lines):
+            line_stripped = line.strip()
+            
+            # Look for IMAGE placeholders
+            if '[IMAGE:' in line_stripped:
+                print(f"🖼️  Found image at line {i}: {line_stripped}")
+                
+                # Look for a potential bandit name in the next few lines
+                for j in range(i+1, min(i+5, len(lines))):
+                    name_line = lines[j].strip()
+                    
+                    # Skip empty lines and other image placeholders
+                    if not name_line or '[IMAGE:' in name_line:
+                        continue
+                    
+                    # Check if this looks like a name (short line without digits, not too long)
+                    if (len(name_line.split()) <= 4 and  # Allow up to 4 words for full names
+                        not any(word.isdigit() for word in name_line.split()) and
+                        len(name_line) > 2 and
+                        len(name_line) < 50):  # Reasonable name length
+                        
+                        print(f"   🤔 Potential name at line {j}: '{name_line}'")
+                        
+                        # Now look for "Age:" in the following lines
+                        age_found = False
+                        age_line = ""
+                        for k in range(j+1, min(j+8, len(lines))):
+                            if 'Age:' in lines[k]:
+                                age_found = True
+                                age_line = lines[k].strip()
+                                print(f"   ✅ Found Age at line {k}: '{age_line}'")
+                                break
+                        
+                        if age_found:
+                            # Extract age number from the age line
+                            age_match = None
+                            age_pattern = re.search(r'Age:\s*(\d+)', age_line)
+                            if age_pattern:
+                                age_match = age_pattern.group(1)
+                            
+                            # Create a unique identifier to avoid duplicates
+                            bandit_key = f"{name_line}_{age_match}"
+                            
+                            if bandit_key not in found_bandits:
+                                found_bandits.append(bandit_key)
+                                print(f"🎯 CONFIRMED BANDIT #{len(found_bandits)}: {name_line}, Age: {age_match}")
+                                
+                                if len(found_bandits) >= max_bandits:
+                                    print(f"✅ Reached maximum of {max_bandits} bandits, stopping analysis")
+                                    break
+                            else:
+                                print(f"   ⚠️  Duplicate bandit ignored: {name_line}")
+                            
+                            # Found a valid bandit, break out of name search loop
+                            break
+                        else:
+                            print(f"   ❌ No Age found for '{name_line}' - not a bandit")
+                    else:
+                        print(f"   ❌ Line doesn't look like a name: '{name_line}' (too long/has digits/etc)")
+                
+                if len(found_bandits) >= max_bandits:
+                    break
+        
+        print(f"\n📊 BANDIT DETECTION SUMMARY:")
+        print(f"   Total bandits found: {len(found_bandits)}")
+        print(f"   Bandits list:")
+        for i, bandit_key in enumerate(found_bandits, 1):
+            name_age = bandit_key.split('_')
+            name = name_age[0]
+            age = name_age[1] if len(name_age) > 1 else "Unknown"
+            print(f"   {i:2d}. {name} (Age: {age})")
         
         return {
             "readable_text": readable_text,
             "image_data": image_map,
-            "total_images": len(image_map)
+            "total_images": len(image_map),
+            "detected_bandits_count": len(found_bandits),
+            "detected_bandits_list": found_bandits
         }
 
     def detect_and_crop_face(self, image_data: bytes) -> Tuple[bytes, bool]:
@@ -367,61 +423,69 @@ class DocumentProcessor:
         print(f"📊 Upload summary: {uploaded_count} uploaded, {existing_count} existing")
         return image_urls
 
-    def split_text_by_bandits(self, text: str) -> List[str]:
-        """Split text into chunks by bandit sections"""
-        print("✂️  Splitting text by bandit sections...")
+    def split_text_by_bandits(self, text: str, detected_bandits: List[str]) -> List[str]:
+        """Split text into chunks by bandit sections using the pre-detected bandits list"""
+        print(f"✂️  Splitting text by bandit sections using {len(detected_bandits)} detected bandits...")
         
-        # Split by common bandit separators
-        sections = []
         lines = text.split('\n')
+        sections = []
         current_section = []
+        
+        # Extract just the names from detected_bandits for matching
+        detected_names = [bandit.split('_')[0] for bandit in detected_bandits]
+        print(f"📝 Looking for these bandit names: {detected_names}")
         
         for i, line in enumerate(lines):
             line_stripped = line.strip()
             
-            # Look for bandit start patterns:
-            # 1. Image placeholder followed by a name
-            # 2. A name (short line, no digits, not an image placeholder)
-            # 3. Followed by "Age:" in the next few lines
-            is_bandit_start = False
-            
-            if line_stripped and '[IMAGE:' not in line_stripped:
-                # Check if this looks like a name (short, no digits, not empty)
-                if (len(line_stripped.split()) <= 3 and 
-                    not any(word.isdigit() for word in line_stripped.split()) and
-                    len(line_stripped) > 2):
-                    
-                    # Check if next few lines contain "Age:"
-                    for j in range(i+1, min(i+5, len(lines))):
-                        if 'Age:' in lines[j]:
-                            is_bandit_start = True
-                            break
-            
-            if is_bandit_start:
-                # Save previous section if it has content
-                if current_section and len('\n'.join(current_section).strip()) > 100:
-                    sections.append('\n'.join(current_section))
+            # Look for IMAGE placeholders that start bandit sections
+            if '[IMAGE:' in line_stripped:
+                print(f"🖼️  Found image at line {i}: {line_stripped}")
                 
-                # Start new section - look for the image placeholder before the bandit name
-                # Go back a few lines to find the image placeholder
-                bandit_section = []
-                for j in range(max(0, i-3), i):
-                    if '[IMAGE:' in lines[j]:
-                        bandit_section.append(lines[j])
+                # Look for one of our detected bandit names in the next few lines
+                is_detected_bandit_start = False
+                bandit_name_found = ""
+                
+                for j in range(i+1, min(i+5, len(lines))):
+                    name_line = lines[j].strip()
+                    
+                    # Skip empty lines and other image placeholders
+                    if not name_line or '[IMAGE:' in name_line:
+                        continue
+                    
+                    # Check if this matches one of our detected bandit names
+                    for detected_name in detected_names:
+                        if detected_name.lower() == name_line.lower() or detected_name in name_line:
+                            is_detected_bandit_start = True
+                            bandit_name_found = detected_name
+                            print(f"   ✅ Found detected bandit: {detected_name}")
+                            break
+                    
+                    if is_detected_bandit_start:
                         break
                 
-                # Add the bandit name and continue
-                bandit_section.append(line)
-                current_section = bandit_section
-                print(f"🎯 Found bandit start: {line_stripped}")
+                if is_detected_bandit_start:
+                    # Save previous section if it has content
+                    if current_section and len('\n'.join(current_section).strip()) > 100:
+                        sections.append('\n'.join(current_section))
+                        print(f"   📄 Saved section #{len(sections)} ({len(current_section)} lines)")
+                    
+                    # Start new section with the image
+                    current_section = [line]
+                    print(f"🎯 Starting new section for bandit: {bandit_name_found}")
+                else:
+                    # Not a bandit image, add to current section
+                    current_section.append(line)
             else:
+                # Regular text line, add to current section
                 current_section.append(line)
         
         # Add the last section
         if current_section and len('\n'.join(current_section).strip()) > 100:
             sections.append('\n'.join(current_section))
+            print(f"   📄 Saved final section #{len(sections)} ({len(current_section)} lines)")
         
-        print(f"📄 Found {len(sections)} bandit-based sections")
+        print(f"📊 Split into {len(sections)} bandit-based sections")
         
         # If we found bandit sections, use them; otherwise use fixed chunks
         if len(sections) >= 1:
@@ -435,17 +499,28 @@ class DocumentProcessor:
                 chunk = '\n'.join(lines[i:i + chunk_size])
                 if len(chunk.strip()) > 100:
                     sections.append(chunk)
+            print(f"📄 Created {len(sections)} fixed chunks")
             return sections
 
-    def process_with_claude(self, text: str, max_bandits: int = MAX_BANDITS) -> Dict[str, Any]:
-        """Process text with Claude API using chunking to handle first MAX_BANDITS bandits only"""
-        print(f"🤖 Processing text with Claude AI (first {max_bandits} bandits only)...")
+    def process_with_claude(self, text: str, detected_bandits: List[str], max_bandits: int = MAX_BANDITS) -> Dict[str, Any]:
+        """Process text with Claude API using the pre-detected bandits list for accuracy"""
+        print(f"🤖 Processing text with Claude AI using {len(detected_bandits)} pre-detected bandits...")
         
         if not claude_client:
             raise Exception("Anthropic API key not configured")
         
-        # Split text into manageable chunks
-        text_chunks = self.split_text_by_bandits(text)
+        # Create a formatted list of detected bandits for the prompt
+        bandits_list = "\n".join([f"- {bandit.replace('_', ', Age: ')}" for bandit in detected_bandits[:max_bandits]])
+        
+        print(f"📋 Pre-detected bandits to process:")
+        for i, bandit in enumerate(detected_bandits[:max_bandits], 1):
+            name_age = bandit.split('_')
+            name = name_age[0]
+            age = name_age[1] if len(name_age) > 1 else "Unknown"
+            print(f"   {i:2d}. {name} (Age: {age})")
+        
+        # Split text into manageable chunks based on detected bandits
+        text_chunks = self.split_text_by_bandits(text, detected_bandits)
         
         # Process each chunk and combine results
         all_bandits = []
@@ -458,26 +533,30 @@ class DocumentProcessor:
             chunk_prompt = f"""
 Extract bandits and events from this text chunk. This is part {i} of {len(text_chunks)} chunks from a larger document.
 
+IMPORTANT: You must ONLY extract the following PRE-IDENTIFIED bandits (ignore any others):
+{bandits_list}
+
 Database schema:
 - bandit: id (uuid), name, age, city, occupation, rating (0-5), image_url, description, family_name
 - event: id (uuid), name, genre (single string, exactly one of: Food, Culture, Nightlife, Shopping, Coffee), description, rating (0-5), image_url, link, address, city, neighborhood, start_time, end_time, timing_info (raw timing text from document), image_gallery (comma-separated string)
 - bandit_event: id (uuid), bandit_id, event_id, personal_tip
 
 CRITICAL INSTRUCTIONS:
-1. Look for BANDIT sections that start with [IMAGE: img_xxx_xxx] followed by a person's name
-2. Each bandit has: name, Age: XX, Profession: XXX, bandiVibe: description
-3. After bandit details, there are EVENTS they recommend (venues, cafes, etc.)
-4. Events have: name, Type: XXX, description, Address: XXX
-5. Extract EVERY bandit and event you find - do not skip any
-6. For bandits: use the first image placeholder as image_url
-7. For events: use subsequent image placeholders as image_url and image_gallery
-8. Set rating to 4 for all bandits and events
-9. Set city to "Athens" for all
-10. Create bandit_event relationships linking each bandit to their events
-11. Use chunk_{i}_ prefix for all UUIDs
-12. IMPORTANT: Only include image_gallery field if there are actual images. If no additional images exist for an event, omit the image_gallery field entirely (do not include empty arrays or empty strings)
-13. For image_gallery: return as an array of image placeholder IDs (e.g., ["img_001_002", "img_001_003"]) - the system will convert these to comma-separated URLs
-14. TIMING INFO: Look for specific timing information in the event text. Extract ONLY:
+1. ONLY process bandits from the pre-identified list above - do not create any additional bandits
+2. Look for BANDIT sections that start with [IMAGE: img_xxx_xxx] followed by the bandit's name from the list
+3. Each bandit has: name, Age: XX, Profession: XXX, bandiVibe: description
+4. After bandit details, there are EVENTS they recommend (venues, cafes, etc.)
+5. Events have: name, Type: XXX, description, Address: XXX
+6. Extract EVERY event you find for the pre-identified bandits
+7. For bandits: use the first image placeholder as image_url
+8. For events: use subsequent image placeholders as image_url and image_gallery
+9. Set rating to 4 for all bandits and events
+10. Set city to "Athens" for all
+11. Create bandit_event relationships linking each bandit to their events
+12. Use chunk_{i}_ prefix for all UUIDs
+13. IMPORTANT: Only include image_gallery field if there are actual images. If no additional images exist for an event, omit the image_gallery field entirely (do not include empty arrays or empty strings)
+14. For image_gallery: return as an array of image placeholder IDs (e.g., ["img_001_002", "img_001_003"]) - the system will convert these to comma-separated URLs
+15. TIMING INFO: Look for specific timing information in the event text. Extract ONLY:
     - Specific opening hours (e.g., "9 AM - 5 PM", "Monday-Friday 8:00-18:00")
     - Day names (e.g., "Monday", "Tuesday", "Weekends", "Daily")
     - Specific times (e.g., "8:00 AM", "6 PM", "Happy hour 5-7 PM")
@@ -767,6 +846,98 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
         print(f"   🎉 Events: {len(event_id_mapping)}")
         print(f"   🔗 Relationships: {len([r for r in data.get('bandit_events', []) if bandit_id_mapping.get(r.get('bandit_id')) and event_id_mapping.get(r.get('event_id'))])}")
 
+    def print_statistics(self):
+        """Print detailed statistics about the data in the database"""
+        print("\n📊 DATABASE STATISTICS")
+        print("=" * 50)
+        
+        if not supabase:
+            print("❌ Supabase not configured, cannot fetch statistics")
+            return
+        
+        try:
+            # Get all data from database
+            bandits_response = supabase.table("bandit").select("*").execute()
+            events_response = supabase.table("event").select("*").execute()
+            bandit_events_response = supabase.table("bandit_event").select("*").execute()
+            
+            bandits = bandits_response.data
+            events = events_response.data
+            bandit_events = bandit_events_response.data
+            
+            # Total number of bandits
+            print(f"📊 TOTAL NUMBER OF BANDITS: {len(bandits)}")
+            
+            # Total number of events
+            print(f"📊 TOTAL NUMBER OF EVENTS: {len(events)}")
+            
+            # List of bandits with their events
+            print("\n👥 BANDITS AND THEIR EVENTS:")
+            print("-" * 40)
+            
+            for bandit in bandits:
+                bandit_id = bandit['id']
+                bandit_name = bandit['name']
+                
+                # Find events for this bandit
+                related_event_ids = [be['event_id'] for be in bandit_events if be['bandit_id'] == bandit_id]
+                related_events = [e for e in events if e['id'] in related_event_ids]
+                
+                print(f"🎯 {bandit_name}")
+                print(f"   Number of events: {len(related_events)}")
+                if related_events:
+                    for event in related_events:
+                        print(f"   - {event['name']}")
+                else:
+                    print("   - No events")
+                print()
+            
+            # Events not associated with any bandit
+            associated_event_ids = set(be['event_id'] for be in bandit_events)
+            unassociated_events = [e for e in events if e['id'] not in associated_event_ids]
+            print(f"🔗 NUMBER OF EVENTS NOT ASSOCIATED WITH A BANDIT: {len(unassociated_events)}")
+            if unassociated_events:
+                for event in unassociated_events:
+                    print(f"   - {event['name']}")
+            
+            # Events with timing info
+            events_with_timing = [e for e in events if e.get('timing_info') and e['timing_info'].strip()]
+            print(f"\n⏰ NUMBER OF EVENTS WITH TIMING INFO: {len(events_with_timing)}")
+            if events_with_timing:
+                print("   Events with timing info:")
+                for event in events_with_timing:
+                    print(f"   - {event['name']}: {event['timing_info']}")
+            
+            # Events without location (address)
+            events_without_location = [e for e in events if not e.get('address') or not e['address'].strip()]
+            print(f"\n📍 NUMBER OF EVENTS WITHOUT LOCATION: {len(events_without_location)}")
+            if events_without_location:
+                print("   Events without location:")
+                for event in events_without_location:
+                    print(f"   - {event['name']}")
+            
+            # Events with no main image
+            events_without_main_image = [e for e in events if not e.get('image_url') or not e['image_url'].strip()]
+            print(f"\n🖼️ NUMBER OF EVENTS WITH NO MAIN IMAGE: {len(events_without_main_image)}")
+            if events_without_main_image:
+                print("   Events without main image:")
+                for event in events_without_main_image:
+                    print(f"   - {event['name']}")
+            
+            # Events with no gallery
+            events_without_gallery = [e for e in events if not e.get('image_gallery') or not e['image_gallery'].strip()]
+            print(f"\n🎨 NUMBER OF EVENTS WITH NO GALLERY: {len(events_without_gallery)}")
+            if events_without_gallery:
+                print("   Events without gallery:")
+                for event in events_without_gallery:
+                    print(f"   - {event['name']}")
+            
+            print("\n" + "=" * 50)
+            print("📊 STATISTICS COMPLETE")
+            
+        except Exception as e:
+            print(f"❌ Error fetching statistics: {str(e)}")
+
     def process_document(self):
         """Main pipeline to process document from DOCX to database"""
         print(f"🚀 Starting complete pipeline for: {self.docx_path}")
@@ -787,14 +958,18 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             # Step 4: Upload images to Supabase
             image_urls = self.upload_images_to_supabase(extraction_result["image_data"])
             
-            # Step 5: Process with Claude AI (first MAX_BANDITS bandits only)
-            structured_data = self.process_with_claude(extraction_result["readable_text"], max_bandits=MAX_BANDITS)
+            # Step 5: Process with Claude AI using pre-detected bandits
+            detected_bandits = extraction_result["detected_bandits_list"]
+            structured_data = self.process_with_claude(extraction_result["readable_text"], detected_bandits, max_bandits=MAX_BANDITS)
             
             # Step 6: Combine data with image URLs
             final_data = self.combine_data_with_images(structured_data, image_urls)
             
             # Step 7: Insert into database
             self.insert_to_database(final_data)
+            
+            # Step 8: Print statistics
+            self.print_statistics()
             
             print("✅ Complete pipeline finished successfully!")
             print(f"🎯 Processed first {MAX_BANDITS} bandits from {self.pdf_path.name}")
