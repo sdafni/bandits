@@ -1,5 +1,6 @@
 import { getEvents } from '@/app/services/events';
-import { useLocalSearchParams } from 'expo-router';
+import Constants from 'expo-constants';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import EventCard from './EventCard';
@@ -30,10 +31,9 @@ export default function PlatformMapView({
 }: MapViewProps) {
   // Get banditId from URL params (same as city guide)
   const { banditId } = useLocalSearchParams();
+  const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [currentMapCenter, setCurrentMapCenter] = useState(initialRegion);
 
   useEffect(() => {
     // Call onMapReady after component mounts
@@ -68,24 +68,87 @@ export default function PlatformMapView({
     }
   };
 
+  const calculateOptimalMapBounds = () => {
+    if (events.length === 0) return { center: initialRegion, zoom: 12 };
+    
+    // Find the bounding box of all events
+    const lats = events.map(event => event.location_lat);
+    const lngs = events.map(event => event.location_lng);
+    
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    
+    // Calculate center point
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    
+    // Calculate the span (delta) of the bounding box
+    const latSpan = maxLat - minLat;
+    const lngSpan = maxLng - minLng;
+    
+    // Add some padding (10% on each side)
+    const padding = 0.1;
+    const paddedLatSpan = latSpan * (1 + padding * 2);
+    const paddedLngSpan = lngSpan * (1 + padding * 2);
+    
+    // Calculate optimal zoom level based on the span (closer zoom)
+    // This is an approximation - Google Maps will handle the final zoom
+    let zoom = 14; // Default zoom (closer)
+    
+    if (paddedLatSpan > 0.1) zoom = 10;  // Very wide area
+    else if (paddedLatSpan > 0.05) zoom = 11;  // Wide area
+    else if (paddedLatSpan > 0.02) zoom = 12; // Medium area
+    else if (paddedLatSpan > 0.01) zoom = 13; // Small area
+    else if (paddedLatSpan > 0.005) zoom = 14; // Very small area
+    else if (paddedLatSpan > 0.002) zoom = 15; // Tiny area
+    else zoom = 16; // Very tiny area
+    
+    return {
+      center: { latitude: centerLat, longitude: centerLng },
+      zoom: zoom,
+      bounds: {
+        north: maxLat + (latSpan * padding),
+        south: minLat - (latSpan * padding),
+        east: maxLng + (lngSpan * padding),
+        west: minLng - (lngSpan * padding)
+      }
+    };
+  };
+
   const generateGoogleMapsEmbedUrl = () => {
-    // Use a simple static Athens map embed URL
-    // This will show Athens and users can explore from there
+    // Get API key from environment or app config
+    const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY || 
+                   Constants.expoConfig?.android?.config?.googleMaps?.apiKey || 
+                   Constants.expoConfig?.ios?.config?.googleMapsApiKey;
+    
+    // If we have events, show all locations using search
+    if (events.length > 0) {
+      // Calculate optimal bounds for all events
+      const mapBounds = calculateOptimalMapBounds();
+      
+      // Create a search query with all event names and addresses
+      const searchQuery = events.map(event => 
+        `${event.name} ${event.address}`
+      ).join(' OR ');
+      
+      // Use Google Maps embed with search, centered and zoomed optimally
+      const embedUrl = `https://www.google.com/maps/embed/v1/search?key=${apiKey}&q=${encodeURIComponent(searchQuery)}&center=${mapBounds.center.latitude},${mapBounds.center.longitude}&zoom=${mapBounds.zoom}`;
+      return embedUrl;
+    }
+    
+    // Fallback to static Athens map if no events
     return 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3144.5!2d23.7275!3d37.9838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzfCsDU5JzAxLjYiTiAyM8KwNDMnMzkuMCJF!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus';
   };
 
 
   const handleEventPress = (event: Event) => {
-    setSelectedEvent(event);
-    // Update the map center to the selected event location
-    const newCenter = {
-      latitude: event.location_lat,
-      longitude: event.location_lng,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-    setCurrentMapCenter(newCenter);
-    onRegionChange(newCenter);
+    // Navigate to event page (same as city guide)
+    const url = banditId 
+      ? `/event/${event.id}?banditId=${banditId}` as any
+      : `/event/${event.id}` as any;
+    router.push(url);
   };
 
   return (
@@ -93,7 +156,7 @@ export default function PlatformMapView({
       {/* Top Half - Embedded Google Maps */}
       <View style={styles.mapContainer}>
         <iframe
-          key={`${currentMapCenter.latitude}-${currentMapCenter.longitude}`}
+          key={`${events.length}-${events.map(e => e.id).join(',')}`}
           src={generateGoogleMapsEmbedUrl()}
           width="100%"
           height="100%"
