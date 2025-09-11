@@ -106,13 +106,22 @@ export default function BanditScreen() {
           source={{ uri: bandit.image_url }}
           style={styles.mainImage}
         />
-        <Pressable
-          style={styles.exploreButton}
-          onPress={() => router.push(`/cityGuide?banditId=${id}`)}
-        >
-          <Text style={styles.plusSign}>+</Text>
-          <Text style={styles.exploreText}>CITY GUIDE</Text>
-        </Pressable>
+        <View style={styles.buttonsContainer}>
+          <Pressable
+            style={styles.exploreButton}
+            onPress={() => router.push(`/cityGuide?banditId=${id}`)}
+          >
+            <Text style={styles.plusSign}>+</Text>
+            <Text style={styles.exploreText}>CITY2GUIDE</Text>
+          </Pressable>
+          <Pressable
+            style={styles.mapButton}
+            onPress={() => router.push(`/cityMap?banditId=${id}`)}
+          >
+            <Text style={styles.plusSign}>📍</Text>
+            <Text style={styles.exploreText}>CITY MAP</Text>
+          </Pressable>
+        </View>
      
     </View>
     <Text style={styles.name}>{`${bandit.name} ${bandit.family_name}, ${bandit.city}`}</Text>
@@ -242,10 +251,15 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 
-  exploreButton: {
+  buttonsContainer: {
     position: 'absolute',
     right: 16,
     bottom: -12,
+    flexDirection: 'row',
+    gap: 8,
+    zIndex: 2,
+  },
+  exploreButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FF3B30',
@@ -253,7 +267,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 20,
     gap: 4,
-    zIndex: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#34C759',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 4,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

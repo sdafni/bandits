@@ -13,6 +13,9 @@
       "bundleIdentifier": "com.yuvaldafni.bandits",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyBZAyI_ON7F4VEZ_9k1ETzF4_k6qcBJ1"
       }
     },
     "android": {
@@ -22,6 +25,11 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.yuvaldafni.bandits",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBZAyI_ON7F4VEZ_9k1ETzF4_k6qcBJ1"
+        }
+      },
       "intentFilters": [
         {
           "action": "VIEW",

@@ -49,7 +49,7 @@ GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')  # For geocoding
 
 # Pipeline settings
 EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
-MAX_BANDITS = 5  # Maximum number of bandits to process
+MAX_BANDITS = 500  # Maximum number of bandits to process
 
 # Geocoding settings
 GEOCODING_CACHE_FILE = "geocoding_cache.json"  # Cache file for geocoding results
