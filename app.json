@@ -15,7 +15,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
-        "googleMapsApiKey": "AIzaSyBZAyI_ON7F4VEZ_9k1ETzF4_k6qcBJ1"
+        "googleMapsApiKey": "AIzaSyBfv6k8wNTEtWYL6iKTw1O3XC0vf_CS7Xg"
       }
     },
     "android": {
@@ -27,7 +27,7 @@
       "package": "com.yuvaldafni.bandits",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBZAyI_ON7F4VEZ_9k1ETzF4_k6qcBJ1"
+          "apiKey": "AIzaSyBfv6k8wNTEtWYL6iKTw1O3XC0vf_CS7Xg"
         }
       },
       "intentFilters": [
