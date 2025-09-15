@@ -112,7 +112,7 @@ export default function BanditScreen() {
             onPress={() => router.push(`/cityGuide?banditId=${id}`)}
           >
             <Text style={styles.plusSign}>+</Text>
-            <Text style={styles.exploreText}>CITY2GUIDE</Text>
+            <Text style={styles.exploreText}>CITY3GUIDE</Text>
           </Pressable>
           <Pressable
             style={styles.mapButton}

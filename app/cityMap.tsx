@@ -1,7 +1,7 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import PlatformMapView, { Marker } from '../components/MapView';
+import PlatformMapView from '../components/MapView';
 
 // Check if we're running on web
 const isWeb = Platform.OS === 'web';
@@ -14,7 +14,6 @@ const ATHENS_COORDINATES = {
 };
 
 export default function CityMapScreen() {
-  const { banditId } = useLocalSearchParams();
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -23,7 +22,6 @@ export default function CityMapScreen() {
     console.log('📱 Platform.OS:', Platform.OS);
     console.log('🌐 Is Web:', isWeb);
     console.log('🗺️ PlatformMapView available:', !!PlatformMapView);
-    console.log('📍 Marker available:', !!Marker);
     console.log('📍 Athens coordinates:', ATHENS_COORDINATES);
   }, []);
 
@@ -40,7 +38,6 @@ export default function CityMapScreen() {
   const handleRegionChange = (region: any) => {
     console.log('📍 Map region changed:', region);
   };
-
 
   return (
     <>
@@ -61,15 +58,7 @@ export default function CityMapScreen() {
           onError={handleMapError}
           onRegionChange={handleRegionChange}
         >
-          <Marker
-            coordinate={{
-              latitude: ATHENS_COORDINATES.latitude,
-              longitude: ATHENS_COORDINATES.longitude,
-            }}
-            title="Athens"
-            description="Historic center of Athens, Greece"
-            onPress={() => console.log('📍 Athens marker pressed')}
-          />
+          {/* Additional markers can be added here if needed */}
         </PlatformMapView>
         {!mapReady && !isWeb && (
           <View style={styles.loadingOverlay}>
