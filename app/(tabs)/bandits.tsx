@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits, getUniqueCities, toggleBanditLike } from '@/app/services/bandits';
 import BanditCard from '@/components/BanditCard';
@@ -97,6 +97,7 @@ export default function BanditsScreen() {
   const [bandits, setBandits] = useState<Bandit[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const { selectedCity, setSelectedCity } = useCity();
 
   useEffect(() => {
@@ -134,9 +135,11 @@ export default function BanditsScreen() {
     }
   };
 
-  const filteredBandits = selectedCity 
-    ? bandits.filter(bandit => bandit.city === selectedCity)
-    : bandits;
+  const filteredBandits = bandits.filter(bandit => {
+    const matchesCity = !selectedCity || bandit.city === selectedCity;
+    const matchesSearch = !searchTerm || bandit.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCity && matchesSearch;
+  });
 
   return (
     <View style={styles.mainContainer}>
@@ -145,6 +148,15 @@ export default function BanditsScreen() {
         selectedCity={selectedCity}
         onSelectCity={setSelectedCity}
       />
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search bandits..."
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+          placeholderTextColor="#666"
+        />
+      </View>
       <ScrollView style={styles.scrollView}>
         <View style={styles.container}>
           {filteredBandits.map((bandit) => (
@@ -265,6 +277,27 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  searchBarContainer: {
+    marginHorizontal: 16,
+    marginBottom: 13,
+  },
+  searchInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    height: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#000000',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   container: {
     flex: 1,
