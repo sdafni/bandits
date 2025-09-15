@@ -2,7 +2,7 @@ import { useMapEvents } from '@/hooks/useMapEvents';
 import Constants from 'expo-constants';
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import EventsList from './EventsList';
+import EventList from './EventList';
 
 interface MapViewProps {
   initialRegion: {
@@ -80,7 +80,7 @@ export default function PlatformMapView({
       </View>
 
       {/* Bottom Half - Events List */}
-      <EventsList
+      <EventList
         events={events}
         loading={loading}
         error={error}

@@ -2,7 +2,7 @@ import { useMapEvents } from '@/hooks/useMapEvents';
 import React, { useEffect } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import EventsList from './EventsList';
+import EventList from './EventList';
 import MapMarkers from './MapMarkers';
 
 interface MapViewProps {
@@ -96,7 +96,7 @@ export default function PlatformMapView({
       
       {/* Events List Overlay */}
       <View style={styles.eventsOverlay}>
-        <EventsList
+        <EventList
           events={events}
           loading={loading}
           error={error}

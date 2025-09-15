@@ -1,9 +1,9 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { getUserLikedEvents, toggleEventLike } from '@/app/services/events';
-import EventCard from '@/components/EventCard';
+import EventList from '@/components/EventList';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 
@@ -74,25 +74,17 @@ export default function MySpotsScreen() {
         </Text>
       </View>
       
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.container}>
-          {likedEvents.length === 0 ? (
-            <Text style={styles.noEventsText}>No liked events yet</Text>
-          ) : (
-            likedEvents.map((event) => (
-              <EventCard 
-                key={event.id} 
-                event={event} 
-                onLike={() => handleEventRemove(event.id)}
-                isLiked={true}
-                buttonType="remove"
-                buttonText="Remove"
-                showRecommendations={true}
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+      <EventList
+        events={likedEvents}
+        onEventLike={handleEventRemove}
+        likedEventIds={new Set(likedEvents.map(event => event.id))}
+        emptyMessage="No liked events yet"
+        variant="vertical"
+        showRecommendations={true}
+        buttonType="remove"
+        buttonText="Remove"
+        scrollViewStyle={styles.scrollView}
+      />
     </View>
   );
 }

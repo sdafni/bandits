@@ -5,7 +5,7 @@ import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity
 
 import { getBandits } from '@/app/services/bandits';
 import { EventFilters, getCurrentLocation, getEventGenres, getEvents, getUniqueNeighborhoods, getUserLikedEventIds, toggleEventLike } from '@/app/services/events';
-import EventCard from '@/components/EventCard';
+import EventList from '@/components/EventList';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 
@@ -364,23 +364,15 @@ export default function ExploreScreen() {
       </View>
       
       {/* Events List */}
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.container}>
-          {events.length === 0 ? (
-            <Text style={styles.noEventsText}>No events found</Text>
-          ) : (
-            events.map((event) => (
-              <EventCard 
-                key={event.id} 
-                event={event} 
-                onLike={() => handleEventLike(event.id)}
-                isLiked={likedEvents.has(event.id)}
-                showRecommendations={true}
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+      <EventList
+        events={events}
+        onEventLike={handleEventLike}
+        likedEventIds={likedEvents}
+        emptyMessage="No events found"
+        variant="vertical"
+        showRecommendations={true}
+        scrollViewStyle={styles.scrollView}
+      />
     </View>
   );
 }

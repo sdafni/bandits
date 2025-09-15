@@ -1,9 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getEvents } from '@/app/services/events';
-import EventCard from '@/components/EventCard';
+import EventList from '@/components/EventList';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
@@ -170,24 +170,14 @@ export default function CityGuideScreen() {
         )}
         
         {/* Events List */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
+        <EventList
+          events={filteredEvents}
+          variant="horizontal"
+          showButton={false}
+          imageHeight={256}
+          banditId={banditId as string}
           contentContainerStyle={styles.eventsContainer}
-        >
-          {filteredEvents.map((event, index) => (
-            <EventCard 
-              key={event.id} 
-              event={event} 
-              onLike={() => {}} // No like functionality in city guide
-              isLiked={false}
-              variant="horizontal"
-              showButton={false}
-              imageHeight={256}
-              banditId={banditId as string}
-            />
-          ))}
-        </ScrollView>
+        />
         
         {/* Ask Me Button */}
         <Pressable style={styles.askMeButton} onPress={handleAskMePress}>
