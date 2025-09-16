@@ -48,22 +48,27 @@ export default function BanditHeader({
         />
         
         {showActionButtons && (
-          <View style={styles.buttonsContainer}>
+          <>
+            <View style={styles.buttonsContainer}>
+              <Pressable
+                style={styles.exploreButton}
+                onPress={() => router.push(`/cityGuide?banditId=${id}`)}
+              >
+                <Text style={styles.plusSign}>+</Text>
+                <Text style={styles.exploreText}>CITY GUIDE</Text>
+              </Pressable>
+            </View>
             <Pressable
-              style={styles.exploreButton}
-              onPress={() => router.push(`/cityGuide?banditId=${id}`)}
-            >
-              <Text style={styles.plusSign}>+</Text>
-              <Text style={styles.exploreText}>CITY GUIDE</Text>
-            </Pressable>
-            <Pressable
-              style={styles.mapButton}
+              style={styles.mapButtonTopLeft}
               onPress={() => router.push(`/cityMap?banditId=${id}`)}
             >
-              <Text style={styles.plusSign}>📍</Text>
-              <Text style={styles.exploreText}>CITY MAP</Text>
+              <Image
+                source={require('@/assets/images/cityButtonB.png')}
+                style={styles.mapButtonImage}
+                resizeMode="cover"
+              />
             </Pressable>
-          </View>
+          </>
         )}
       </View>
 
@@ -147,7 +152,7 @@ const styles = StyleSheet.create({
   },
   listImageContainer: {
     marginBottom: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   mainImage: {
     width: '100%',
@@ -183,19 +188,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  mapButton: {
+  mapButtonImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  mapButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
+    zIndex: 1,
+  },
+  mapButtonTopLeft: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#34C759',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    justifyContent: 'center',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
     borderRadius: 20,
-    gap: 4,
+    gap: 0,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    overflow: 'hidden',
+    aspectRatio: 1,
+    minWidth: 80,
+    zIndex: 2,
   },
   exploreText: {
     color: 'white',
