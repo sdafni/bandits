@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   citySelectContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
+    borderRadius: 20,
     height: '100%',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
+    borderRadius: 20,
     height: 48,
     paddingHorizontal: 16,
     paddingVertical: 12,
