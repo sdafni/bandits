@@ -2,10 +2,16 @@ import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { getBandits, getUniqueCities, toggleBanditLike } from '@/app/services/bandits';
-import BanditCard from '@/components/BanditCard';
+import { getBanditEventCategories } from '@/app/services/events';
+import BanditHeader from '@/components/BanditHeader';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 type Bandit = Database['public']['Tables']['bandit']['Row'];
+
+interface EventCategory {
+  genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
+  count: number;
+}
 
 const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
   cities: string[];
@@ -96,6 +102,7 @@ const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
 export default function BanditsScreen() {
   const [bandits, setBandits] = useState<Bandit[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [categories, setCategories] = useState<EventCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { selectedCity, setSelectedCity } = useCity();
@@ -116,6 +123,16 @@ export default function BanditsScreen() {
       // Auto-select the city if there's only one
       if (citiesData.length === 1) {
         setSelectedCity(citiesData[0]);
+      }
+
+      // Fetch categories for the first bandit (or you could fetch for all bandits)
+      if (banditsData.length > 0) {
+        try {
+          const categoriesData = await getBanditEventCategories(banditsData[0].id);
+          setCategories(categoriesData);
+        } catch (categoriesError) {
+          console.warn('Failed to fetch categories:', categoriesError);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -160,10 +177,13 @@ export default function BanditsScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.container}>
           {filteredBandits.map((bandit) => (
-            <BanditCard
+            <BanditHeader
               key={bandit.id}
               bandit={bandit}
+              categories={categories}
               onLike={() => handleLike(bandit.id, bandit.is_liked)}
+              variant="list"
+              showActionButtons={true}
             />
           ))}
         </View>

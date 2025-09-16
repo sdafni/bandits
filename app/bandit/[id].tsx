@@ -1,10 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getBanditEventCategories } from '@/app/services/events';
 import { getBanditReviews } from '@/app/services/reviews';
-import EventCategories from '@/components/EventCategories';
+import BanditHeader from '@/components/BanditHeader';
 import ReviewCard from '@/components/ReviewCard';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
@@ -100,40 +100,14 @@ export default function BanditScreen() {
       <Stack.Screen options={{ headerShown: true, title: bandit.name }} />
       
   <View style={styles.container}>
-    <View style={styles.imageContainer}>
-      
-        <Image
-          source={{ uri: bandit.image_url }}
-          style={styles.mainImage}
-        />
-        <View style={styles.buttonsContainer}>
-          <Pressable
-            style={styles.exploreButton}
-            onPress={() => router.push(`/cityGuide?banditId=${id}`)}
-          >
-            <Text style={styles.plusSign}>+</Text>
-            <Text style={styles.exploreText}>CITY3GUIDE</Text>
-          </Pressable>
-          <Pressable
-            style={styles.mapButton}
-            onPress={() => router.push(`/cityMap?banditId=${id}`)}
-          >
-            <Text style={styles.plusSign}>📍</Text>
-            <Text style={styles.exploreText}>CITY MAP</Text>
-          </Pressable>
-        </View>
-     
-    </View>
-    <Text style={styles.name}>{`${bandit.name} ${bandit.family_name}, ${bandit.city}`}</Text>
-    <Text style={styles.descriptionLine}>{`(${bandit.age} y/o, local banDit)`}</Text>
-    <Text style={styles.occupation}>{bandit.occupation}</Text>
+    <BanditHeader
+      bandit={bandit}
+      categories={categories}
+      variant="detail"
+      showActionButtons={true}
+    />
     
-        <Text style={styles.description}>{bandit.description}</Text>
-
-
-
-
-    <EventCategories categories={categories} />
+    <Text style={styles.description}>{bandit.description}</Text>
     
     <Text style={styles.whyFollowLabel}>{`Why follow ${bandit.name}?`}</Text>
 
@@ -184,38 +158,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
-  imageContainer: {
-    alignItems: 'center',
-    marginBottom: 32, // increased from 16 to 32 to make space for button
-    position: 'relative',
-    zIndex: 1,
-    overflow: 'visible', // allow button to hang outside
-  },
-  mainImage: {
-    width: '100%',
-    height: 145,
-    borderRadius: 30,
-    opacity: 1,
-    zIndex: 1,
-  },
-  name: {
-    fontWeight: '700',
-    fontSize: 17,
-    color: '#222',
-    marginBottom: 4,
-  },
-  descriptionLine: {
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#3C3C3C',
-    marginBottom: 4,
-  },
-  occupation: {
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#3C3C3C',
-    marginBottom: 10,
-  },
   whyFollowLabel: {
     fontWeight: '600',
     fontSize: 13,
@@ -251,53 +193,6 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 
-  buttonsContainer: {
-    position: 'absolute',
-    right: 16,
-    bottom: -12,
-    flexDirection: 'row',
-    gap: 8,
-    zIndex: 2,
-  },
-  exploreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF3B30',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    gap: 4,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  mapButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#34C759',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    gap: 4,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  exploreText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  plusSign: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 2,
-  },
   reviewsSection: {
     marginTop: 20,
     marginBottom: 20,
