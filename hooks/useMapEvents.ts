@@ -16,7 +16,7 @@ export interface MapBounds {
   };
 }
 
-export function useMapEvents() {
+export function useMapEvents(onEventPress?: (event: Event) => void) {
   const { banditId } = useLocalSearchParams();
   const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
@@ -116,10 +116,15 @@ export function useMapEvents() {
   };
 
   const handleEventPress = (event: Event) => {
-    const url = banditId 
-      ? `/event/${event.id}?banditId=${banditId}` as any
-      : `/event/${event.id}` as any;
-    router.push(url);
+    if (onEventPress) {
+      onEventPress(event);
+    } else {
+      // Default behavior: navigate to event detail page
+      const url = banditId 
+        ? `/event/${event.id}?banditId=${banditId}` as any
+        : `/event/${event.id}` as any;
+      router.push(url);
+    }
   };
 
   return {

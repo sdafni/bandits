@@ -1,8 +1,13 @@
 import { Database } from '@/lib/database.types';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import EventCard from './EventCard';
 
 type Event = Database['public']['Tables']['event']['Row'];
+
+export interface EventListRef {
+  scrollToEvent: (eventId: string) => void;
+}
 
 interface EventListProps {
   events: Event[];
@@ -26,7 +31,7 @@ interface EventListProps {
   error?: string | null;
 }
 
-export default function EventList({
+const EventList = forwardRef<EventListRef, EventListProps>(({
   events,
   onEventLike,
   likedEventIds = new Set(),
@@ -43,8 +48,31 @@ export default function EventList({
   contentContainerStyle,
   loading = false,
   error = null
-}: EventListProps) {
+}, ref) => {
   const isHorizontal = variant === 'horizontal';
+  const scrollViewRef = useRef<ScrollView>(null);
+  const eventRefs = useRef<{ [key: string]: View | null }>({});
+
+  useImperativeHandle(ref, () => ({
+    scrollToEvent: (eventId: string) => {
+      const eventRef = eventRefs.current[eventId];
+      if (eventRef && scrollViewRef.current) {
+        eventRef.measureLayout(
+          scrollViewRef.current.getInnerViewNode(),
+          (x, y, width, height) => {
+            if (isHorizontal) {
+              scrollViewRef.current?.scrollTo({ x, animated: true });
+            } else {
+              scrollViewRef.current?.scrollTo({ y, animated: true });
+            }
+          },
+          () => {
+            console.warn('Failed to measure event layout for scrolling');
+          }
+        );
+      }
+    },
+  }));
 
   // Handle loading state
   if (loading) {
@@ -85,30 +113,38 @@ export default function EventList({
       };
 
   const content = (
-    <ScrollView {...scrollViewProps}>
+    <ScrollView {...scrollViewProps} ref={scrollViewRef}>
       <View style={isHorizontal ? styles.horizontalContainer : styles.verticalContainer}>
         {events.map((event) => (
-          <EventCard
+          <View
             key={event.id}
-            event={event}
-            onLike={() => onEventLike?.(event.id)}
-            isLiked={likedEventIds.has(event.id)}
-            variant={isHorizontal ? 'horizontal' : 'default'}
-            showRecommendations={showRecommendations}
-            banditId={banditId}
-            buttonType={buttonType}
-            buttonText={buttonText}
-            showButton={showButton}
-            imageHeight={imageHeight}
-            onPress={onEventPress ? () => onEventPress(event) : undefined}
-          />
+            ref={(ref) => {
+              eventRefs.current[event.id] = ref;
+            }}
+          >
+            <EventCard
+              event={event}
+              onLike={() => onEventLike?.(event.id)}
+              isLiked={likedEventIds.has(event.id)}
+              variant={isHorizontal ? 'horizontal' : 'default'}
+              showRecommendations={showRecommendations}
+              banditId={banditId}
+              buttonType={buttonType}
+              buttonText={buttonText}
+              showButton={showButton}
+              imageHeight={imageHeight}
+              onPress={onEventPress ? () => onEventPress(event) : undefined}
+            />
+          </View>
         ))}
       </View>
     </ScrollView>
   );
 
   return content;
-}
+});
+
+export default EventList;
 
 const styles = StyleSheet.create({
   loadingContainer: {

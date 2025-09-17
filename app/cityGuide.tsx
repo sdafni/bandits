@@ -147,7 +147,7 @@ export default function CityGuideScreen() {
           events={filteredEvents}
           variant="horizontal"
           showButton={false}
-          imageHeight={256}
+          imageHeight={120}
           banditId={banditId as string}
           contentContainerStyle={styles.eventsContainer}
         />

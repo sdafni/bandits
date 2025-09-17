@@ -145,7 +145,7 @@ export default function EventCard({
         </View>
         <Text style={styles.eventDescription} numberOfLines={3} ellipsizeMode="tail">{event.description}</Text>
         <View style={styles.bottomInfo}>
-          <Text style={styles.eventAddress}>{event.address}</Text>
+          <Text style={styles.eventAddress} numberOfLines={0} adjustsFontSizeToFit={false}>{event.address}</Text>
           {event.timing_info && event.timing_info.trim() && (
             <View style={styles.timeContainer}>
               <Text style={styles.eventTime}>
@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+    flexWrap: 'wrap',
+    flexShrink: 0,
   },
 
   eventDescription: {
@@ -238,6 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     flex: 1,
     minHeight: 0,
+    maxHeight: 100, // Prevent description from taking too much space
   },
   bottomInfo: {
     flexShrink: 0,

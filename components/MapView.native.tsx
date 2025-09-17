@@ -1,8 +1,8 @@
 import { useMapEvents } from '@/hooks/useMapEvents';
-import React, { useEffect } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import EventList from './EventList';
+import EventList, { EventListRef } from './EventList';
 import MapMarkers from './MapMarkers';
 
 interface MapViewProps {
@@ -25,7 +25,14 @@ export default function PlatformMapView({
   onRegionChange, 
   children 
 }: MapViewProps) {
-  const { events, loading, error, banditId, calculateOptimalMapBounds, handleEventPress } = useMapEvents();
+  const eventListRef = useRef<EventListRef>(null);
+  
+  // Create a handler that scrolls to the event instead of navigating
+  const handleMarkerPress = (event: any) => {
+    eventListRef.current?.scrollToEvent(event.id);
+  };
+  
+  const { events, loading, error, banditId, calculateOptimalMapBounds, handleEventPress } = useMapEvents(handleMarkerPress);
 
   useEffect(() => {
     // Report errors to parent component
@@ -59,54 +66,56 @@ export default function PlatformMapView({
   
   return (
     <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        initialRegion={getOptimalRegion()}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        provider={undefined}
-        mapType="standard"
-        onMapReady={() => {
-          console.log('🗺️ MapView onMapReady called');
-          onMapReady();
-        }}
-        onRegionChange={(region) => {
-          console.log('🗺️ MapView onRegionChange:', region);
-          onRegionChange(region);
-        }}
-        loadingEnabled={true}
-        loadingIndicatorColor="#666666"
-        loadingBackgroundColor="#eeeeee"
-      >
-        <MapMarkers
-          events={events}
-          onEventPress={handleEventPress}
-          MarkerComponent={Marker}
-          showEventMarkers={true}
-          showCenterMarker={false}
-          centerCoordinates={{
-            latitude: initialRegion.latitude,
-            longitude: initialRegion.longitude,
+      {/* Top 40% - Map */}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={getOptimalRegion()}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          provider={undefined}
+          mapType="standard"
+          onMapReady={() => {
+            console.log('🗺️ MapView onMapReady called');
+            onMapReady();
           }}
-          centerTitle="Athens"
-          centerDescription="Historic center of Athens, Greece"
-        />
-        {children}
-      </MapView>
-      
-      {/* Events List Overlay */}
-      <View style={styles.eventsOverlay}>
-        <EventList
-          events={events}
-          loading={loading}
-          error={error}
-          onEventPress={handleEventPress}
-          banditId={banditId}
-          variant="horizontal"
-          showButton={false}
-          imageHeight={120}
-        />
+          onRegionChange={(region) => {
+            console.log('🗺️ MapView onRegionChange:', region);
+            onRegionChange(region);
+          }}
+          loadingEnabled={true}
+          loadingIndicatorColor="#666666"
+          loadingBackgroundColor="#eeeeee"
+        >
+          <MapMarkers
+            events={events}
+            onEventPress={handleEventPress}
+            MarkerComponent={Marker}
+            showEventMarkers={true}
+            showCenterMarker={false}
+            centerCoordinates={{
+              latitude: initialRegion.latitude,
+              longitude: initialRegion.longitude,
+            }}
+            centerTitle="Athens"
+            centerDescription="Historic center of Athens, Greece"
+          />
+          {children}
+        </MapView>
       </View>
+      
+      {/* Bottom 60% - Events List */}
+      <EventList
+        ref={eventListRef}
+        events={events}
+        loading={loading}
+        error={error}
+        onEventPress={handleEventPress}
+        banditId={banditId}
+        variant="horizontal"
+        showButton={false}
+        imageHeight={120}
+      />
     </View>
   );
 }
@@ -114,27 +123,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  map: {
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
-  },
-  eventsOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  mapContainer: {
     height: '40%',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: '#f0f0f0',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
   },
 });
 export { Marker };
