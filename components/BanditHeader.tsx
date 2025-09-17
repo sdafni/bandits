@@ -1,6 +1,6 @@
 import { Database } from '@/lib/database.types';
 import { router } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import EventCategories from './EventCategories';
 import { ThemedText } from './ThemedText';
 
@@ -57,10 +57,16 @@ export default function BanditHeader({
               <Text style={styles.exploreText}>CITY GUIDE</Text>
             </Pressable>
             <Pressable
-              style={styles.mapButtonCenter}
+              style={styles.mapButtonTopLeft}
               onPress={() => router.push(`/cityMap?banditId=${id}`)}
             >
-              <Text style={styles.mapButtonText}>MAP</Text>
+              <ImageBackground
+                source={require('@/assets/images/cityButtonB.png')}
+                style={styles.mapButtonBackground}
+                imageStyle={styles.mapButtonBackgroundImage}
+                resizeMode="cover"
+                onError={(error) => console.error('Map button image failed to load:', error)}
+              />
             </Pressable>
           </>
         )}
@@ -178,14 +184,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     zIndex: 2,
   },
-  mapButtonCenter: {
+  mapButtonTopLeft: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -40 }, { translateY: -20 }],
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    top: 16,
+    left: 16,
+    width: 100,
+    height: 70,
     borderRadius: 20,
     elevation: 3,
     shadowColor: '#000',
@@ -193,11 +197,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     zIndex: 2,
+    overflow: 'hidden',
   },
-  mapButtonText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '600',
+  mapButtonBackground: {
+    width: '100%',
+    height: '100%',
+  },
+  mapButtonBackgroundImage: {
+    borderRadius: 20,
   },
   exploreText: {
     color: 'white',
