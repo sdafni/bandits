@@ -31,7 +31,7 @@ export default function TabLayout() {
   }, [router]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, flexDirection: 'column' }}>
       {/* <ModeHeader /> */}
     <Tabs
       screenOptions={{
@@ -43,8 +43,12 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderBottomWidth: 1,
           borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
-
           height: 60,
+          flexShrink: 0, // Prevent the tab bar from shrinking
+        },
+        // Ensure content area takes remaining space
+        contentStyle: {
+          flex: 1,
         },
       }}>
       <Tabs.Screen

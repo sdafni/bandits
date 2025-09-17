@@ -162,7 +162,7 @@ export default function EventCard({
     <Pressable 
       style={[
         styles.eventCard,
-        !isHorizontal && { maxHeight: 280 },
+        !isHorizontal && { maxHeight: 320 },
         isHorizontal && styles.eventCardHorizontal
       ]} 
       onPress={handleCardPress}
@@ -204,9 +204,11 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     backgroundColor: '#FF3B30',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 60,
+    alignItems: 'center',
   },
   removeButtonText: {
     color: 'white',
@@ -262,6 +264,8 @@ const styles = StyleSheet.create({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
+    minHeight: 0,
+    paddingHorizontal: 2,
   },
   eventContentHorizontal: {
     flex: 1,
@@ -270,10 +274,10 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 150,
+    height: 140,
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   imageContainerHorizontal: {
     width: '100%',
