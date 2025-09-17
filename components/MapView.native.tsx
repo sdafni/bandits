@@ -102,7 +102,6 @@ export default function PlatformMapView({
           error={error}
           onEventPress={handleEventPress}
           banditId={banditId}
-          title="Bandit Events & Locations"
           variant="horizontal"
           showButton={false}
           imageHeight={120}

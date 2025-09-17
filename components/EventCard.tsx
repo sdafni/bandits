@@ -270,16 +270,14 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 0,
-    paddingTop: 32, // Add space for bandit icons
+    marginBottom: 8,
   },
   imageContainerHorizontal: {
     width: '100%',
     height: 256,
-    marginBottom: 0,
+    marginBottom: 8,
     borderTopLeftRadius: 7,
     borderTopRightRadius: 7,
-    paddingTop: 32, // Add space for bandit icons
   },
   ratingContainer: {
     position: 'absolute',

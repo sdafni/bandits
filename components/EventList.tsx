@@ -24,7 +24,6 @@ interface EventListProps {
   // Loading and error states (from EventsList)
   loading?: boolean;
   error?: string | null;
-  title?: string;
 }
 
 export default function EventList({
@@ -43,8 +42,7 @@ export default function EventList({
   scrollViewStyle,
   contentContainerStyle,
   loading = false,
-  error = null,
-  title
+  error = null
 }: EventListProps) {
   const isHorizontal = variant === 'horizontal';
 
@@ -109,35 +107,10 @@ export default function EventList({
     </ScrollView>
   );
 
-  // If title is provided, wrap in container with header
-  if (title) {
-    return (
-      <View style={styles.containerWithTitle}>
-        <Text style={styles.headerText}>{title}</Text>
-        {content}
-      </View>
-    );
-  }
-
   return content;
 }
 
 const styles = StyleSheet.create({
-  containerWithTitle: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  headerText: {
-    fontFamily: 'Caros',
-    fontWeight: '800',
-    fontSize: 24,
-    color: '#3C3C3C',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
