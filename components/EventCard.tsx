@@ -1,6 +1,6 @@
 import { Database } from '@/lib/database.types';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { getEventBanditRecommendations } from '@/app/services/events';
@@ -82,7 +82,7 @@ export default function EventCard({
       ]}>
         <Image
           source={{ 
-            uri: event.image_url || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/bandiTourMAinLogo.png'
+            uri: event.image_url || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/jazzInjazz.png'
           }}
           style={styles.eventImage}
           resizeMode="cover"

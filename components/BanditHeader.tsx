@@ -49,15 +49,13 @@ export default function BanditHeader({
         
         {showActionButtons && (
           <>
-            <View style={styles.buttonsContainer}>
-              <Pressable
-                style={styles.exploreButton}
-                onPress={() => router.push(`/cityGuide?banditId=${id}`)}
-              >
-                <Text style={styles.plusSign}>+</Text>
-                <Text style={styles.exploreText}>CITY GUIDE</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              style={styles.exploreButton}
+              onPress={() => router.push(`/cityGuide?banditId=${id}`)}
+            >
+              <Text style={styles.plusSign}>+</Text>
+              <Text style={styles.exploreText}>CITY GUIDE</Text>
+            </Pressable>
             <Pressable
               style={styles.mapButtonTopLeft}
               onPress={() => router.push(`/cityMap?banditId=${id}`)}
@@ -166,15 +164,10 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
-  buttonsContainer: {
+  exploreButton: {
     position: 'absolute',
     right: 16,
     bottom: -12,
-    flexDirection: 'row',
-    gap: 8,
-    zIndex: 2,
-  },
-  exploreButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FF3B30',
@@ -187,6 +180,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    zIndex: 2,
   },
   mapButtonImage: {
     position: 'absolute',

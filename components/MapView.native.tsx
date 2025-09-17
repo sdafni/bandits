@@ -83,7 +83,7 @@ export default function PlatformMapView({
           onEventPress={handleEventPress}
           MarkerComponent={Marker}
           showEventMarkers={true}
-          showCenterMarker={true}
+          showCenterMarker={false}
           centerCoordinates={{
             latitude: initialRegion.latitude,
             longitude: initialRegion.longitude,
