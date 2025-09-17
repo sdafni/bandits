@@ -44,7 +44,7 @@ export default function CityMapScreen() {
       <Stack.Screen 
         options={{ 
           headerShown: true, 
-          title: 'Athens City Map',
+          title: '',
           headerStyle: {
             backgroundColor: '#FFFFFF',
           },

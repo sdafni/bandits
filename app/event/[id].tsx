@@ -79,9 +79,6 @@ export default function EventDetailScreen() {
     setIsLiked(!isLiked);
   };
 
-  const handleBackPress = () => {
-    router.back();
-  };
 
   if (loading) {
     return (
@@ -112,11 +109,9 @@ export default function EventDetailScreen() {
     <ThemedView style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* Header with back button */}
+      {/* Header with like button */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
+        <View style={styles.spacer} />
         <TouchableOpacity style={styles.likeButton} onPress={handleLikePress}>
           <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
             {isLiked ? '❤️' : '🤍'}
@@ -228,18 +223,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 10,
   },
-  backButton: {
+  spacer: {
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
   },
   likeButton: {
     width: 40,

@@ -101,7 +101,7 @@ export default function BanditScreen() {
 
   return (  
     <>
-      <Stack.Screen options={{ headerShown: true, title: bandit.name }} />
+      <Stack.Screen options={{ headerShown: true, title: '' }} />
       
   <View style={styles.container}>
     <BanditHeader

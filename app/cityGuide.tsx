@@ -114,7 +114,7 @@ export default function CityGuideScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: 'City Guide' }} />
+      <Stack.Screen options={{ headerShown: true, title: '' }} />
       
       <View style={styles.container}>
         {/* Header */}
