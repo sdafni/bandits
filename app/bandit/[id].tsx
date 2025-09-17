@@ -95,6 +95,10 @@ export default function BanditScreen() {
 
 
 
+  const handleCategoryPress = (genre: string) => {
+    router.push(`/cityGuide?banditId=${id}&genre=${genre}`);
+  };
+
   return (  
     <>
       <Stack.Screen options={{ headerShown: true, title: bandit.name }} />
@@ -105,6 +109,7 @@ export default function BanditScreen() {
       categories={categories}
       variant="detail"
       showActionButtons={true}
+      onCategoryPress={handleCategoryPress}
     />
     
     <Text style={styles.description}>{bandit.description}</Text>

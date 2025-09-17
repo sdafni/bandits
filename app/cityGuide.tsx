@@ -14,11 +14,11 @@ type Event = Database['public']['Tables']['event']['Row'];
 
 
 export default function CityGuideScreen() {
-  const { banditId } = useLocalSearchParams();
+  const { banditId, genre } = useLocalSearchParams();
   const router = useRouter();
   const [bandit, setBandit] = useState<Bandit | null>(null);
   const [allEvents, setAllEvents] = useState<Event[]>([]); // All events for this bandit
-  const [selectedGenre, setSelectedGenre] = useState<string>('');
+  const [selectedGenre, setSelectedGenre] = useState<string>(genre as string || '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

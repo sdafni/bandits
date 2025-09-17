@@ -17,6 +17,7 @@ interface BanditHeaderProps {
   onLike?: (id: string, currentLikeStatus: boolean) => void;
   variant?: 'list' | 'detail';
   showActionButtons?: boolean;
+  onCategoryPress?: (genre: string) => void;
 }
 
 export default function BanditHeader({ 
@@ -24,7 +25,8 @@ export default function BanditHeader({
   categories, 
   onLike, 
   variant = 'detail',
-  showActionButtons = true 
+  showActionButtons = true,
+  onCategoryPress
 }: BanditHeaderProps) {
   const { id, name, family_name, age, city, occupation, image_url, rating, is_liked } = bandit;
 
@@ -98,7 +100,10 @@ export default function BanditHeader({
         )}
       </View>
 
-      <EventCategories categories={categories} />
+      <EventCategories 
+        categories={categories} 
+        onCategoryPress={onCategoryPress}
+      />
     </>
   );
 

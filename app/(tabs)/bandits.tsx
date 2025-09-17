@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -100,6 +101,7 @@ const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
 };
 
 export default function BanditsScreen() {
+  const router = useRouter();
   const [bandits, setBandits] = useState<Bandit[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [categories, setCategories] = useState<EventCategory[]>([]);
@@ -152,6 +154,10 @@ export default function BanditsScreen() {
     }
   };
 
+  const handleCategoryPress = (banditId: string, genre: string) => {
+    router.push(`/cityGuide?banditId=${banditId}&genre=${genre}`);
+  };
+
   const filteredBandits = bandits.filter(bandit => {
     const matchesCity = !selectedCity || bandit.city === selectedCity;
     const matchesSearch = !searchTerm || bandit.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -184,6 +190,7 @@ export default function BanditsScreen() {
               onLike={() => handleLike(bandit.id, bandit.is_liked)}
               variant="list"
               showActionButtons={true}
+              onCategoryPress={(genre) => handleCategoryPress(bandit.id, genre)}
             />
           ))}
         </View>

@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EventGenre, getGenreIcon } from '@/constants/Genres';
 
@@ -13,6 +14,76 @@ interface EventCategoriesProps {
   onCategoryPress?: (genre: string) => void;
 }
 
+const AnimatedCategoryItem = ({ category, isSelected, onPress }: {
+  category: EventCategory;
+  isSelected: boolean;
+  onPress: () => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0.7,
+        duration: 100,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+
+  return (
+    <View style={styles.categoryItem}>
+      <Animated.View
+        style={{
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+        }}
+      >
+        <Pressable
+          style={[
+            styles.categoryBadge,
+            isSelected && styles.categoryBadgeSelected
+          ]}
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+        >
+          <Text style={styles.categoryIcon}>{getGenreIcon(category.genre)}</Text>
+          <Text style={[
+            styles.categoryText,
+            isSelected && styles.categoryTextSelected
+          ]}>
+            {category.count} {category.genre.toUpperCase()}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+};
+
 export default function EventCategories({ categories, selectedGenre, onCategoryPress }: EventCategoriesProps) {
   if (!categories || categories.length === 0) {
     return null;
@@ -21,24 +92,13 @@ export default function EventCategories({ categories, selectedGenre, onCategoryP
   return (
     <View style={styles.container}>
       <View style={styles.categoriesContainer}>
-        {categories.map((category, index) => (
-          <View key={category.genre} style={styles.categoryItem}>
-            <Pressable
-              style={[
-                styles.categoryBadge,
-                selectedGenre === category.genre && styles.categoryBadgeSelected
-              ]}
-              onPress={() => onCategoryPress?.(category.genre)}
-            >
-              <Text style={styles.categoryIcon}>{getGenreIcon(category.genre)}</Text>
-              <Text style={[
-                styles.categoryText,
-                selectedGenre === category.genre && styles.categoryTextSelected
-              ]}>
-                {category.count} {category.genre.toUpperCase()}
-              </Text>
-            </Pressable>
-          </View>
+        {categories.map((category) => (
+          <AnimatedCategoryItem
+            key={category.genre}
+            category={category}
+            isSelected={selectedGenre === category.genre}
+            onPress={() => onCategoryPress?.(category.genre)}
+          />
         ))}
       </View>
     </View>
