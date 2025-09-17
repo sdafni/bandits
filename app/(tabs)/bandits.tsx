@@ -104,7 +104,7 @@ export default function BanditsScreen() {
   const router = useRouter();
   const [bandits, setBandits] = useState<Bandit[]>([]);
   const [cities, setCities] = useState<string[]>([]);
-  const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [banditCategories, setBanditCategories] = useState<Record<string, EventCategory[]>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { selectedCity, setSelectedCity } = useCity();
@@ -121,20 +121,31 @@ export default function BanditsScreen() {
       ]);
       setBandits(banditsData);
       setCities(citiesData);
-      
+
       // Auto-select the city if there's only one
       if (citiesData.length === 1) {
         setSelectedCity(citiesData[0]);
       }
 
-      // Fetch categories for the first bandit (or you could fetch for all bandits)
+      // Fetch categories for each bandit
       if (banditsData.length > 0) {
-        try {
-          const categoriesData = await getBanditEventCategories(banditsData[0].id);
-          setCategories(categoriesData);
-        } catch (categoriesError) {
-          console.warn('Failed to fetch categories:', categoriesError);
-        }
+        const categoriesPromises = banditsData.map(async (bandit) => {
+          try {
+            const categoriesData = await getBanditEventCategories(bandit.id);
+            return { banditId: bandit.id, categories: categoriesData };
+          } catch (categoriesError) {
+            console.warn('Failed to fetch categories for bandit:', bandit.id, categoriesError);
+            return { banditId: bandit.id, categories: [] };
+          }
+        });
+
+        const allCategoriesData = await Promise.all(categoriesPromises);
+        const categoriesMap = allCategoriesData.reduce((acc, { banditId, categories }) => {
+          acc[banditId] = categories;
+          return acc;
+        }, {} as Record<string, EventCategory[]>);
+
+        setBanditCategories(categoriesMap);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -186,7 +197,7 @@ export default function BanditsScreen() {
             <BanditHeader
               key={bandit.id}
               bandit={bandit}
-              categories={categories}
+              categories={banditCategories[bandit.id] || []}
               onLike={() => handleLike(bandit.id, bandit.is_liked)}
               variant="list"
               showActionButtons={true}
