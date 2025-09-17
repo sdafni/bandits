@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   eventCardHorizontal: {
     width: 192,
-    height: 400,
+    height: 320,
     marginRight: 16,
     marginBottom: 0,
     backgroundColor: '#FFFFFF',
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   imageContainerHorizontal: {
     width: '100%',
-    height: 256,
+    height: 205,
     marginBottom: 8,
     borderTopLeftRadius: 7,
     borderTopRightRadius: 7,

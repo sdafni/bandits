@@ -129,7 +129,6 @@ export default function EventDetailScreen() {
             style={styles.mainImage}
             resizeMode="cover"
           />
-          <View style={styles.imageOverlay} />
         </View>
 
         {/* Event Title */}
@@ -251,14 +250,6 @@ const styles = StyleSheet.create({
   mainImage: {
     width: '100%',
     height: '100%',
-  },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   titleContainer: {
     paddingHorizontal: 20,

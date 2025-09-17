@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { getEvents } from '@/app/services/events';
 import EventCategories from '@/components/EventCategories';
@@ -75,18 +75,6 @@ export default function CityGuideScreen() {
 
 
 
-  const handleAskMePress = () => {
-    const phoneNumber = '+972544717932';
-    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}`;
-    
-    Linking.canOpenURL(whatsappUrl).then((supported) => {
-      if (supported) {
-        return Linking.openURL(whatsappUrl);
-      } else {
-        Alert.alert('Error', 'WhatsApp is not installed on this device');
-      }
-    });
-  };
 
   if (loading) {
     return (
@@ -164,10 +152,6 @@ export default function CityGuideScreen() {
           contentContainerStyle={styles.eventsContainer}
         />
         
-        {/* Ask Me Button */}
-        <Pressable style={styles.askMeButton} onPress={handleAskMePress}>
-          <Text style={styles.askMeText}>Ask me</Text>
-        </Pressable>
       </View>
     </>
   );
@@ -252,20 +236,5 @@ const styles = StyleSheet.create({
   eventsContainer: {
     paddingHorizontal: 8,
     marginBottom: 20,
-  },
-  askMeButton: {
-    backgroundColor: '#FF0000',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  askMeText: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    fontSize: 10,
-    color: '#FFFFFF',
-    textAlign: 'center',
   },
 }); 

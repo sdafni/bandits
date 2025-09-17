@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getBanditEventCategories } from '@/app/services/events';
 import { getBanditReviews } from '@/app/services/reviews';
@@ -99,6 +99,19 @@ export default function BanditScreen() {
     router.push(`/cityGuide?banditId=${id}&genre=${genre}`);
   };
 
+  const handleAskMePress = () => {
+    const phoneNumber = '+972544717932';
+    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}`;
+    
+    Linking.canOpenURL(whatsappUrl).then((supported) => {
+      if (supported) {
+        return Linking.openURL(whatsappUrl);
+      } else {
+        Alert.alert('Error', 'WhatsApp is not installed on this device');
+      }
+    });
+  };
+
   return (  
     <>
       <Stack.Screen options={{ headerShown: true, title: '' }} />
@@ -147,6 +160,11 @@ export default function BanditScreen() {
         ))}
       </ScrollView>
     </View>
+    
+    {/* Ask Me Button */}
+    <Pressable style={styles.askMeButton} onPress={handleAskMePress}>
+      <Text style={styles.askMeText}>Ask me</Text>
+    </Pressable>
     
   </View>
 
@@ -217,5 +235,21 @@ const styles = StyleSheet.create({
   },
   reviewsContainer: {
     paddingHorizontal: 8,
+  },
+  askMeButton: {
+    backgroundColor: '#ff0000',
+    borderRadius: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  askMeText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'Caros',
   },
 });
