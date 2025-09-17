@@ -3,16 +3,16 @@ import { ThemedView } from '@/components/ThemedView';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Dimensions,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 type Event = Database['public']['Tables']['event']['Row'];
@@ -128,7 +128,9 @@ export default function EventDetailScreen() {
         {/* Main Event Image */}
         <View style={styles.mainImageContainer}>
           <Image
-            source={{ uri: event.image_url }}
+            source={{ 
+              uri: event.image_url || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/jazzInjazz.png'
+            }}
             style={styles.mainImage}
             resizeMode="cover"
           />
