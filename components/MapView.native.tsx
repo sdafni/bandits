@@ -1,4 +1,5 @@
 import { useMapEvents } from '@/hooks/useMapEvents';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
@@ -26,13 +27,14 @@ export default function PlatformMapView({
   children 
 }: MapViewProps) {
   const eventListRef = useRef<EventListRef>(null);
+  const { banditId } = useLocalSearchParams();
   
-  // Create a handler that scrolls to the event instead of navigating
+  // Create a handler that scrolls to the event instead of navigating (for markers)
   const handleMarkerPress = (event: any) => {
     eventListRef.current?.scrollToEvent(event.id);
   };
   
-  const { events, loading, error, banditId, calculateOptimalMapBounds, handleEventPress } = useMapEvents(handleMarkerPress);
+  const { events, loading, error, calculateOptimalMapBounds } = useMapEvents();
 
   useEffect(() => {
     // Report errors to parent component
@@ -89,7 +91,7 @@ export default function PlatformMapView({
         >
           <MapMarkers
             events={events}
-            onEventPress={handleEventPress}
+            onEventPress={handleMarkerPress}
             MarkerComponent={Marker}
             showEventMarkers={true}
             showCenterMarker={false}
@@ -110,8 +112,7 @@ export default function PlatformMapView({
         events={events}
         loading={loading}
         error={error}
-        onEventPress={handleEventPress}
-        banditId={banditId}
+        banditId={banditId as string}
         variant="horizontal"
         showButton={false}
         imageHeight={120}

@@ -1,5 +1,6 @@
 import { useMapEvents } from '@/hooks/useMapEvents';
 import Constants from 'expo-constants';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import EventList, { EventListRef } from './EventList';
@@ -25,6 +26,7 @@ export default function PlatformMapView({
   children 
 }: MapViewProps) {
   const eventListRef = useRef<EventListRef>(null);
+  const { banditId } = useLocalSearchParams();
   
   // Create a handler that scrolls to the event instead of navigating
   // Note: For web, we can't handle marker clicks directly from the embedded Google Maps
@@ -33,7 +35,7 @@ export default function PlatformMapView({
     eventListRef.current?.scrollToEvent(event.id);
   };
   
-  const { events, loading, error, banditId, calculateOptimalMapBounds, handleEventPress } = useMapEvents(handleMarkerPress);
+  const { events, loading, error, calculateOptimalMapBounds } = useMapEvents();
 
   useEffect(() => {
     // Call onMapReady after component mounts
@@ -94,8 +96,7 @@ export default function PlatformMapView({
         events={events}
         loading={loading}
         error={error}
-        onEventPress={handleEventPress}
-        banditId={banditId}
+        banditId={banditId as string}
         variant="horizontal"
         showButton={false}
         imageHeight={154}
