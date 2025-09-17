@@ -57,14 +57,10 @@ export default function BanditHeader({
               <Text style={styles.exploreText}>CITY GUIDE</Text>
             </Pressable>
             <Pressable
-              style={styles.mapButtonTopLeft}
+              style={styles.mapButtonCenter}
               onPress={() => router.push(`/cityMap?banditId=${id}`)}
             >
-              <Image
-                source={require('@/assets/images/cityButtonB.png')}
-                style={styles.mapButtonImage}
-                resizeMode="cover"
-              />
+              <Text style={styles.mapButtonText}>MAP</Text>
             </Pressable>
           </>
         )}
@@ -182,41 +178,26 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     zIndex: 2,
   },
-  mapButtonImage: {
+  mapButtonCenter: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-  },
-  mapButtonText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '600',
-    zIndex: 1,
-  },
-  mapButtonTopLeft: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 0,
-    paddingHorizontal: 0,
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -40 }, { translateY: -20 }],
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
-    gap: 0,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    overflow: 'hidden',
-    aspectRatio: 1,
-    minWidth: 80,
     zIndex: 2,
+  },
+  mapButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
   },
   exploreText: {
     color: 'white',
