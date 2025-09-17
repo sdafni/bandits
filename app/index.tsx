@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // const { width, height } = Dimensions.get('window');
 
@@ -33,12 +33,33 @@ export default function Index() {
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
     
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('📋 Session data received:', session);
-      setUser(session?.user ?? null);
-    }).catch(err => {
-      console.error('❌ Error getting session:', err);
-    });
+    // Auto-login with hardcoded credentials (TEMPORARY BYPASS)
+    const autoLogin = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('🔄 Auto-logging in with hardcoded credentials...');
+          const { error } = await supabase.auth.signInWithPassword({
+            email: 'sdafni.yd@gmail.com',
+            password: 'yuv121bandit'
+          });
+          if (error) {
+            console.error('❌ Auto-login failed:', error);
+            // Fall back to normal flow
+            setUser(null);
+          }
+        } else {
+          console.log('📋 Session already exists:', session);
+          setUser(session.user);
+        }
+      } catch (err) {
+        console.error('❌ Error in auto-login:', err);
+        setUser(null);
+      }
+    };
+    
+    autoLogin();
+    
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('🔄 Auth state changed:', _event, 'session:', session);
       setUser(session?.user ?? null);
