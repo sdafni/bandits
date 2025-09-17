@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Tabs, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import ExploreIcon from '@/assets/icons/explore.svg';
@@ -43,6 +43,8 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderBottomWidth: 1,
           borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+
+          height: 60,
         },
       }}>
       <Tabs.Screen

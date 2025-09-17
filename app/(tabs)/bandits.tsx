@@ -24,7 +24,7 @@ const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
   // Show city name as header text if there's only one city
   if (cities.length === 1) {
     return (
-      <View style={styles.searchWrapper}>
+      <View style={[styles.searchWrapper, styles.singleCityWrapper]}>
         <Text style={styles.cityHeaderText}>{cities[0]}</Text>
       </View>
     );
@@ -206,10 +206,13 @@ const styles = StyleSheet.create({
   },
   searchWrapper: {
     marginTop: 13,
-    marginBottom: 13,
-
+    marginBottom: 5,
     marginHorizontal: 16,
-    height: 64, // 40 * 1.3 = ~52 (30% increase)
+    height: 64,
+  },
+  singleCityWrapper: {
+    marginBottom: 2.5, // Half of the original 5
+    height: 40,
   },
   citySelectContainer: {
     backgroundColor: '#FFFFFF',
@@ -330,6 +333,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 0,
+    paddingBottom: 60,
     gap: 11, // Reduced from 16 to 11 (approximately 70%)
   },
 }); 
