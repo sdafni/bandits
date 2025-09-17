@@ -1,5 +1,4 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EventGenre, getGenreIcon } from '@/constants/Genres';
 
@@ -10,9 +9,11 @@ interface EventCategory {
 
 interface EventCategoriesProps {
   categories: EventCategory[];
+  selectedGenre?: string;
+  onCategoryPress?: (genre: string) => void;
 }
 
-export default function EventCategories({ categories }: EventCategoriesProps) {
+export default function EventCategories({ categories, selectedGenre, onCategoryPress }: EventCategoriesProps) {
   if (!categories || categories.length === 0) {
     return null;
   }
@@ -22,12 +23,21 @@ export default function EventCategories({ categories }: EventCategoriesProps) {
       <View style={styles.categoriesContainer}>
         {categories.map((category, index) => (
           <View key={category.genre} style={styles.categoryItem}>
-            <View style={styles.categoryBadge}>
+            <Pressable
+              style={[
+                styles.categoryBadge,
+                selectedGenre === category.genre && styles.categoryBadgeSelected
+              ]}
+              onPress={() => onCategoryPress?.(category.genre)}
+            >
               <Text style={styles.categoryIcon}>{getGenreIcon(category.genre)}</Text>
-              <Text style={styles.categoryText}>
+              <Text style={[
+                styles.categoryText,
+                selectedGenre === category.genre && styles.categoryTextSelected
+              ]}>
                 {category.count} {category.genre.toUpperCase()}
               </Text>
-            </View>
+            </Pressable>
           </View>
         ))}
       </View>
@@ -62,6 +72,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
     minHeight: 25,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  categoryBadgeSelected: {
+    backgroundColor: '#FFE5E5',
+    borderColor: '#FF0000',
   },
   categoryIcon: {
     fontSize: 14,
@@ -72,5 +88,8 @@ const styles = StyleSheet.create({
     color: '#3C3C3C',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  categoryTextSelected: {
+    color: '#FF0000',
   },
 }); 

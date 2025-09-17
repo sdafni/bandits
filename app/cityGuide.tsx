@@ -3,28 +3,15 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getEvents } from '@/app/services/events';
+import EventCategories from '@/components/EventCategories';
 import EventList from '@/components/EventList';
+import { EventGenre } from '@/constants/Genres';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 type Bandit = Database['public']['Tables']['bandit']['Row'];
 type Event = Database['public']['Tables']['event']['Row'];
 
-interface EventCategory {
-  genre: 'Food' | 'Culture' | 'Nightlife' | 'Shopping' | 'Coffee';
-  count: number;
-}
-
-const genres = ['Food', 'Culture', 'Nightlife', 'Shopping', 'Coffee'];
-
-// Genre button images from assets
-const genreImages = {
-  Food: require('@/assets/icons/food_pngwing.png'),
-  Culture: require('@/assets/icons/culture_pngwing.png'),
-  Nightlife: require('@/assets/icons/nightlife_pngwing.png'),
-  Shopping: require('@/assets/icons/shopping_pngwing.png'),
-  Coffee: require('@/assets/icons/coffee_pngwing.png'),
-};
 
 export default function CityGuideScreen() {
   const { banditId } = useLocalSearchParams();
@@ -67,6 +54,24 @@ export default function CityGuideScreen() {
   const filteredEvents = selectedGenre 
     ? allEvents.filter(event => event.genre === selectedGenre)
     : allEvents;
+
+  // Calculate category counts from all events
+  const getEventCategories = () => {
+    const categoryCounts: { [key: string]: number } = {};
+    
+    allEvents.forEach(event => {
+      if (event.genre) {
+        categoryCounts[event.genre] = (categoryCounts[event.genre] || 0) + 1;
+      }
+    });
+
+    return Object.entries(categoryCounts).map(([genre, count]) => ({
+      genre: genre as EventGenre,
+      count
+    }));
+  };
+
+  const eventCategories = getEventCategories();
 
 
 
@@ -137,35 +142,15 @@ export default function CityGuideScreen() {
           </View>
         </View>
         
-        {/* Genre Selection - Only show if there are events in DB */}
-        {allEvents.length > 0 && (
+        {/* Event Categories - Only show if there are events in DB */}
+        {allEvents.length > 0 && eventCategories.length > 0 && (
           <>
             <Text style={styles.interestsText}>Select Your Interests</Text>
-            
-            <View style={styles.genreContainer}>
-              {genres.map((genre) => (
-                <Pressable
-                  key={genre}
-                  style={[
-                    styles.genreButton,
-                    selectedGenre === genre && styles.genreButtonSelected
-                  ]}
-                  onPress={() => setSelectedGenre(selectedGenre === genre ? '' : genre)}
-                >
-                                <Image 
-                source={genreImages[genre as keyof typeof genreImages]} 
-                style={styles.genreIcon}
-                resizeMode="contain"
-              />
-                  <Text style={[
-                    styles.genreText,
-                    selectedGenre === genre && styles.genreTextSelected
-                  ]}>
-                    {genre}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <EventCategories 
+              categories={eventCategories}
+              selectedGenre={selectedGenre}
+              onCategoryPress={(genre) => setSelectedGenre(selectedGenre === genre ? '' : genre)}
+            />
           </>
         )}
         
@@ -263,45 +248,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#3C3C3C',
     marginBottom: 16,
-  },
-  genreContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center', // Center the group
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 8, // Smaller gap between buttons
-  },
-  genreButton: {
-    width: 52,
-    height: 52,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#777777',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  genreButtonSelected: {
-    borderColor: '#FF0000',
-  },
-  genreIcon: {
-    width: 16,
-    height: 16,
-    marginBottom: 2,
-  },
-  genreText: {
-    fontFamily: 'Caros',
-    fontWeight: '700',
-    fontSize: 6,
-    color: '#3C3C3C',
-  },
-  genreTextSelected: {
-    color: '#777777',
   },
   eventsContainer: {
     paddingHorizontal: 8,
