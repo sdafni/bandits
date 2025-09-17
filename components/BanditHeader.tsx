@@ -100,10 +100,12 @@ export default function BanditHeader({
         )}
       </View>
 
-      <EventCategories 
-        categories={categories} 
-        onCategoryPress={onCategoryPress}
-      />
+      <View style={isListVariant ? styles.listCategoriesWrapper : undefined}>
+        <EventCategories 
+          categories={categories} 
+          onCategoryPress={onCategoryPress}
+        />
+      </View>
     </>
   );
 
@@ -233,6 +235,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 0,
+  },
+  listCategoriesWrapper: {
+    paddingHorizontal: 16,
   },
   nameContainer: {
     flex: 1,

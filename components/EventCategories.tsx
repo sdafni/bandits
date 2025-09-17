@@ -114,9 +114,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    rowGap: 8,
   },
   categoryItem: {
-    marginBottom: 8,
+    // Removed marginBottom since gap handles spacing
   },
   categoryBadge: {
     backgroundColor: '#ECECEC',
