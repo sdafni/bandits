@@ -102,7 +102,7 @@ export default function EventList({
             buttonText={buttonText}
             showButton={showButton}
             imageHeight={imageHeight}
-            onPress={() => onEventPress?.(event)}
+            onPress={onEventPress ? () => onEventPress(event) : undefined}
           />
         ))}
       </View>
