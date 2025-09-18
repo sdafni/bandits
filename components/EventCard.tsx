@@ -1,7 +1,7 @@
 import { Database } from '@/lib/database.types';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { getEventBanditRecommendations } from '@/app/services/events';
 
@@ -159,12 +159,12 @@ export default function EventCard({
   );
 
   return (
-    <Pressable 
+    <Pressable
       style={[
         styles.eventCard,
-        !isHorizontal && { maxHeight: 320 },
-        isHorizontal && styles.eventCardHorizontal
-      ]} 
+        isHorizontal && styles.eventCardHorizontal,
+        !isHorizontal && Platform.OS === 'android' && styles.eventCardAndroid
+      ]}
       onPress={handleCardPress}
     >
       {cardContent}
@@ -179,6 +179,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
+  },
+  eventCardAndroid: {
+    minHeight: 300,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
   },
   eventCardHorizontal: {
     width: 192,
@@ -209,6 +214,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minWidth: 60,
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexShrink: 0,
   },
   removeButtonText: {
     color: 'white',
@@ -266,6 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     minHeight: 0,
     paddingHorizontal: 2,
+    justifyContent: 'space-between',
   },
   eventContentHorizontal: {
     flex: 1,
@@ -274,10 +282,11 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 140,
+    height: Platform.OS === 'android' ? 160 : 140,
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 6,
+    flexShrink: 0,
   },
   imageContainerHorizontal: {
     width: '100%',

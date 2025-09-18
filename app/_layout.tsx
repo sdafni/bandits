@@ -67,6 +67,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="bandit/[id]" options={{ headerShown: true, title: '' }} />
+          <Stack.Screen name="cityGuide" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="event/[id]" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="+not-found" />
         </Stack>

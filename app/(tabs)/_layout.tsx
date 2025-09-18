@@ -43,7 +43,7 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderBottomWidth: 1,
           borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
-          height: 60,
+          height: 85,
           flexShrink: 0, // Prevent the tab bar from shrinking
         },
         // Ensure content area takes remaining space
