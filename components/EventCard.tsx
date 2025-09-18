@@ -23,10 +23,10 @@ interface EventCardProps {
   showRecommendations?: boolean; // Show bandit recommendation icons
 }
 
-export default function EventCard({ 
-  event, 
-  onLike, 
-  isLiked, 
+export default function EventCard({
+  event,
+  onLike,
+  isLiked,
   buttonType = 'like',
   buttonText,
   showButton = true,
@@ -81,8 +81,8 @@ export default function EventCard({
         ...(imageHeight ? [{ height: imageHeight }] : [])
       ]}>
         <Image
-          source={{ 
-            uri: event.image_url || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/jazzInjazz.png'
+          source={{
+            uri: (event.image_url && event.image_url.trim()) || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/jazzInjazz.png'
           }}
           style={styles.eventImage}
           resizeMode="cover"
@@ -91,7 +91,7 @@ export default function EventCard({
           }}
         />
         <View style={styles.ratingContainer}>
-          <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
+          <Text style={styles.ratingText}>{(event.rating || 0).toFixed(1)}</Text>
           <Text style={styles.starText}>★</Text>
         </View>
         
@@ -126,7 +126,7 @@ export default function EventCard({
         isHorizontal && styles.eventContentHorizontal
       ]}>
         <View style={styles.eventHeader}>
-          <Text style={styles.eventName}>{event.name}</Text>
+          <Text style={styles.eventName}>{event.name || ''}</Text>
           {showButton && (
             buttonType === 'remove' ? (
               <TouchableOpacity onPress={handleLikePress} style={styles.removeButton}>
@@ -143,13 +143,13 @@ export default function EventCard({
             )
           )}
         </View>
-        <Text style={styles.eventDescription} numberOfLines={3} ellipsizeMode="tail">{event.description}</Text>
+        <Text style={styles.eventDescription} numberOfLines={3} ellipsizeMode="tail">{event.description || ''}</Text>
         <View style={styles.bottomInfo}>
-          <Text style={styles.eventAddress} numberOfLines={0} adjustsFontSizeToFit={false}>{event.address}</Text>
-          {event.timing_info && event.timing_info.trim() && (
+          <Text style={styles.eventAddress} numberOfLines={0} adjustsFontSizeToFit={false}>{event.address || ''}</Text>
+          {event.timing_info && typeof event.timing_info === 'string' && event.timing_info.trim() && (
             <View style={styles.timeContainer}>
               <Text style={styles.eventTime}>
-                {event.timing_info}
+                {event.timing_info || ''}
               </Text>
             </View>
           )}

@@ -21,8 +21,9 @@ type Bandit = Database['public']['Tables']['bandit']['Row'];
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function EventDetailScreen() {
-  const { id, banditId } = useLocalSearchParams<{ id: string; banditId?: string }>();
+  const { id, banditId } = useLocalSearchParams();
   const router = useRouter();
+
   const [event, setEvent] = useState<Event | null>(null);
   const [bandit, setBandit] = useState<Bandit | null>(null);
   const [personalTip, setPersonalTip] = useState<string | null>(null);
@@ -56,13 +57,13 @@ export default function EventDetailScreen() {
             setBandit(banditData);
             
             // Fetch personal tip
-            const tip = await getBanditEventPersonalTip(banditId, id as string);
+            const tip = await getBanditEventPersonalTip(
+              Array.isArray(banditId) ? banditId[0] : banditId,
+              typeof id === 'string' ? id : id[0]
+            );
             setPersonalTip(tip);
           }
         }
-
-        // TODO: Check if event is liked by current user
-        // setIsLiked(await isEventLiked(id as string));
 
       } catch (err) {
         console.error('Error fetching event data:', err);
@@ -101,8 +102,8 @@ export default function EventDetailScreen() {
   }
 
   // Parse gallery images from comma-separated string
-  const galleryImages = event.image_gallery 
-    ? event.image_gallery.split(',').map(url => url.trim()).filter(url => url)
+  const galleryImages = event.image_gallery
+    ? (event.image_gallery || '').split(',').map(url => url.trim()).filter(url => url)
     : [];
 
   return (
@@ -133,7 +134,7 @@ export default function EventDetailScreen() {
 
         {/* Event Title */}
         <View style={styles.titleContainer}>
-          <Text style={styles.eventTitle}>{event.name}</Text>
+          <Text style={styles.eventTitle}>{event.name || ''}</Text>
         </View>
 
         {/* Rating */}
@@ -143,19 +144,19 @@ export default function EventDetailScreen() {
               <Text key={index} style={styles.star}>★</Text>
             ))}
           </View>
-          <Text style={styles.ratingText}>{event.rating.toFixed(1)}</Text>
+          <Text style={styles.ratingText}>{(event.rating || 0).toFixed(1)}</Text>
         </View>
 
         {/* Event Description */}
         <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionText}>{event.description}</Text>
+          <Text style={styles.descriptionText}>{event.description || ''}</Text>
         </View>
 
         {/* Timing Information */}
         {event.timing_info && event.timing_info.trim() && (
           <View style={styles.timingContainer}>
             <Text style={styles.timingTitle}>Hours</Text>
-            <Text style={styles.timingText}>{event.timing_info}</Text>
+            <Text style={styles.timingText}>{event.timing_info || ''}</Text>
           </View>
         )}
 
@@ -163,7 +164,7 @@ export default function EventDetailScreen() {
         {bandit && personalTip && (
           <View style={styles.personalTipContainer}>
             <Text style={styles.personalTipTitle}>{`${bandit.name}'s Personal Tip`}</Text>
-            <Text style={styles.personalTipText}>{personalTip}</Text>
+            <Text style={styles.personalTipText}>{personalTip || ''}</Text>
           </View>
         )}
 

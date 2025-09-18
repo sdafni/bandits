@@ -148,6 +148,7 @@ export default function ExploreScreen() {
   const [events, setEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(false);
   const [cities, setCities] = useState<string[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
@@ -224,7 +225,11 @@ export default function ExploreScreen() {
   };
 
   const loadEvents = async () => {
+    // Prevent duplicate calls
+    if (loadingEvents) return;
+
     try {
+      setLoadingEvents(true);
       const filters: EventFilters = {};
       
       if (searchQuery) {
@@ -267,6 +272,8 @@ export default function ExploreScreen() {
     } catch (error) {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events');
+    } finally {
+      setLoadingEvents(false);
     }
   };
 
