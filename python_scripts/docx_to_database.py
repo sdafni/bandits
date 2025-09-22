@@ -52,7 +52,7 @@ DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')  # For DeepSeek API
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')  # For geocoding
 
 # Pipeline settings
-DRY_RUN = True
+DRY_RUN = False
 EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
 MAX_BANDITS = 500  # Maximum number of bandits to process
 
@@ -61,7 +61,7 @@ GEOCODING_CACHE_FILE = "geocoding_cache.json"  # Cache file for geocoding result
 USE_FREE_GEOCODING = True  # Use free Nominatim service instead of Google Maps
 
 # AI Model settings
-USE_DEEPSEEK = True  # Set to True to use DeepSeek instead of Claude
+USE_DEEPSEEK = False  # Set to True to use DeepSeek instead of Claude
 
 # Initialize clients
 supabase: Client = None
@@ -534,8 +534,8 @@ class DocumentProcessor:
                 print(f"   🔄 Google failed, trying Nominatim as fallback...")
                 lat, lng = self.geocode_with_nominatim(full_address)
         
-        # Cache the result (both success and failure) and save immediately
-        if cache is not None:
+        # Cache the result (only successful geocoding with valid coordinates) and save immediately
+        if cache is not None and lat is not None and lng is not None:
             cache[cache_key] = {
                 'address': full_address,
                 'latitude': lat,
@@ -1084,7 +1084,7 @@ CRITICAL INSTRUCTIONS:
 17. TIMING INFO: Look for specific timing information in the event text. Extract ONLY:
     - Specific opening hours (e.g., "9 AM - 5 PM", "Monday-Friday 8:00-18:00")
     - Day names (e.g., "Monday", "Tuesday", "Weekends", "Daily")
-    - Specific times (e.g., "8:00 AM", "6 PM", "Happy hour 5-7 PM")
+    - Specific times (e.g., "25/6/2025" or some known date format)
     - Date ranges (e.g., "March 15-20", "Every Friday")
     DO NOT extract vague time descriptions like "nighttime", "daytime", "evening vibes", "late night", "early morning"
     If found, extract the raw text and put it in the timing_info field. If no specific timing info is found, set timing_info to an empty string ""
@@ -1243,6 +1243,116 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             combined_data['events'].append(processed_event)
         
         return combined_data
+
+    def analyze_duplicate_events(self, final_data: Dict[str, Any]):
+        """Analyze events for duplicates and print list with their recommending bandits"""
+        print("\n🔍 ANALYZING DUPLICATE EVENTS")
+        print("=" * 50)
+
+        events = final_data.get('events', [])
+        bandit_events = final_data.get('bandit_events', [])
+        bandits = final_data.get('bandit', [])
+
+        # Create mapping of bandit IDs to names
+        bandit_id_to_name = {bandit['id']: bandit['name'] for bandit in bandits}
+
+        # Group events by name (case-insensitive)
+        from collections import defaultdict
+        event_name_groups = defaultdict(list)
+
+        for event in events:
+            event_name = event.get('name', '').strip().lower()
+            if event_name:
+                event_name_groups[event_name].append(event)
+
+        # Find duplicates
+        duplicate_events = {name: events_list for name, events_list in event_name_groups.items() if len(events_list) > 1}
+
+        if duplicate_events:
+            print(f"📊 Found {len(duplicate_events)} events that appear more than once:")
+
+            for event_name, event_instances in duplicate_events.items():
+                print(f"\n🎯 Event: '{event_name.title()}' (appears {len(event_instances)} times)")
+
+                for i, event in enumerate(event_instances, 1):
+                    print(f"  Instance {i}:")
+                    print(f"    Address: {event.get('address', 'No address')}")
+                    print(f"    Main Image: {'Yes' if event.get('image_url') else 'No'}")
+
+                    # Find bandits recommending this event
+                    recommending_bandits = []
+                    for be in bandit_events:
+                        if be.get('event_id') == event.get('id'):
+                            bandit_name = bandit_id_to_name.get(be.get('bandit_id'), 'Unknown')
+                            recommending_bandits.append(bandit_name)
+
+                    if recommending_bandits:
+                        print(f"    Recommended by: {', '.join(recommending_bandits)}")
+                    else:
+                        print(f"    Recommended by: No bandits")
+        else:
+            print("✅ No duplicate events found!")
+
+        return duplicate_events
+
+    def analyze_events_without_main_image(self, final_data: Dict[str, Any]):
+        """Find events with no main image and print list"""
+        print("\n🖼️ ANALYZING EVENTS WITHOUT MAIN IMAGE")
+        print("=" * 50)
+
+        events = final_data.get('events', [])
+        events_without_image = []
+
+        for event in events:
+            if not event.get('image_url') or not event['image_url'].strip():
+                events_without_image.append(event)
+
+        if events_without_image:
+            print(f"📊 Found {len(events_without_image)} events with no main image:")
+            for event in events_without_image:
+                print(f"  • {event.get('name', 'Unnamed event')}")
+                if event.get('address'):
+                    print(f"    Address: {event['address']}")
+        else:
+            print("✅ All events have main images!")
+
+        return events_without_image
+
+    def verify_duplicate_event_images(self, duplicate_events: Dict[str, list]):
+        """Verify that duplicate events use main image from only one appearance"""
+        print("\n🔍 VERIFYING DUPLICATE EVENT IMAGE USAGE")
+        print("=" * 50)
+
+        if not duplicate_events:
+            print("✅ No duplicate events to verify!")
+            return
+
+        for event_name, event_instances in duplicate_events.items():
+            print(f"\n🎯 Checking: '{event_name.title()}'")
+
+            # Count how many instances have main images
+            instances_with_images = []
+            instances_without_images = []
+
+            for i, event in enumerate(event_instances, 1):
+                if event.get('image_url') and event['image_url'].strip():
+                    instances_with_images.append((i, event))
+                else:
+                    instances_without_images.append((i, event))
+
+            print(f"  Instances with main image: {len(instances_with_images)}")
+            print(f"  Instances without main image: {len(instances_without_images)}")
+
+            if len(instances_with_images) == 1:
+                print("  ✅ Perfect! Only one instance has a main image")
+                instance_num, event = instances_with_images[0]
+                print(f"     Instance {instance_num} has the image")
+            elif len(instances_with_images) == 0:
+                print("  ⚠️  None of the instances have a main image")
+            else:
+                print(f"  ❌ Problem! {len(instances_with_images)} instances have main images")
+                for instance_num, event in instances_with_images:
+                    print(f"     Instance {instance_num} has an image")
 
     def truncate_database_tables(self):
         """Truncate all database tables before insertion"""
@@ -1546,12 +1656,17 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             if final_data.get('events'):
                 geocoded_events = self.geocode_events_batch(final_data['events'])
                 final_data['events'] = geocoded_events
-            
-            # Step 8: Insert into database
+
+            # Step 8: Analyze data for duplicates and issues
+            duplicate_events = self.analyze_duplicate_events(final_data)
+            events_without_image = self.analyze_events_without_main_image(final_data)
+            self.verify_duplicate_event_images(duplicate_events)
+
+            # Step 9: Insert into database
             if not DRY_RUN:
                 self.insert_to_database(final_data)
-            
-            # Step 9: Print statistics
+
+            # Step 10: Print statistics
             self.print_statistics()
             
             print("✅ Complete pipeline finished successfully!")
