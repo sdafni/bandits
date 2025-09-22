@@ -62,6 +62,8 @@ USE_FREE_GEOCODING = True  # Use free Nominatim service instead of Google Maps
 
 # AI Model settings
 USE_DEEPSEEK = False  # Set to True to use DeepSeek instead of Claude
+AI_CACHE_FILE = "ai_cache.json"  # Cache file for AI processing results
+USE_AI_CACHE = True  # Set to True to use cached AI results instead of making API calls
 
 # Initialize clients
 supabase: Client = None
@@ -421,6 +423,39 @@ class DocumentProcessor:
             print(f"💾 Saved geocoding cache with {len(cache)} entries")
         except Exception as e:
             print(f"❌ Error saving geocoding cache: {str(e)}")
+
+    def load_ai_cache(self) -> Dict[str, Any]:
+        """Load AI processing cache from file"""
+        cache_path = Path(AI_CACHE_FILE)
+        if cache_path.exists():
+            try:
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                print(f"📂 Loaded AI cache with {len(cache)} entries")
+                return cache
+            except Exception as e:
+                print(f"⚠️  Error loading AI cache: {str(e)}")
+                return {}
+        else:
+            print(f"📂 No existing AI cache found, will create new one")
+            return {}
+
+    def save_ai_cache(self, cache: Dict[str, Any]):
+        """Save AI processing cache to file"""
+        try:
+            cache_path = Path(AI_CACHE_FILE)
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(cache, f, indent=2, ensure_ascii=False)
+            print(f"💾 Saved AI cache with {len(cache)} entries")
+        except Exception as e:
+            print(f"❌ Error saving AI cache: {str(e)}")
+
+    def create_cache_key(self, text: str, detected_bandits: List[str], max_bandits: int) -> str:
+        """Create a unique cache key for AI processing"""
+        import hashlib
+        # Create a deterministic hash from the input parameters
+        content = f"{text}|{sorted(detected_bandits[:max_bandits])}|{max_bandits}"
+        return hashlib.md5(content.encode('utf-8')).hexdigest()
     
     def geocode_with_nominatim(self, full_address: str) -> Tuple[Optional[float], Optional[float]]:
         """Use free Nominatim (OpenStreetMap) geocoding service"""
@@ -1005,8 +1040,23 @@ class DocumentProcessor:
     def process_with_ai(self, text: str, detected_bandits: List[str], max_bandits: int = MAX_BANDITS) -> Dict[str, Any]:
         """Process text with AI (Claude or DeepSeek) using the pre-detected bandits list for accuracy"""
         service_name = "DeepSeek" if USE_DEEPSEEK else "Claude"
+
+        # Load AI cache
+        ai_cache = self.load_ai_cache()
+        cache_key = self.create_cache_key(text, detected_bandits, max_bandits)
+
+        # Check if we should use cached result
+        if USE_AI_CACHE and cache_key in ai_cache:
+            print(f"📋 Using cached AI result for this input")
+            cached_result = ai_cache[cache_key]
+            print(f"🎯 Cached AI processing result:")
+            print(f"   👥 Bandits: {len(cached_result.get('bandit', []))}")
+            print(f"   🎉 Events: {len(cached_result.get('events', []))}")
+            print(f"   🔗 Relationships: {len(cached_result.get('bandit_events', []))}")
+            return cached_result
+
         print(f"🤖 Processing text with {service_name} AI using {len(detected_bandits)} pre-detected bandits...")
-        
+
         if USE_DEEPSEEK and not DEEPSEEK_API_KEY:
             raise Exception("DeepSeek API key not configured")
         elif not USE_DEEPSEEK and not ai_client:
@@ -1173,7 +1223,11 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
         print(f"   👥 Bandits: {len(all_bandits)}")
         print(f"   🎉 Events: {len(filtered_events)}")
         print(f"   🔗 Relationships: {len(filtered_relationships)}")
-        
+
+        # Cache the result for future use
+        ai_cache[cache_key] = structured_data
+        self.save_ai_cache(ai_cache)
+
         return structured_data
 
     def combine_data_with_images(self, structured_data: Dict[str, Any], image_urls: Dict[str, str]) -> Dict[str, Any]:
