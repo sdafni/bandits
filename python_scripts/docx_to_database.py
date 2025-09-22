@@ -147,58 +147,66 @@ class DocumentProcessor:
             print(f"   ❌ Error emptying bucket: {e}")
 
     def find_bandit_patterns_in_lines(self, lines: List[str], start_index: int = 0, max_bandits: int = None) -> List[Dict[str, Any]]:
-        """Helper method to find bandit patterns (IMAGE -> Name -> Age) in text lines"""
+        """Helper method to find bandit patterns by finding Age: and looking backwards for name and image"""
         import re
         found_patterns = []
 
         for i, line in enumerate(lines[start_index:], start_index):
-            line_stripped = line.strip()
+            if 'Age:' in line:
+                age_pattern = re.search(r'Age:\s*(\d+)', line)
+                if age_pattern:
+                    age_value = age_pattern.group(1)
 
-            # Look for IMAGE placeholders
-            if '[IMAGE:' in line_stripped:
-                # Extract image placeholder ID
-                image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
-                image_id = image_match.group(1) if image_match else f"img_unknown_{i}"
+                    # Look backwards to find the first name and image
+                    found_name = None
+                    found_image = None
 
-                # Look for a potential bandit name in the next few lines
-                for j in range(i+1, min(i+5, len(lines))):
-                    name_line = lines[j].strip()
+                    # Search backwards from the age line
+                    for j in range(i-1, max(i-10, start_index-1), -1):
+                        line_stripped = lines[j].strip()
 
-                    # Skip empty lines and other image placeholders
-                    if not name_line or '[IMAGE:' in name_line:
-                        continue
+                        # Look for potential name first (if we haven't found one yet)
+                        if (found_name is None and line_stripped and '[IMAGE:' not in line_stripped):
+                            # Check if this is a single word starting with capital letter
+                            words = line_stripped.split()
+                            if (len(words) == 1 and  # Single word only
+                                words[0][0].isupper() and  # Starts with capital letter
+                                words[0].isalpha() and  # All alphabetic characters
+                                len(words[0]) > 1):  # At least 2 characters
 
-                    # Check if this looks like a name (short line without digits, not too long)
-                    if (len(name_line.split()) <= 4 and  # Allow up to 4 words for full names
-                        not any(word.isdigit() for word in name_line.split()) and
-                        len(name_line) > 2 and
-                        len(name_line) < 50):  # Reasonable name length
+                                found_name = {
+                                    'line_index': j,
+                                    'name': line_stripped
+                                }
 
-                        # Look for "Age:" in the following lines
-                        age_match = None
-                        for k in range(j+1, min(j+8, len(lines))):
-                            if 'Age:' in lines[k]:
-                                age_pattern = re.search(r'Age:\s*(\d+)', lines[k])
-                                if age_pattern:
-                                    age_match = age_pattern.group(1)
-                                break
+                        # Look for IMAGE placeholder
+                        if '[IMAGE:' in line_stripped and found_image is None:
+                            image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
+                            if image_match:
+                                found_image = {
+                                    'line_index': j,
+                                    'image_id': image_match.group(1),
+                                    'image_line': line_stripped
+                                }
 
-                        if age_match:
-                            pattern = {
-                                'line_index': i,
-                                'image_id': image_id,
-                                'name': name_line,
-                                'age': age_match,
-                                'name_line_index': j,
-                                'image_line': line_stripped
-                            }
-                            found_patterns.append(pattern)
+                        # Stop if we found both
+                        if found_name and found_image:
+                            break
 
-                            # Stop if we've reached the maximum
-                            if max_bandits and len(found_patterns) >= max_bandits:
-                                return found_patterns
+                    # If we found both name and image, create a pattern
+                    if found_name and found_image:
+                        pattern = {
+                            'line_index': found_image['line_index'],
+                            'image_id': found_image['image_id'],
+                            'name': found_name['name'],
+                            'age': age_value,
+                            'name_line_index': found_name['line_index'],
+                            'image_line': found_image['image_line']
+                        }
+                        found_patterns.append(pattern)
 
-                            # Found a valid pattern, break out of name search loop
+                        # Stop if we've reached the maximum
+                        if max_bandits and len(found_patterns) >= max_bandits:
                             break
 
         return found_patterns
