@@ -48,6 +48,7 @@ DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')  # For DeepSeek API
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')  # For geocoding
 
 # Pipeline settings
+DRY_RUN = True
 EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
 MAX_BANDITS = 500  # Maximum number of bandits to process
 
@@ -639,38 +640,39 @@ class DocumentProcessor:
                 else:
                     # File doesn't exist, process and upload
                     processed_data, face_detected = self.detect_and_crop_face(raw_image_data)
-                    
-                    try:
-                        # Upload and get the response
-                        upload_response = supabase.storage.from_(BUCKET_NAME).upload(
-                            path=file_path,
-                            file=processed_data,
-                            file_options={"content-type": "image/jpeg"}
-                        )
-                        
-                        # Get public URL from the upload response or construct it
-                        if hasattr(upload_response, 'data') and upload_response.data:
-                            public_url = upload_response.data.get('publicURL')
-                        else:
-                            # Fallback: get public URL using the API
-                            public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
-                        
-                        image_urls[placeholder_id] = public_url
-                        uploaded_count += 1
-                        status = "Face cropped" if face_detected else "Uploaded"
-                        print(f"✅ {status}: {placeholder_id} -> {public_url}")
-                        
-                    except Exception as upload_error:
-                        # If upload fails due to duplicate, still get the public URL
-                        if "already exists" in str(upload_error) or "Duplicate" in str(upload_error):
-                            print(f"⚠️  File already exists, getting URL: {placeholder_id}")
-                            public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+
+                    if not DRY_RUN:
+                        try:
+                            # Upload and get the response
+                            upload_response = supabase.storage.from_(BUCKET_NAME).upload(
+                                path=file_path,
+                                file=processed_data,
+                                file_options={"content-type": "image/jpeg"}
+                            )
+
+                            # Get public URL from the upload response or construct it
+                            if hasattr(upload_response, 'data') and upload_response.data:
+                                public_url = upload_response.data.get('publicURL')
+                            else:
+                                # Fallback: get public URL using the API
+                                public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+
                             image_urls[placeholder_id] = public_url
-                            existing_count += 1
-                            print(f"✅ Using existing: {placeholder_id} -> {public_url}")
-                        else:
-                            raise upload_error
-                
+                            uploaded_count += 1
+                            status = "Face cropped" if face_detected else "Uploaded"
+                            print(f"✅ {status}: {placeholder_id} -> {public_url}")
+
+                        except Exception as upload_error:
+                            # If upload fails due to duplicate, still get the public URL
+                            if "already exists" in str(upload_error) or "Duplicate" in str(upload_error):
+                                print(f"⚠️  File already exists, getting URL: {placeholder_id}")
+                                public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+                                image_urls[placeholder_id] = public_url
+                                existing_count += 1
+                                print(f"✅ Using existing: {placeholder_id} -> {public_url}")
+                            else:
+                                raise upload_error
+
             except Exception as e:
                 print(f"❌ Failed to process {placeholder_id}: {str(e)}")
         
@@ -1343,7 +1345,7 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             pdf_path = self.convert_docx_to_pdf()
             
             # Step 2: Empty bucket before uploading new images (if enabled)
-            if EMPTY_BUCKET_BEFORE_UPLOAD:
+            if EMPTY_BUCKET_BEFORE_UPLOAD and not DRY_RUN:
                 self.empty_bucket()
             else:
                 print("⏭️  Skipping bucket emptying (EMPTY_BUCKET_BEFORE_UPLOAD=False)")
@@ -1367,7 +1369,8 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
                 final_data['events'] = geocoded_events
             
             # Step 8: Insert into database
-            self.insert_to_database(final_data)
+            if not DRY_RUN:
+                self.insert_to_database(final_data)
             
             # Step 9: Print statistics
             self.print_statistics()
