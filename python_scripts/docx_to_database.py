@@ -620,6 +620,52 @@ class DocumentProcessor:
         print(f"   💾 Cache now contains: {len(cache)} entries")
         
         return geocoded_events
+    def save_bandit_images_locally(self, image_data: Dict[str, bytes], bandit_patterns: List[Dict[str, Any]]) -> None:
+        """Save bandit images locally with bandit_name+image_placeholder naming"""
+        print(f"💾 Saving bandit images locally...")
+
+        # Create bandit_images folder
+        bandit_images_dir = Path("bandit_images")
+        bandit_images_dir.mkdir(exist_ok=True)
+
+        # Create a mapping of image_id to bandit name
+        image_to_bandit = {}
+        for pattern in bandit_patterns:
+            image_id = pattern['image_id']
+            bandit_name = pattern['name']
+            image_to_bandit[image_id] = bandit_name
+
+        saved_count = 0
+
+        for placeholder_id, raw_image_data in image_data.items():
+            # Check if this image belongs to a bandit
+            if placeholder_id in image_to_bandit:
+                bandit_name = image_to_bandit[placeholder_id]
+
+                # Clean bandit name for filename (remove special characters)
+                clean_name = re.sub(r'[^\w\-_]', '_', bandit_name)
+
+                # Create filename: bandit_name+image_placeholder.jpg
+                filename = f"{clean_name}+{placeholder_id}.jpg"
+                file_path = bandit_images_dir / filename
+
+                try:
+                    # Apply face detection and cropping if possible
+                    processed_data, face_detected = self.detect_and_crop_face(raw_image_data)
+
+                    # Save the processed image
+                    with open(file_path, 'wb') as f:
+                        f.write(processed_data)
+
+                    status = "Face cropped" if face_detected else "Saved"
+                    print(f"   ✅ {status}: {filename}")
+                    saved_count += 1
+
+                except Exception as e:
+                    print(f"   ❌ Failed to save {filename}: {str(e)}")
+
+        print(f"📊 Saved {saved_count} bandit images to {bandit_images_dir}/")
+
     def upload_images_to_supabase(self, image_data: Dict[str, bytes]) -> Dict[str, str]:
         """Upload images to Supabase storage, checking for existing files first"""
         print(f"📤 Processing {len(image_data)} images to Supabase...")
@@ -1353,10 +1399,19 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             
             # Step 3: Extract text with image placeholders (first 10 pages)
             extraction_result = self.extract_text_with_placeholders()
-            
-            # Step 4: Upload images to Supabase
+
+            # Step 4a: Get bandit patterns for local image saving
+            bandit_patterns = self.find_bandit_patterns_in_lines(
+                extraction_result["readable_text"].split('\n'),
+                max_bandits=MAX_BANDITS
+            )
+
+            # Step 4b: Save bandit images locally with proper naming
+            self.save_bandit_images_locally(extraction_result["image_data"], bandit_patterns)
+
+            # Step 4c: Upload images to Supabase
             image_urls = self.upload_images_to_supabase(extraction_result["image_data"])
-            
+
             # Step 5: Process with AI using pre-detected bandits
             detected_bandits = extraction_result["detected_bandits_list"]
             structured_data = self.process_with_ai(extraction_result["readable_text"], detected_bandits, max_bandits=MAX_BANDITS)
