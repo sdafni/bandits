@@ -666,14 +666,29 @@ class DocumentProcessor:
 
         print(f"📊 Saved {saved_count} bandit images to {bandit_images_dir}/")
 
-    def upload_images_to_supabase(self, image_data: Dict[str, bytes]) -> Dict[str, str]:
-        """Upload images to Supabase storage, checking for existing files first"""
+    def upload_images_to_supabase(self, image_data: Dict[str, bytes], bandit_patterns: List[Dict[str, Any]] = None) -> Dict[str, str]:
+        """Upload images to Supabase storage, using pre-cropped bandit images when available"""
         print(f"📤 Processing {len(image_data)} images to Supabase...")
-        
+
         if not supabase:
             print("⚠️  Supabase not configured, skipping upload")
             return {}
-        
+
+        # Create mapping of image_id to bandit name for pre-cropped images
+        bandit_image_map = {}
+        bandit_images_dir = Path("bandit_images")
+
+        if bandit_patterns and bandit_images_dir.exists():
+            for pattern in bandit_patterns:
+                image_id = pattern['image_id']
+                bandit_name = pattern['name']
+                clean_name = re.sub(r'[^\w\-_]', '_', bandit_name)
+                cropped_file = bandit_images_dir / f"{clean_name}+{image_id}.jpg"
+
+                if cropped_file.exists():
+                    bandit_image_map[image_id] = cropped_file
+                    print(f"🎯 Found pre-cropped bandit image: {cropped_file.name}")
+
         # First, get list of existing files in the pdf_images folder
         print("🔍 Checking for existing images in bucket...")
         existing_files = set()
@@ -685,16 +700,16 @@ class DocumentProcessor:
             print(f"   Found {len(existing_files)} existing images")
         except Exception as e:
             print(f"   ⚠️  Could not list existing files: {e}")
-        
+
         image_urls = {}
         uploaded_count = 0
         existing_count = 0
-        
+
         for placeholder_id, raw_image_data in image_data.items():
             try:
                 file_name = f"{placeholder_id}.jpg"
                 file_path = f"pdf_images/{file_name}"
-                
+
                 # Check if file already exists
                 if file_name in existing_files:
                     # File exists, just get the public URL
@@ -703,8 +718,17 @@ class DocumentProcessor:
                     existing_count += 1
                     print(f"✅ Using existing: {placeholder_id} -> {public_url}")
                 else:
-                    # File doesn't exist, process and upload
-                    processed_data, face_detected = self.detect_and_crop_face(raw_image_data)
+                    # Check if we have a pre-cropped bandit image to use
+                    if placeholder_id in bandit_image_map:
+                        # Use pre-cropped image from bandit_images folder
+                        cropped_file_path = bandit_image_map[placeholder_id]
+                        with open(cropped_file_path, 'rb') as f:
+                            processed_data = f.read()
+                        status_msg = "Pre-cropped bandit"
+                    else:
+                        # File doesn't exist and no pre-cropped version, process normally
+                        processed_data, face_detected = self.detect_and_crop_face(raw_image_data)
+                        status_msg = "Face cropped" if face_detected else "Uploaded"
 
                     if not DRY_RUN:
                         try:
@@ -724,8 +748,7 @@ class DocumentProcessor:
 
                             image_urls[placeholder_id] = public_url
                             uploaded_count += 1
-                            status = "Face cropped" if face_detected else "Uploaded"
-                            print(f"✅ {status}: {placeholder_id} -> {public_url}")
+                            print(f"✅ {status_msg}: {placeholder_id} -> {public_url}")
 
                         except Exception as upload_error:
                             # If upload fails due to duplicate, still get the public URL
@@ -740,7 +763,7 @@ class DocumentProcessor:
 
             except Exception as e:
                 print(f"❌ Failed to process {placeholder_id}: {str(e)}")
-        
+
         print(f"📊 Upload summary: {uploaded_count} uploaded, {existing_count} existing")
         return image_urls
 
@@ -1409,8 +1432,8 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
             # Step 4b: Save bandit images locally with proper naming
             self.save_bandit_images_locally(extraction_result["image_data"], bandit_patterns)
 
-            # Step 4c: Upload images to Supabase
-            image_urls = self.upload_images_to_supabase(extraction_result["image_data"])
+            # Step 4c: Upload images to Supabase (using pre-cropped bandit images when available)
+            image_urls = self.upload_images_to_supabase(extraction_result["image_data"], bandit_patterns)
 
             # Step 5: Process with AI using pre-detected bandits
             detected_bandits = extraction_result["detected_bandits_list"]
