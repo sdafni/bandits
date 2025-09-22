@@ -772,5 +772,815 @@
     "latitude": 37.9782676,
     "longitude": 23.7254576,
     "timestamp": 1758515342.965585
+  },
+  "ntourm 1, neos kosmos, athens, athens, greece": {
+    "address": "Ntourm 1, Neos kosmos, Athens, Athens, Greece",
+    "latitude": 37.9594859,
+    "longitude": 23.722951,
+    "timestamp": 1758517700.13244
+  },
+  "paramithias 14, athina 104 35, athens, greece": {
+    "address": "Paramithias 14, Athina 104 35, Athens, Greece",
+    "latitude": 37.9832486,
+    "longitude": 23.7158726,
+    "timestamp": 1758518135.786137
+  },
+  "καρόρη 23 και, agathonos 1, athina 105 51, athens, greece": {
+    "address": "Καρόρη 23 και, Agathonos 1, Athina 105 51, Athens, Greece",
+    "latitude": 37.9781904,
+    "longitude": 23.7278566,
+    "timestamp": 1758518137.569262
+  },
+  "keramikou 49, athina 104 36, athens, greece": {
+    "address": "Keramikou 49, Athina 104 36, Athens, Greece",
+    "latitude": 37.9822355,
+    "longitude": 23.7202599,
+    "timestamp": 1758518139.3177102
+  },
+  "chatzigianni mexi 9, athina 115 28, athens, greece": {
+    "address": "Chatzigianni Mexi 9, Athina 115 28, Athens, Greece",
+    "latitude": 37.9758951,
+    "longitude": 23.751503,
+    "timestamp": 1758518141.173423
+  },
+  "katsoulieri 7, chalandri 152 33, athens, greece": {
+    "address": "Katsoulieri 7, Chalandri 152 33, Athens, Greece",
+    "latitude": 38.0219653,
+    "longitude": 23.7992326,
+    "timestamp": 1758518142.777629
+  },
+  "ergon house athens, 23, mitropoleos street, athina, athens, greece": {
+    "address": "ERGON House Athens, 23, Mitropoleos Street, Athina, Athens, Greece",
+    "latitude": 37.9752809,
+    "longitude": 23.7315222,
+    "timestamp": 1758518144.599492
+  },
+  "skoufou 15, athens, greece": {
+    "address": "Skoufou 15, Athens, Greece",
+    "latitude": 37.9738366,
+    "longitude": 23.7327131,
+    "timestamp": 1758518146.234016
+  },
+  "pl. agias irinis 2, athina 105 60, athens, greece": {
+    "address": "Pl. Agias Irinis 2, Athina 105 60, Athens, Greece",
+    "latitude": 37.9773746,
+    "longitude": 23.7282412,
+    "timestamp": 1758518148.0382888
+  },
+  "pireos 84, athina 104 35, athens, greece": {
+    "address": "Pireos 84, Athina 104 35, Athens, Greece",
+    "latitude": 37.979803,
+    "longitude": 23.7180827,
+    "timestamp": 1758518149.812054
+  },
+  "eolou 21, aghias irinis str, athina 105 51, athens, greece": {
+    "address": "Eolou 21, Aghias Irinis Str, Athina 105 51, Athens, Greece",
+    "latitude": 37.9768928,
+    "longitude": 23.7275934,
+    "timestamp": 1758518151.61703
+  },
+  "nikis 24, syntagma, athens 105 57, athens, greece": {
+    "address": "Nikis 24, Syntagma, Athens 105 57, Athens, Greece",
+    "latitude": 37.9742731,
+    "longitude": 23.732858,
+    "timestamp": 1758518153.4112651
+  },
+  "ifestou 26, athina 105 55, athens, greece": {
+    "address": "Ifestou 26, Athina 105 55, Athens, Greece",
+    "latitude": 37.9762449,
+    "longitude": 23.7245253,
+    "timestamp": 1758518155.193706
+  },
+  "απόλλωνος 16, patroou 1, athina 105 57, athens, greece": {
+    "address": "Απόλλωνος 16, Patroou 1, Athina 105 57, Athens, Greece",
+    "latitude": 37.9747973,
+    "longitude": 23.7311882,
+    "timestamp": 1758518157.061963
+  },
+  "evaggelistrias 17, athina 105 63, athens, greece": {
+    "address": "Evaggelistrias 17, Athina 105 63, Athens, Greece",
+    "latitude": 37.9766221,
+    "longitude": 23.7294085,
+    "timestamp": 1758518160.010584
+  },
+  "leof. andrea siggrou 51-53, athina 117 43, athens, greece": {
+    "address": "Leof. Andrea Siggrou 51-53, Athina 117 43, Athens, Greece",
+    "latitude": 37.9630265,
+    "longitude": 23.7253933,
+    "timestamp": 1758518161.7934191
+  },
+  "praxitelous 37, syntagma, athens, greece": {
+    "address": "Praxitelous 37, Syntagma, Athens, Greece",
+    "latitude": 37.9792443,
+    "longitude": 23.7290754,
+    "timestamp": 1758518163.538898
+  },
+  "evaggelistrias 33, athina 105 60, athens, greece": {
+    "address": "Evaggelistrias 33, Athina 105 60, Athens, Greece",
+    "latitude": 37.9774154,
+    "longitude": 23.7293947,
+    "timestamp": 1758518165.479331
+  },
+  "kipselis 77, athens, greece 113 61, athens, greece": {
+    "address": "Kipselis 77, Athens, Greece 113 61, Athens, Greece",
+    "latitude": 38.0009413,
+    "longitude": 23.7402542,
+    "timestamp": 1758518168.5219488
+  },
+  "sikinou 16, kipséli, attiki, greece 11361, athens, greece": {
+    "address": "Sikinou 16, Kipséli, Attiki, Greece 11361, Athens, Greece",
+    "latitude": 38.002308,
+    "longitude": 23.7384642,
+    "timestamp": 1758518170.299642
+  },
+  "κολοκοτρώνη 5, kifisiá, greece 14562, athens, greece": {
+    "address": "Κολοκοτρώνη 5, Kifisiá, Greece 14562, Athens, Greece",
+    "latitude": 38.0727406,
+    "longitude": 23.8158175,
+    "timestamp": 1758518172.069778
+  },
+  "erisichthonos 44, athens, greece 11851, athens, greece": {
+    "address": "Erisichthonos 44, Athens, Greece 11851, Athens, Greece",
+    "latitude": 37.9749001,
+    "longitude": 23.7157971,
+    "timestamp": 1758518173.6613388
+  },
+  "86 ermou str., athens, greece 10554, athens, greece": {
+    "address": "86 Ermou str., Athens, Greece 10554, Athens, Greece",
+    "latitude": 37.976947,
+    "longitude": 23.7254294,
+    "timestamp": 1758518175.4523451
+  },
+  "praxitelous 37, athens, greece 10560, athens, greece": {
+    "address": "Praxitelous 37, Athens, Greece 10560, Athens, Greece",
+    "latitude": 37.9792443,
+    "longitude": 23.7290754,
+    "timestamp": 1758518177.1981702
+  },
+  "agias eirinis 17, athens, greece 10551, athens, greece": {
+    "address": "Agias Eirinis 17, Athens, Greece 10551, Athens, Greece",
+    "latitude": 37.9770815,
+    "longitude": 23.726749,
+    "timestamp": 1758518178.945369
+  },
+  "empedokleous 34, athens, greece 11636, athens, greece": {
+    "address": "Empedokleous 34, Athens, Greece 11636, Athens, Greece",
+    "latitude": 37.9647705,
+    "longitude": 23.7439513,
+    "timestamp": 1758518180.659062
+  },
+  "kolokotroni 62, athens, greece 10560, athens, greece": {
+    "address": "Kolokotroni 62, Athens, Greece 10560, Athens, Greece",
+    "latitude": 37.97790639999999,
+    "longitude": 23.7280528,
+    "timestamp": 1758518182.438431
+  },
+  "falirou 47, koukaki, athens, greece 11742, athens, greece": {
+    "address": "Falirou 47, Koukaki, Athens, Greece 11742, Athens, Greece",
+    "latitude": 37.9654242,
+    "longitude": 23.7269056,
+    "timestamp": 1758518184.135679
+  },
+  "39 sarri, athens, greece 10554, athens, greece": {
+    "address": "39 Sarri, Athens, Greece 10554, Athens, Greece",
+    "latitude": 37.9784306,
+    "longitude": 23.7219167,
+    "timestamp": 1758518186.138592
+  },
+  "rovertou galli 25, athens, greece 11742, athens, greece": {
+    "address": "Rovertou Galli 25, Athens, Greece 11742, Athens, Greece",
+    "latitude": 37.9691087,
+    "longitude": 23.7244527,
+    "timestamp": 1758518187.995111
+  },
+  "vryaxidos 9, pagrati, athens 11634, athens, greece": {
+    "address": "Vryaxidos 9, Pagrati, Athens 11634, Athens, Greece",
+    "latitude": 37.9669879,
+    "longitude": 23.747054,
+    "timestamp": 1758518189.584519
+  },
+  "christokopídou street, psyrri, athens, greece": {
+    "address": "Christokopídou Street, Psyrri, Athens, Greece",
+    "latitude": 37.9776063,
+    "longitude": 23.723651,
+    "timestamp": 1758518191.1686301
+  },
+  "menechmou 1-3, athens, greece": {
+    "address": "Menechmou 1-3, Athens, Greece",
+    "latitude": 37.9651328,
+    "longitude": 23.7310091,
+    "timestamp": 1758518192.7599192
+  },
+  "skoufou 15, athina 105 57, athens, greece": {
+    "address": "Skoufou 15, Athina 105 57, Athens, Greece",
+    "latitude": 37.9738366,
+    "longitude": 23.7327131,
+    "timestamp": 1758518194.499999
+  },
+  "sarri 39, athens, greece 10554, athens, greece": {
+    "address": "Sarri 39, Athens, Greece 10554, Athens, Greece",
+    "latitude": 37.9784306,
+    "longitude": 23.7219167,
+    "timestamp": 1758518196.5177119
+  },
+  "iasonos 45, metaxourgeio 104 36, athens, greece": {
+    "address": "Iasonos 45, Metaxourgeio 104 36, Athens, Greece",
+    "latitude": 37.9847265,
+    "longitude": 23.719978,
+    "timestamp": 1758518198.270228
+  },
+  "charitos 11, athina 106 75, athens, greece": {
+    "address": "Charitos 11, Athina 106 75, Athens, Greece",
+    "latitude": 37.97814839999999,
+    "longitude": 23.7428375,
+    "timestamp": 1758518199.995307
+  },
+  "archelaou 7, athens, greece 116 35, athens, greece": {
+    "address": "Archelaou 7, Athens, Greece 116 35, Athens, Greece",
+    "latitude": 37.9706663,
+    "longitude": 23.7466794,
+    "timestamp": 1758518201.7520971
+  },
+  "menechmou 1-3, athens, greece 11743, athens, greece": {
+    "address": "Menechmou 1-3, Athens, Greece 11743, Athens, Greece",
+    "latitude": 37.9651328,
+    "longitude": 23.7310091,
+    "timestamp": 1758518203.292368
+  },
+  "syggrou avenue 364, athens, greece 17674, athens, greece": {
+    "address": "Syggrou avenue 364, Athens, Greece 17674, Athens, Greece",
+    "latitude": 37.9414722,
+    "longitude": 23.6911501,
+    "timestamp": 1758518205.193861
+  },
+  "archimidous 1, pangrati 116 35, athens, greece": {
+    "address": "Archimidous 1, Pangrati 116 35, Athens, Greece",
+    "latitude": 37.9678,
+    "longitude": 23.7438785,
+    "timestamp": 1758518206.886431
+  },
+  "empedokleous 15, pangrati 116 35, athens, greece": {
+    "address": "Empedokleous 15, Pangrati 116 35, Athens, Greece",
+    "latitude": 37.966294,
+    "longitude": 23.7429093,
+    "timestamp": 1758518208.659086
+  },
+  "pyrronos 5, pangrati 116 36, athens, greece": {
+    "address": "Pyrronos 5, Pangrati 116 36, Athens, Greece",
+    "latitude": 37.9651238,
+    "longitude": 23.743077,
+    "timestamp": 1758518210.4044921
+  },
+  "empedokleous 28, pangrati 116 35, athens, greece": {
+    "address": "Empedokleous 28, Pangrati 116 35, Athens, Greece",
+    "latitude": 37.96506189999999,
+    "longitude": 23.7437682,
+    "timestamp": 1758518212.105317
+  },
+  "around zisimopoulou, pangrati, athens, greece": {
+    "address": "Around Zisimopoulou, Pangrati, Athens, Greece",
+    "latitude": 37.96775969999999,
+    "longitude": 23.7469741,
+    "timestamp": 1758518213.672244
+  },
+  "aminta 9, pangrati 116 35, athens, greece": {
+    "address": "Aminta 9, Pangrati 116 35, Athens, Greece",
+    "latitude": 37.9720242,
+    "longitude": 23.7447606,
+    "timestamp": 1758518215.412304
+  },
+  "asklipiou 1-3, exarchia 106 79, athens, greece": {
+    "address": "Asklipiou 1-3, Exarchia 106 79, Athens, Greece",
+    "latitude": 37.9817786,
+    "longitude": 23.7345682,
+    "timestamp": 1758518217.2772028
+  },
+  "leonidou 9, kerameikos 104 36, athens, greece": {
+    "address": "Leonidou 9, Kerameikos 104 36, Athens, Greece",
+    "latitude": 37.9836973,
+    "longitude": 23.7219714,
+    "timestamp": 1758518219.052333
+  },
+  "platia kypselis, athina 113 62, athens, greece": {
+    "address": "Platia Kypselis, Athina 113 62, Athens, Greece",
+    "latitude": 37.9971837,
+    "longitude": 23.7617615,
+    "timestamp": 1758518220.756663
+  },
+  "eptanisou 6, kypseli 113 61, athens, greece": {
+    "address": "Eptanisou 6, Kypseli 113 61, Athens, Greece",
+    "latitude": 37.996861,
+    "longitude": 23.7352969,
+    "timestamp": 1758518223.52772
+  },
+  "kypseli (private showroom, by appointment), athens, greece": {
+    "address": "Kypseli (private showroom, by appointment), Athens, Greece",
+    "latitude": 38.0027173,
+    "longitude": 23.7423148,
+    "timestamp": 1758518225.2192461
+  },
+  "ippokratous 129, exarchia 114 72, athens, greece": {
+    "address": "Ippokratous 129, Exarchia 114 72, Athens, Greece",
+    "latitude": 37.9859445,
+    "longitude": 23.7417822,
+    "timestamp": 1758518227.004193
+  },
+  "voulis 35, syntagma 105 57, athens, greece": {
+    "address": "Voulis 35, Syntagma 105 57, Athens, Greece",
+    "latitude": 37.9745847,
+    "longitude": 23.7323316,
+    "timestamp": 1758518228.720788
+  },
+  "zaharitsa 44, koukaki 117 41, athens, greece": {
+    "address": "Zaharitsa 44, Koukaki 117 41, Athens, Greece",
+    "latitude": 37.9646263,
+    "longitude": 23.7221096,
+    "timestamp": 1758518230.3160162
+  },
+  "5 delfon st., athens, greece 10680, athens, greece": {
+    "address": "5 Delfon St., Athens, Greece 10680, Athens, Greece",
+    "latitude": 37.9821544,
+    "longitude": 23.7369129,
+    "timestamp": 1758518232.859112
+  },
+  "aithras 1, athens, greece 11851, athens, greece": {
+    "address": "Aithras 1, Athens, Greece 11851, Athens, Greece",
+    "latitude": 37.9758284,
+    "longitude": 23.7140643,
+    "timestamp": 1758518234.5763981
+  },
+  "leof. mesogeion 262, cholargos 155 62, athens, greece": {
+    "address": "Leof. Mesogeion 262, Cholargos 155 62, Athens, Greece",
+    "latitude": 38.0061459,
+    "longitude": 23.7981616,
+    "timestamp": 1758518236.6910348
+  },
+  "keramikou 49, kerameikos 104 36, athens, greece": {
+    "address": "Keramikou 49, Kerameikos 104 36, Athens, Greece",
+    "latitude": 37.9822355,
+    "longitude": 23.7202599,
+    "timestamp": 1758518238.395692
+  },
+  "meg. alexandrou 125, athina 104 35, athens, greece": {
+    "address": "Meg. Alexandrou 125, Athina 104 35, Athens, Greece",
+    "latitude": 37.9810071,
+    "longitude": 23.7134029,
+    "timestamp": 1758518240.3037472
+  },
+  "aminta 12, athina 116 35, athens, greece": {
+    "address": "Aminta 12, Athina 116 35, Athens, Greece",
+    "latitude": 37.9718703,
+    "longitude": 23.7450342,
+    "timestamp": 1758518242.073372
+  },
+  "plateia avyssinias, monastiraki, athens, greece": {
+    "address": "Plateia Avyssinias, Monastiraki, Athens, Greece",
+    "latitude": 37.9766105,
+    "longitude": 23.7239613,
+    "timestamp": 1758518243.661692
+  },
+  "sarri 50, psirri, athens, greece": {
+    "address": "Sarri 50, Psirri, Athens, Greece",
+    "latitude": 37.9782126,
+    "longitude": 23.721217,
+    "timestamp": 1758518245.328866
+  },
+  "protogenous 11, psirri, athens, greece": {
+    "address": "Protogenous 11, Psirri, Athens, Greece",
+    "latitude": 37.9780593,
+    "longitude": 23.7256874,
+    "timestamp": 1758518246.9752939
+  },
+  "kallirrois 10, athina 117 43, athens, greece": {
+    "address": "Kallirrois 10, Athina 117 43, Athens, Greece",
+    "latitude": 37.9670963,
+    "longitude": 23.7316465,
+    "timestamp": 1758518249.09899
+  },
+  "melidoni 1, athina 105 53, athens, greece": {
+    "address": "Melidoni 1, Athina 105 53, Athens, Greece",
+    "latitude": 37.9783855,
+    "longitude": 23.7205159,
+    "timestamp": 1758518250.8166132
+  },
+  "syngrou ave 364, kallithea 176 74, athens, greece": {
+    "address": "Syngrou Ave 364, Kallithea 176 74, Athens, Greece",
+    "latitude": 37.9414722,
+    "longitude": 23.6911501,
+    "timestamp": 1758518252.695199
+  },
+  "evridamantos 15, athina 117 45, athens, greece": {
+    "address": "Evridamantos 15, Athina 117 45, Athens, Greece",
+    "latitude": 37.9572957,
+    "longitude": 23.7193458,
+    "timestamp": 1758518254.278327
+  },
+  "melidoni 1, thissio 105 55, athens, greece": {
+    "address": "Melidoni 1, Thissio 105 55, Athens, Greece",
+    "latitude": 37.9783855,
+    "longitude": 23.7205159,
+    "timestamp": 1758518256.9154298
+  },
+  "ermou 18 (inside karassos stoa, 2nd floor), athens, greece": {
+    "address": "Ermou 18 (inside Karassos Stoa, 2nd floor), Athens, Greece",
+    "latitude": 37.9761207,
+    "longitude": 23.7318918,
+    "timestamp": 1758518258.4766998
+  },
+  "σταδίου 30, korai 4, athina 105 64, athens, greece": {
+    "address": "Σταδίου 30, Korai 4, Athina 105 64, Athens, Greece",
+    "latitude": 37.9795077,
+    "longitude": 23.7321902,
+    "timestamp": 1758518260.3398342
+  },
+  "apostolou pavlou, thissio, athens, greece": {
+    "address": "Apostolou Pavlou, Thissio, Athens, Greece",
+    "latitude": 37.9740356,
+    "longitude": 23.7200752,
+    "timestamp": 1758518261.966847
+  },
+  "leoforos vasilissis amalias 1, athina 105 57, athens, greece": {
+    "address": "Leoforos Vasilissis Amalias 1, Athina 105 57, Athens, Greece",
+    "latitude": 37.9725878,
+    "longitude": 23.737433,
+    "timestamp": 1758518263.8515022
+  },
+  "schinias, attica, marathon 190 07, athens, greece": {
+    "address": "Schinias, Attica, Marathon 190 07, Athens, Greece",
+    "latitude": 37.9838096,
+    "longitude": 23.7275388,
+    "timestamp": 1758518265.513439
+  },
+  "acharnon 339, kato patissia 111 45, athens, greece": {
+    "address": "Acharnon 339, Kato Patissia 111 45, Athens, Greece",
+    "latitude": 38.0148955,
+    "longitude": 23.7281097,
+    "timestamp": 1758518267.724622
+  },
+  "λεωφ. νίκης 26, nea kallikratia 630 80, athens, greece": {
+    "address": "Λεωφ. Νίκης 26, Nea Kallikratia 630 80, Athens, Greece",
+    "latitude": 40.3102299,
+    "longitude": 23.0618951,
+    "timestamp": 1758518269.8843389
+  },
+  "kirikeioi 6, athina 105 55, athens, greece": {
+    "address": "Kirikeioi 6, Athina 105 55, Athens, Greece",
+    "latitude": 37.9760678,
+    "longitude": 23.7266421,
+    "timestamp": 1758518271.500057
+  },
+  "solonos 27 dimokritou, athina 106 71, athens, greece": {
+    "address": "Solonos 27 Dimokritou, Athina 106 71, Athens, Greece",
+    "latitude": 37.9788532,
+    "longitude": 23.7379421,
+    "timestamp": 1758518273.308758
+  },
+  "vriaxidos 9, athina 116 34, athens, greece": {
+    "address": "Vriaxidos 9, Athina 116 34, Athens, Greece",
+    "latitude": 37.9669879,
+    "longitude": 23.747054,
+    "timestamp": 1758518274.8952692
+  },
+  "2 anapiron polemou, pangrati, athens, greece": {
+    "address": "2 Anapiron Polemou, Pangrati, Athens, Greece",
+    "latitude": 37.9792896,
+    "longitude": 23.7493143,
+    "timestamp": 1758518276.5382988
+  },
+  "mitropoleos 23, syntagma, athens, greece": {
+    "address": "Mitropoleos 23, Syntagma, Athens, Greece",
+    "latitude": 37.9756684,
+    "longitude": 23.734052,
+    "timestamp": 1758518278.18314
+  },
+  "psarron 9, psiri, athens, greece": {
+    "address": "Psarron 9, Psiri, Athens, Greece",
+    "latitude": 37.9861244,
+    "longitude": 23.7220135,
+    "timestamp": 1758518279.838418
+  },
+  "thiseos 16, monastiraki, athens, greece": {
+    "address": "Thiseos 16, Monastiraki, Athens, Greece",
+    "latitude": 37.9772112,
+    "longitude": 23.7308897,
+    "timestamp": 1758518281.472192
+  },
+  "7-9 thiseos str., 10562, syntagma, athens, greece": {
+    "address": "7-9 Thiseos Str., 10562, Syntagma, Athens, Greece",
+    "latitude": 37.9770005,
+    "longitude": 23.730731,
+    "timestamp": 1758518283.190948
+  },
+  "2, limpona street, athina 105 60, athens, greece": {
+    "address": "2, Limpona Street, Athina 105 60, Athens, Greece",
+    "latitude": 37.9774881,
+    "longitude": 23.7283164,
+    "timestamp": 1758518284.990346
+  },
+  "kakourgodikiou 4, athina 105 54, athens, greece": {
+    "address": "Kakourgodikiou 4, Athina 105 54, Athens, Greece",
+    "latitude": 37.97766,
+    "longitude": 23.7260477,
+    "timestamp": 1758518286.541238
+  },
+  "ir. politechniou 15, ilioupoli 163 42, athens, greece": {
+    "address": "Ir. Politechniou 15, Ilioupoli 163 42, Athens, Greece",
+    "latitude": 37.9293853,
+    "longitude": 23.7561988,
+    "timestamp": 1758518288.330036
+  },
+  "leof. dimarchou aggelou metaxa, glifada 166 74, athens, greece": {
+    "address": "Leof. Dimarchou Aggelou Metaxa, Glifada 166 74, Athens, Greece",
+    "latitude": 37.8584078,
+    "longitude": 23.754776,
+    "timestamp": 1758518290.136744
+  },
+  "skoufou 6, athina 105 57, athens, greece": {
+    "address": "Skoufou 6, Athina 105 57, Athens, Greece",
+    "latitude": 37.9743998,
+    "longitude": 23.7325227,
+    "timestamp": 1758518291.978027
+  },
+  "archelaou 7, athens, greece 11523, athens, greece": {
+    "address": "Archelaou 7, Athens, Greece 11523, Athens, Greece",
+    "latitude": 37.9706663,
+    "longitude": 23.7466794,
+    "timestamp": 1758518293.772375
+  },
+  "φορμίωνος 12 μονής σέκου, athens, greece 11634, athens, greece": {
+    "address": "Φορμίωνος 12 Μονής Σέκου, Athens, Greece 11634, Athens, Greece",
+    "latitude": 37.9705578,
+    "longitude": 23.751401,
+    "timestamp": 1758518295.5967271
+  },
+  "2, vriaxidos street, athens, greece 11635, athens, greece": {
+    "address": "2, Vriaxidos Street, Athens, Greece 11635, Athens, Greece",
+    "latitude": 37.9673961,
+    "longitude": 23.7467568,
+    "timestamp": 1758518297.146532
+  },
+  "πλ. μεσολογγίου 3, athens, greece 11634, athens, greece": {
+    "address": "Πλ. Μεσολογγίου 3, Athens, Greece 11634, Athens, Greece",
+    "latitude": 37.9691659,
+    "longitude": 23.749012,
+    "timestamp": 1758518299.066572
+  },
+  "αθηνάς 11, athens, greece 10554, athens, greece": {
+    "address": "Αθηνάς 11, Athens, Greece 10554, Athens, Greece",
+    "latitude": 37.9773411,
+    "longitude": 23.7262049,
+    "timestamp": 1758518302.563848
+  },
+  "omirou 19, athens, greece 10671, athens, greece": {
+    "address": "Omirou 19, Athens, Greece 10671, Athens, Greece",
+    "latitude": 37.9796921,
+    "longitude": 23.7361226,
+    "timestamp": 1758518304.2993522
+  },
+  "18 akadimias st., athens, greece 10671, athens, greece": {
+    "address": "18 Akadimias st., Athens, Greece 10671, Athens, Greece",
+    "latitude": 37.9779439,
+    "longitude": 23.7374931,
+    "timestamp": 1758518306.88046
+  },
+  "φρυνης 51, athens, greece 11633, athens, greece": {
+    "address": "Φρυνης 51, Athens, Greece 11633, Athens, Greece",
+    "latitude": 37.9647432,
+    "longitude": 23.7497778,
+    "timestamp": 1758518308.52441
+  },
+  "erechthiou 19, athina 117 42, athens, greece": {
+    "address": "Erechthiou 19, Athina 117 42, Athens, Greece",
+    "latitude": 37.96709999999999,
+    "longitude": 23.7252034,
+    "timestamp": 1758518310.247846
+  },
+  "leof. poseidonos 10, alimos 174 55, athens, greece": {
+    "address": "Leof. Poseidonos 10, Alimos 174 55, Athens, Greece",
+    "latitude": 37.9162461,
+    "longitude": 23.7057843,
+    "timestamp": 1758518312.153984
+  },
+  "leof. eleftherias 45, alimos 174 55, athens, greece": {
+    "address": "Leof. Eleftherias 45, Alimos 174 55, Athens, Greece",
+    "latitude": 37.920754,
+    "longitude": 23.7063013,
+    "timestamp": 1758518313.883817
+  },
+  "konnou paleologou 24, nea smirni 171 21, athens, greece": {
+    "address": "Konnou Paleologou 24, Nea Smirni 171 21, Athens, Greece",
+    "latitude": 37.947859,
+    "longitude": 23.7082256,
+    "timestamp": 1758518315.7040288
+  },
+  "geor. papandreou 33, zografou 157 73, athens, greece": {
+    "address": "Geor. Papandreou 33, Zografou 157 73, Athens, Greece",
+    "latitude": 37.9803874,
+    "longitude": 23.764694,
+    "timestamp": 1758518317.644206
+  },
+  "ferekidou 5, athina 116 35, athens, greece": {
+    "address": "Ferekidou 5, Athina 116 35, Athens, Greece",
+    "latitude": 37.9669504,
+    "longitude": 23.7430775,
+    "timestamp": 1758518319.361241
+  },
+  "char. trikoupi 159, kifisiá, greece 14564, athens, greece": {
+    "address": "Char. Trikoupi 159, Kifisiá, Greece 14564, Athens, Greece",
+    "latitude": 38.0872926,
+    "longitude": 23.8092438,
+    "timestamp": 1758518321.690742
+  },
+  "polidefkous 41, pireas 185 45, athens, greece": {
+    "address": "Polidefkous 41, Pireas 185 45, Athens, Greece",
+    "latitude": 37.950316,
+    "longitude": 23.6426835,
+    "timestamp": 1758518323.411307
+  },
+  "55 agias varvaras street, athens, 172 35, greece, athens, greece": {
+    "address": "55 Agias Varvaras Street, Athens, 172 35, Greece, Athens, Greece",
+    "latitude": 37.9514642,
+    "longitude": 23.7352045,
+    "timestamp": 1758518325.146643
+  },
+  "faidrou 4, pagkrati, athens, greece": {
+    "address": "Faidrou 4, Pagkrati, Athens, Greece",
+    "latitude": 37.9699627,
+    "longitude": 23.7453894,
+    "timestamp": 1758518326.790064
+  },
+  "vasileiou tou megalou 40, athens, athens, greece": {
+    "address": "Vasileiou Tou Megalou 40, Athens, Athens, Greece",
+    "latitude": 37.9754928,
+    "longitude": 23.7075672,
+    "timestamp": 1758518328.4218738
+  },
+  "vissis 6, athens, athens, greece": {
+    "address": "Vissis 6, Athens, Athens, Greece",
+    "latitude": 37.9787324,
+    "longitude": 23.7276631,
+    "timestamp": 1758518330.11805
+  },
+  "7th floor, athenswas, athens, greece": {
+    "address": "7th floor, AthensWas, Athens, Greece",
+    "latitude": 37.9695119,
+    "longitude": 23.7308623,
+    "timestamp": 1758518331.681505
+  },
+  "leventi 5, athens, greece 10673, athens, greece": {
+    "address": "Leventi 5, Athens, Greece 10673, Athens, Greece",
+    "latitude": 37.9779389,
+    "longitude": 23.7417253,
+    "timestamp": 1758518333.46699
+  },
+  "ferekidou 5, athens, athens, greece": {
+    "address": "Ferekidou 5, Athens, Athens, Greece",
+    "latitude": 37.9669504,
+    "longitude": 23.7430775,
+    "timestamp": 1758518335.118227
+  },
+  "leof. poseidonos 14, vari 166 72, athens, greece": {
+    "address": "Leof. Poseidonos 14, Vari 166 72, Athens, Greece",
+    "latitude": 37.8183593,
+    "longitude": 23.8025372,
+    "timestamp": 1758518336.835553
+  },
+  "anifantou bastogianni 10, neo psychiko, athens, greece": {
+    "address": "Anifantou Bastogianni 10, Neo Psychiko, Athens, Greece",
+    "latitude": 38.0057879,
+    "longitude": 23.7826199,
+    "timestamp": 1758518338.404091
+  },
+  "intercontinental athenaeum, athens, greece": {
+    "address": "InterContinental Athenaeum, Athens, Greece",
+    "latitude": 37.9595518,
+    "longitude": 23.7217644,
+    "timestamp": 1758518340.037923
+  },
+  "46 leoforos konstantinoupoleos, athens, athens, greece": {
+    "address": "46 Leoforos Konstantinoupoleos, Athens, Athens, Greece",
+    "latitude": 37.9781618,
+    "longitude": 23.7093891,
+    "timestamp": 1758518341.6725252
+  },
+  "technopolis, pireos 100, athens, athens, greece": {
+    "address": "Technopolis, Pireos 100, Athens, Athens, Greece",
+    "latitude": 37.9782261,
+    "longitude": 23.7136476,
+    "timestamp": 1758518343.39082
+  },
+  "lepiniwn 5-7, botanicos, athens, athens, greece": {
+    "address": "Lepiniwn 5-7, Botanicos, Athens, Athens, Greece",
+    "latitude": 37.9838096,
+    "longitude": 23.7275388,
+    "timestamp": 1758518344.940227
+  },
+  "18 akadimias street, athens, athens, greece": {
+    "address": "18 Akadimias Street, Athens, Athens, Greece",
+    "latitude": 37.9779439,
+    "longitude": 23.7374931,
+    "timestamp": 1758518346.887758
+  },
+  "4 archelaou street, pangrati, athens, greece": {
+    "address": "4 Archelaou Street, Pangrati, Athens, Greece",
+    "latitude": 37.9705767,
+    "longitude": 23.7471092,
+    "timestamp": 1758518348.573969
+  },
+  "34 empedokleous street, pangrati, athens, greece": {
+    "address": "34 Empedokleous Street, Pangrati, Athens, Greece",
+    "latitude": 37.9647705,
+    "longitude": 23.7439513,
+    "timestamp": 1758518350.182837
+  },
+  "27-29 varnava square, pangrati, athens, greece": {
+    "address": "27-29 Varnava Square, Pangrati, Athens, Greece",
+    "latitude": 37.9657146,
+    "longitude": 23.7433075,
+    "timestamp": 1758518351.901679
+  },
+  "4 vryaxidos street, pangrati, athens, greece": {
+    "address": "4 Vryaxidos Street, Pangrati, Athens, Greece",
+    "latitude": 37.9673166,
+    "longitude": 23.7467288,
+    "timestamp": 1758518353.424453
+  },
+  "45 patriarchou ioakeim street, kolonaki, athens, greece": {
+    "address": "45 Patriarchou Ioakeim Street, Kolonaki, Athens, Greece",
+    "latitude": 37.9783532,
+    "longitude": 23.745085,
+    "timestamp": 1758518355.1143832
+  },
+  "menechmou 1-3, athens, athens, greece": {
+    "address": "Menechmou 1-3, Athens, Athens, Greece",
+    "latitude": 37.9651328,
+    "longitude": 23.7310091,
+    "timestamp": 1758518356.666764
+  },
+  "ermou 111, athens, greece 10555, athens, greece": {
+    "address": "Ermou 111, Athens, Greece 10555, Athens, Greece",
+    "latitude": 37.9769565,
+    "longitude": 23.7234624,
+    "timestamp": 1758518358.462823
+  },
+  "δράκου 19, athens, greece 11742, athens, greece": {
+    "address": "Δράκου 19, Athens, Greece 11742, Athens, Greece",
+    "latitude": 37.9655843,
+    "longitude": 23.7254602,
+    "timestamp": 1758518360.155146
+  },
+  "varnava, pagrati, athens, greece": {
+    "address": "Varnava, Pagrati, Athens, Greece",
+    "latitude": 37.9660217,
+    "longitude": 23.7434413,
+    "timestamp": 1758518361.7378612
+  },
+  "empedokleous 15, pagrati, athens, greece": {
+    "address": "Empedokleous 15, Pagrati, Athens, Greece",
+    "latitude": 37.966294,
+    "longitude": 23.7429093,
+    "timestamp": 1758518363.32376
+  },
+  "dorieon 36, kato petralona, athens, greece": {
+    "address": "Dorieon 36, Kato Petralona, Athens, Greece",
+    "latitude": 37.9673853,
+    "longitude": 23.7121638,
+    "timestamp": 1758518364.948967
+  },
+  "mitropoleos 46, syntagma, athens, greece": {
+    "address": "Mitropoleos 46, Syntagma, Athens, Greece",
+    "latitude": 37.9754679,
+    "longitude": 23.7306987,
+    "timestamp": 1758518366.612414
+  },
+  "leoforos vasileos alexandrou 5, ilisia, athens, greece": {
+    "address": "Leoforos Vasileos Alexandrou 5, Ilisia, Athens, Greece",
+    "latitude": 37.9744272,
+    "longitude": 23.7509116,
+    "timestamp": 1758518368.358182
+  },
+  "22 km outside athens, athens, greece": {
+    "address": "22 km outside Athens, Athens, Greece",
+    "latitude": 38.0272521,
+    "longitude": 23.7446619,
+    "timestamp": 1758518370.349538
+  },
+  "kifisias ave, chalandri area, athens, greece": {
+    "address": "Kifisias Ave, Chalandri area, Athens, Greece",
+    "latitude": 37.9932681,
+    "longitude": 23.7668343,
+    "timestamp": 1758518372.013141
+  },
+  "panormou 115, ambelokipi, athens, greece": {
+    "address": "Panormou 115, Ambelokipi, Athens, Greece",
+    "latitude": 37.9933755,
+    "longitude": 23.7655951,
+    "timestamp": 1758518373.679378
+  },
+  "mesogeion avenue, chalandri, athens, greece": {
+    "address": "Mesogeion Avenue, Chalandri, Athens, Greece",
+    "latitude": 37.992251,
+    "longitude": 23.7739313,
+    "timestamp": 1758518375.2983732
   }
 }

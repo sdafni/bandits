@@ -53,7 +53,7 @@ GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')  # For geocoding
 
 # Pipeline settings
 DRY_RUN = False
-EMPTY_BUCKET_BEFORE_UPLOAD = False  # Set to True to empty bucket, False to reuse existing images
+EMPTY_BUCKET_BEFORE_UPLOAD = True  # Set to True to empty bucket, False to reuse existing images
 MAX_BANDITS = 500  # Maximum number of bandits to process
 
 # Geocoding settings
@@ -554,8 +554,8 @@ class DocumentProcessor:
         if USE_FREE_GEOCODING:
             print(f"   🆓 Trying Nominatim (free)...")
             lat, lng = self.geocode_with_nominatim(full_address)
-            
-            # If Nominatim fails and Google API is available, try Google as fallback
+
+            # Always try Google as fallback if Nominatim fails and Google API is available
             if (lat is None or lng is None) and GOOGLE_MAPS_API_KEY:
                 print(f"   🔄 Nominatim failed, trying Google Maps as fallback...")
                 lat, lng = self.geocode_with_google(full_address)
@@ -564,7 +564,8 @@ class DocumentProcessor:
             if GOOGLE_MAPS_API_KEY:
                 print(f"   🗺️  Trying Google Maps...")
                 lat, lng = self.geocode_with_google(full_address)
-            
+
+            # If Google fails, try Nominatim as fallback
             if (lat is None or lng is None):
                 print(f"   🔄 Google failed, trying Nominatim as fallback...")
                 lat, lng = self.geocode_with_nominatim(full_address)
