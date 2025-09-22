@@ -146,6 +146,63 @@ class DocumentProcessor:
         except Exception as e:
             print(f"   ❌ Error emptying bucket: {e}")
 
+    def find_bandit_patterns_in_lines(self, lines: List[str], start_index: int = 0, max_bandits: int = None) -> List[Dict[str, Any]]:
+        """Helper method to find bandit patterns (IMAGE -> Name -> Age) in text lines"""
+        import re
+        found_patterns = []
+
+        for i, line in enumerate(lines[start_index:], start_index):
+            line_stripped = line.strip()
+
+            # Look for IMAGE placeholders
+            if '[IMAGE:' in line_stripped:
+                # Extract image placeholder ID
+                image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
+                image_id = image_match.group(1) if image_match else f"img_unknown_{i}"
+
+                # Look for a potential bandit name in the next few lines
+                for j in range(i+1, min(i+5, len(lines))):
+                    name_line = lines[j].strip()
+
+                    # Skip empty lines and other image placeholders
+                    if not name_line or '[IMAGE:' in name_line:
+                        continue
+
+                    # Check if this looks like a name (short line without digits, not too long)
+                    if (len(name_line.split()) <= 4 and  # Allow up to 4 words for full names
+                        not any(word.isdigit() for word in name_line.split()) and
+                        len(name_line) > 2 and
+                        len(name_line) < 50):  # Reasonable name length
+
+                        # Look for "Age:" in the following lines
+                        age_match = None
+                        for k in range(j+1, min(j+8, len(lines))):
+                            if 'Age:' in lines[k]:
+                                age_pattern = re.search(r'Age:\s*(\d+)', lines[k])
+                                if age_pattern:
+                                    age_match = age_pattern.group(1)
+                                break
+
+                        if age_match:
+                            pattern = {
+                                'line_index': i,
+                                'image_id': image_id,
+                                'name': name_line,
+                                'age': age_match,
+                                'name_line_index': j,
+                                'image_line': line_stripped
+                            }
+                            found_patterns.append(pattern)
+
+                            # Stop if we've reached the maximum
+                            if max_bandits and len(found_patterns) >= max_bandits:
+                                return found_patterns
+
+                            # Found a valid pattern, break out of name search loop
+                            break
+
+        return found_patterns
+
     def clean_text(self, text: str) -> str:
         """Clean text by removing non-readable characters and normalizing whitespace"""
         # Remove common non-readable characters
@@ -198,77 +255,31 @@ class DocumentProcessor:
         doc.close()
         
         # Now analyze the complete text to find bandits with debugging
-        # Pattern: [IMAGE: xxx] followed by name, followed by "Age:" 
+        # Pattern: [IMAGE: xxx] followed by name, followed by "Age:"
         print(f"\n🔍 Analyzing complete text for bandit patterns (IMAGE -> Name -> Age)...")
         lines = readable_text.split('\n')
-        import re
-        
-        for i, line in enumerate(lines):
-            line_stripped = line.strip()
-            
-            # Look for IMAGE placeholders
-            if '[IMAGE:' in line_stripped:
-                # Extract image placeholder ID
-                image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
-                image_id = image_match.group(1) if image_match else f"img_unknown_{i}"
-                print(f"🖼️  Found image at line {i}: {line_stripped} -> ID: {image_id}")
-                
-                # Look for a potential bandit name in the next few lines
-                for j in range(i+1, min(i+5, len(lines))):
-                    name_line = lines[j].strip()
-                    
-                    # Skip empty lines and other image placeholders
-                    if not name_line or '[IMAGE:' in name_line:
-                        continue
-                    
-                    # Check if this looks like a name (short line without digits, not too long)
-                    if (len(name_line.split()) <= 4 and  # Allow up to 4 words for full names
-                        not any(word.isdigit() for word in name_line.split()) and
-                        len(name_line) > 2 and
-                        len(name_line) < 50):  # Reasonable name length
-                        
-                        print(f"   🤔 Potential name at line {j}: '{name_line}'")
-                        
-                        # Now look for "Age:" in the following lines
-                        age_found = False
-                        age_line = ""
-                        for k in range(j+1, min(j+8, len(lines))):
-                            if 'Age:' in lines[k]:
-                                age_found = True
-                                age_line = lines[k].strip()
-                                print(f"   ✅ Found Age at line {k}: '{age_line}'")
-                                break
-                        
-                        if age_found:
-                            # Extract age number from the age line
-                            age_match = None
-                            age_pattern = re.search(r'Age:\s*(\d+)', age_line)
-                            if age_pattern:
-                                age_match = age_pattern.group(1)
-                            
-                            # Create a unique identifier: name_age_imageid
-                            bandit_key = f"{name_line}_{age_match}_{image_id}"
-                            
-                            # Check for duplicates (same name+age+image combination)
-                            if bandit_key not in found_bandits:
-                                found_bandits.append(bandit_key)
-                                print(f"🎯 CONFIRMED BANDIT #{len(found_bandits)}: {name_line}, Age: {age_match}, Image: {image_id}")
-                                
-                                if len(found_bandits) >= max_bandits:
-                                    print(f"✅ Reached maximum of {max_bandits} bandits, stopping analysis")
-                                    break
-                            else:
-                                print(f"   ⚠️  Duplicate bandit ignored: {name_line} (same name+age+image)")
-                            
-                            # Found a valid bandit, break out of name search loop
-                            break
-                        else:
-                            print(f"   ❌ No Age found for '{name_line}' - not a bandit")
-                    else:
-                        print(f"   ❌ Line doesn't look like a name: '{name_line}' (too long/has digits/etc)")
-                
-                if len(found_bandits) >= max_bandits:
-                    break
+
+        # Use helper method to find patterns
+        patterns = self.find_bandit_patterns_in_lines(lines, max_bandits=max_bandits)
+
+        # Process patterns and create bandit keys
+        for pattern in patterns:
+            print(f"🖼️  Found image at line {pattern['line_index']}: {pattern['image_line']} -> ID: {pattern['image_id']}")
+            print(f"   🤔 Potential name at line {pattern['name_line_index']}: '{pattern['name']}'")
+            print(f"   ✅ Found Age: {pattern['age']}")
+
+            # Create a unique identifier: name_age_imageid
+            bandit_key = f"{pattern['name']}_{pattern['age']}_{pattern['image_id']}"
+
+            # Check for duplicates (same name+age+image combination)
+            if bandit_key not in found_bandits:
+                found_bandits.append(bandit_key)
+                print(f"🎯 CONFIRMED BANDIT #{len(found_bandits)}: {pattern['name']}, Age: {pattern['age']}, Image: {pattern['image_id']}")
+            else:
+                print(f"   ⚠️  Duplicate bandit ignored: {pattern['name']} (same name+age+image)")
+
+        if len(found_bandits) >= max_bandits:
+            print(f"✅ Reached maximum of {max_bandits} bandits")
         
         print(f"\n📊 BANDIT DETECTION SUMMARY:")
         print(f"   Total bandits found: {len(found_bandits)}")
@@ -709,58 +720,40 @@ class DocumentProcessor:
             print(f"   - {info['name']}{age_str}{image_str}")
         
         import re
-        
+
+        # Use helper method to find all patterns in the text
+        all_patterns = self.find_bandit_patterns_in_lines(lines)
+
         for i, line in enumerate(lines):
             line_stripped = line.strip()
-            
+
             # Look for IMAGE placeholders that start bandit sections
             if '[IMAGE:' in line_stripped:
                 # Extract image ID from this line
                 image_match = re.search(r'\[IMAGE:\s*([^]]+)\]', line_stripped)
                 current_image_id = image_match.group(1) if image_match else None
                 print(f"🖼️  Found image at line {i}: {line_stripped} -> ID: {current_image_id}")
-                
-                # Look for a bandit name + age combination in the next few lines
+
+                # Check if this image corresponds to any pattern found by our helper
                 detected_bandit = None
-                found_name = ""
-                found_age = None
-                
-                for j in range(i+1, min(i+8, len(lines))):
-                    name_line = lines[j].strip()
-                    
-                    # Skip empty lines and other image placeholders
-                    if not name_line or '[IMAGE:' in name_line:
-                        continue
-                    
-                    # Check if this looks like a name
-                    if (len(name_line.split()) <= 4 and
-                        not any(word.isdigit() for word in name_line.split()) and
-                        len(name_line) > 2 and
-                        len(name_line) < 50):
-                        
-                        found_name = name_line
-                        
-                        # Look for age in following lines
-                        for k in range(j+1, min(j+8, len(lines))):
-                            if 'Age:' in lines[k]:
-                                age_pattern = re.search(r'Age:\s*(\d+)', lines[k])
-                                if age_pattern:
-                                    found_age = age_pattern.group(1)
-                                break
-                        
-                        # Now check if this name+age+image combination matches any detected bandit
-                        for info in bandit_info:
-                            name_match = (info['name'].lower() == found_name.lower() or 
-                                        info['name'] in found_name or found_name in info['name'])
-                            age_match = (info['age'] == found_age)
-                            image_match = (info['image_id'] == current_image_id) if info['image_id'] else True
-                            
-                            if name_match and age_match and image_match:
-                                detected_bandit = info
-                                print(f"   ✅ Found detected bandit: {info['name']}, Age: {info['age']}, Image: {info['image_id']}")
-                                break
-                        
-                        if detected_bandit:
+                pattern_for_this_image = None
+
+                for pattern in all_patterns:
+                    if pattern['line_index'] == i and pattern['image_id'] == current_image_id:
+                        pattern_for_this_image = pattern
+                        break
+
+                if pattern_for_this_image:
+                    # Now check if this pattern matches any detected bandit from our list
+                    for info in bandit_info:
+                        name_match = (info['name'].lower() == pattern_for_this_image['name'].lower() or
+                                    info['name'] in pattern_for_this_image['name'] or pattern_for_this_image['name'] in info['name'])
+                        age_match = (info['age'] == pattern_for_this_image['age'])
+                        image_match = (info['image_id'] == current_image_id) if info['image_id'] else True
+
+                        if name_match and age_match and image_match:
+                            detected_bandit = info
+                            print(f"   ✅ Found detected bandit: {info['name']}, Age: {info['age']}, Image: {info['image_id']}")
                             break
                 
                 if detected_bandit:
