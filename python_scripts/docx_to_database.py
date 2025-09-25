@@ -11,11 +11,7 @@ This script handles the entire workflow from DOCX file to populated Supabase dat
 6. Populate database with all bandits and events
 
 Usage:
-    # Normal processing mode:
-    python docx_to_database.py
-
-    # Replace a specific bandit's image:
-    python docx_to_database.py replace-image "BanditName" "/path/to/new/image.jpg"
+    python docx_to_database.py input.docx
 
 Requirements:
     - Install dependencies: pip install -r requirements.txt
@@ -806,102 +802,6 @@ class DocumentProcessor:
 
         print(f"📊 Upload summary: {uploaded_count} uploaded, {existing_count} existing")
         return image_urls
-
-    def replace_bandit_image(self, bandit_name: str, new_image_path: str) -> bool:
-        """Replace a specific bandit's image in Supabase while keeping the same filename"""
-        print(f"🔄 Replacing image for bandit: {bandit_name}")
-
-        if not supabase:
-            print("❌ Supabase not configured")
-            return False
-
-        # Check if the new image file exists
-        image_path = Path(new_image_path)
-        if not image_path.exists():
-            print(f"❌ Image file not found: {new_image_path}")
-            return False
-
-        try:
-            # Step 1: Find the bandit in the database
-            bandits_response = supabase.table("bandit").select("*").eq("name", bandit_name).execute()
-
-            if not bandits_response.data:
-                print(f"❌ Bandit '{bandit_name}' not found in database")
-                return False
-
-            bandit = bandits_response.data[0]
-            current_image_url = bandit.get('image_url', '')
-
-            if not current_image_url:
-                print(f"❌ Bandit '{bandit_name}' has no current image URL")
-                return False
-
-            print(f"📍 Current image URL: {current_image_url}")
-
-            # Step 2: Extract the filename from the current URL
-            # URL format is typically: https://[domain]/storage/v1/object/public/[bucket]/pdf_images/[filename]
-            if '/pdf_images/' in current_image_url:
-                filename = current_image_url.split('/pdf_images/')[-1]
-            else:
-                print(f"❌ Could not extract filename from URL: {current_image_url}")
-                return False
-
-            print(f"📎 Extracted filename: {filename}")
-
-            # Step 3: Apply face detection and cropping to the new image
-            with open(image_path, 'rb') as f:
-                new_image_data = f.read()
-
-            processed_data, face_detected = self.detect_and_crop_face(new_image_data)
-            crop_status = "with face cropping" if face_detected else "without face cropping"
-            print(f"🖼️  Processed new image {crop_status}")
-
-            # Step 4: Upload the new image with the same filename (this will overwrite)
-            file_path = f"pdf_images/{filename}"
-
-            if not DRY_RUN:
-                try:
-                    # First, try to remove the old file
-                    try:
-                        supabase.storage.from_(BUCKET_NAME).remove([file_path])
-                        print(f"🗑️  Removed old image: {filename}")
-                    except Exception as remove_error:
-                        print(f"⚠️  Could not remove old image (may not exist): {remove_error}")
-
-                    # Upload the new image
-                    upload_response = supabase.storage.from_(BUCKET_NAME).upload(
-                        path=file_path,
-                        file=processed_data,
-                        file_options={"content-type": "image/jpeg"}
-                    )
-
-                    # Get the new public URL (should be the same as before)
-                    new_public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
-
-                    print(f"✅ Successfully replaced image for '{bandit_name}'")
-                    print(f"📍 New image URL: {new_public_url}")
-
-                    # The image_url in the database should remain the same since we used the same filename
-                    # But let's verify and update if needed
-                    if new_public_url != current_image_url:
-                        print(f"🔄 Updating database with new URL...")
-                        supabase.table("bandit").update({
-                            "image_url": new_public_url
-                        }).eq("name", bandit_name).execute()
-                        print(f"✅ Database updated with new URL")
-
-                    return True
-
-                except Exception as upload_error:
-                    print(f"❌ Upload failed: {upload_error}")
-                    return False
-            else:
-                print(f"🏃 DRY RUN: Would replace image for '{bandit_name}' with {new_image_path}")
-                return True
-
-        except Exception as e:
-            print(f"❌ Error replacing bandit image: {str(e)}")
-            return False
 
     def split_text_by_bandits(self, text: str, detected_bandits: List[str]) -> List[str]:
         """Split text into chunks by bandit sections using the pre-detected bandits list"""
@@ -1734,36 +1634,9 @@ Return only valid JSON with "bandit", "events", and "bandit_events" arrays.
 
 def main():
     """Main function"""
-    # Check for replace image command
-    if len(sys.argv) == 4 and sys.argv[1] == "replace-image":
-        bandit_name = sys.argv[2]
-        image_path = sys.argv[3]
-
-        print(f"🔄 REPLACE IMAGE MODE")
-        print(f"   Bandit: {bandit_name}")
-        print(f"   Image: {image_path}")
-
-        # Verify environment setup for replace mode
-        if not SUPABASE_URL or not SUPABASE_KEY or not BUCKET_NAME:
-            print("❌ Missing Supabase configuration for replace mode")
-            print("Required: SUPABASE_URL, SUPABASE_ANON_KEY, BUCKET_NAME")
-            sys.exit(1)
-
-        # Create processor and replace image
-        processor = DocumentProcessor("dummy.pdf")  # PDF path not needed for replace mode
-        success = processor.replace_bandit_image(bandit_name, image_path)
-
-        if success:
-            print(f"✅ Successfully replaced image for '{bandit_name}'")
-            sys.exit(0)
-        else:
-            print(f"❌ Failed to replace image for '{bandit_name}'")
-            sys.exit(1)
-
-    # Normal processing mode
     # Always use banditsORIG.docx.pdf
     docx_path = "banditsORIG.docx.pdf"
-
+    
     if not Path(docx_path).exists():
         print(f"❌ Required PDF file not found: {docx_path}")
         print("Please ensure banditsORIG.docx.pdf exists in the current directory")
