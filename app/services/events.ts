@@ -3,6 +3,8 @@ import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 type Event = Database['public']['Tables']['event']['Row'];
+type EventInsert = Database['public']['Tables']['event']['Insert'];
+type EventUpdate = Database['public']['Tables']['event']['Update'];
 
 export interface EventFilters {
   searchQuery?: string;
@@ -372,4 +374,63 @@ export async function getEventBanditRecommendations(eventId: string): Promise<Pi
 
   // Extract bandit data from the joined result
   return data?.map((item: any) => item.bandit).filter(Boolean) || [];
+}
+
+export async function updateEvent(id: string, updates: EventUpdate): Promise<Event> {
+  const { data, error } = await supabase
+    .from('event')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating event:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function createEvent(event: EventInsert): Promise<Event> {
+  const { data, error } = await supabase
+    .from('event')
+    .insert(event)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating event:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('event')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting event:', error);
+    throw error;
+  }
+}
+
+export async function getEventById(id: string): Promise<Event | null> {
+  const { data, error } = await supabase
+    .from('event')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error fetching event:', error);
+    throw error;
+  }
+
+  return data;
 } 

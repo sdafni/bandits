@@ -2,6 +2,8 @@ import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 type Bandit = Database['public']['Tables']['bandit']['Row'];
+type BanditInsert = Database['public']['Tables']['bandit']['Insert'];
+type BanditUpdate = Database['public']['Tables']['bandit']['Update'];
 
 export async function getBandits(): Promise<Bandit[]> {
   const { data, error } = await supabase
@@ -43,4 +45,63 @@ export async function getUniqueCities(): Promise<string[]> {
 
   const cities = [...new Set(data?.map(item => item.city) || [])];
   return cities.sort();
+}
+
+export async function updateBandit(id: string, updates: BanditUpdate): Promise<Bandit> {
+  const { data, error } = await supabase
+    .from('bandit')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating bandit:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function createBandit(bandit: BanditInsert): Promise<Bandit> {
+  const { data, error } = await supabase
+    .from('bandit')
+    .insert(bandit)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating bandit:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteBandit(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('bandit')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting bandit:', error);
+    throw error;
+  }
+}
+
+export async function getBanditById(id: string): Promise<Bandit | null> {
+  const { data, error } = await supabase
+    .from('bandit')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error fetching bandit:', error);
+    throw error;
+  }
+
+  return data;
 } 
