@@ -211,18 +211,21 @@ interface EditModalProps {
 
 const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave }) => {
   const [formData, setFormData] = useState<any>({});
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMainImage, setSelectedMainImage] = useState<string | null>(null);
+  const [selectedFaceImage, setSelectedFaceImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
+  const [dragOverMain, setDragOverMain] = useState(false);
+  const [dragOverFace, setDragOverFace] = useState(false);
 
   useEffect(() => {
     if (item) {
       setFormData({ ...item.item });
-      setSelectedImage(null);
+      setSelectedMainImage(null);
+      setSelectedFaceImage(null);
     }
   }, [item]);
 
-  const pickImage = async () => {
+  const pickMainImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -231,13 +234,26 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
     });
 
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      setSelectedMainImage(result.assets[0].uri);
     }
   };
 
-  const handleDrop = (e: any) => {
+  const pickFaceImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setSelectedFaceImage(result.assets[0].uri);
+    }
+  };
+
+  const handleMainDrop = (e: any) => {
     e.preventDefault();
-    setDragOver(false);
+    setDragOverMain(false);
 
     if (Platform.OS !== 'web') return;
 
@@ -248,7 +264,7 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target?.result) {
-            setSelectedImage(event.target.result as string);
+            setSelectedMainImage(event.target.result as string);
           }
         };
         reader.readAsDataURL(file);
@@ -258,32 +274,107 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
     }
   };
 
-  const handleDragOver = (e: any) => {
+  const handleFaceDrop = (e: any) => {
     e.preventDefault();
-    setDragOver(true);
+    setDragOverFace(false);
+
+    if (Platform.OS !== 'web') return;
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setSelectedFaceImage(event.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        Alert.alert('Error', 'Please select an image file');
+      }
+    }
   };
 
-  const handleDragLeave = (e: any) => {
+  const handleMainDragOver = (e: any) => {
     e.preventDefault();
-    setDragOver(false);
+    setDragOverMain(true);
   };
 
-  const uploadImage = async (): Promise<string> => {
-    if (!selectedImage) return formData.image_url;
+  const handleMainDragLeave = (e: any) => {
+    e.preventDefault();
+    setDragOverMain(false);
+  };
+
+  const handleFaceDragOver = (e: any) => {
+    e.preventDefault();
+    setDragOverFace(true);
+  };
+
+  const handleFaceDragLeave = (e: any) => {
+    e.preventDefault();
+    setDragOverFace(false);
+  };
+
+  const uploadMainImage = async (): Promise<string> => {
+    if (!selectedMainImage) return formData.image_url;
 
     const filename = `${item.type}_${item.item.id}_${Date.now()}.jpg`;
 
     let fileToUpload;
 
-    if (Platform.OS === 'web' && selectedImage.startsWith('data:')) {
+    if (Platform.OS === 'web' && selectedMainImage.startsWith('data:')) {
       // Convert base64 to blob for web drag & drop
-      const response = await fetch(selectedImage);
+      const response = await fetch(selectedMainImage);
       fileToUpload = await response.blob();
     } else {
       // For mobile image picker
       const formDataUpload = new FormData();
       formDataUpload.append('file', {
-        uri: selectedImage,
+        uri: selectedMainImage,
+        type: 'image/jpeg',
+        name: filename,
+      } as any);
+      fileToUpload = formDataUpload;
+    }
+
+    const { data, error } = await supabase.storage
+      .from('banditsassets4')
+      .upload(filename, fileToUpload, {
+        contentType: 'image/jpeg',
+        upsert: true
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('banditsassets4')
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
+  const uploadFaceImage = async (): Promise<string | null> => {
+    if (!selectedFaceImage) return formData.face_image_url;
+
+    // Extract the filename from the main image URL and use it for face image
+    const mainImageUrl = formData.image_url;
+    const urlParts = mainImageUrl.split('/');
+    const originalFilename = urlParts[urlParts.length - 1];
+    const filename = `face_images/${originalFilename}`;
+
+    let fileToUpload;
+
+    if (Platform.OS === 'web' && selectedFaceImage.startsWith('data:')) {
+      // Convert base64 to blob for web drag & drop
+      const response = await fetch(selectedFaceImage);
+      fileToUpload = await response.blob();
+    } else {
+      // For mobile image picker
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', {
+        uri: selectedFaceImage,
         type: 'image/jpeg',
         name: filename,
       } as any);
@@ -314,8 +405,14 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
       console.log('Form data:', formData);
 
       let imageUrl = formData.image_url;
-      if (selectedImage) {
-        imageUrl = await uploadImage();
+      let faceImageUrl = formData.face_image_url;
+
+      if (selectedMainImage) {
+        imageUrl = await uploadMainImage();
+      }
+
+      if (selectedFaceImage && item.type === 'bandit') {
+        faceImageUrl = await uploadFaceImage();
       }
 
       if (item.type === 'bandit') {
@@ -326,6 +423,7 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
           city: formData.city,
           occupation: formData.occupation,
           image_url: imageUrl,
+          face_image_url: faceImageUrl,
           rating: parseInt(formData.rating) || 0,
           is_liked: formData.is_liked,
           icon: formData.icon,
@@ -379,6 +477,7 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
           <FormField label="Description" value={formData.description} onChangeText={(text) => setFormData({...formData, description: text})} multiline />
           <FormField label="Why Follow" value={formData.why_follow} onChangeText={(text) => setFormData({...formData, why_follow: text})} multiline />
           <FormField label="Icon" value={formData.icon} onChangeText={(text) => setFormData({...formData, icon: text})} />
+          <FormField label="Face Image URL" value={formData.face_image_url} onChangeText={(text) => setFormData({...formData, face_image_url: text})} />
         </>
       );
     } else {
@@ -424,22 +523,24 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
         </View>
 
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+          {/* Main Image Upload */}
+          <Text style={styles.imageLabel}>Main Image</Text>
           <View
             style={[
               styles.imageContainer,
-              dragOver && Platform.OS === 'web' && styles.imageContainerDragOver
+              dragOverMain && Platform.OS === 'web' && styles.imageContainerDragOver
             ]}
           >
-            <TouchableOpacity onPress={pickImage} style={styles.imageWrapper}>
+            <TouchableOpacity onPress={pickMainImage} style={styles.imageWrapper}>
               <Image
-                source={{ uri: selectedImage || formData.image_url }}
+                source={{ uri: selectedMainImage || formData.image_url }}
                 style={styles.modalImage}
               />
               <View style={styles.imageOverlay}>
                 <Text style={styles.imageOverlayText}>
                   {Platform.OS === 'web'
-                    ? (dragOver ? 'Drop image here' : 'Tap to change image or drag & drop')
-                    : 'Tap to change image'
+                    ? (dragOverMain ? 'Drop main image here' : 'Tap to change main image or drag & drop')
+                    : 'Tap to change main image'
                   }
                 </Text>
               </View>
@@ -463,18 +564,76 @@ const EditModal: React.FC<EditModalProps> = ({ visible, onClose, item, onSave })
                     const reader = new FileReader();
                     reader.onload = (event) => {
                       if (event.target?.result) {
-                        setSelectedImage(event.target.result as string);
+                        setSelectedMainImage(event.target.result as string);
                       }
                     };
                     reader.readAsDataURL(file);
                   }
                 }}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
+                onDrop={handleMainDrop}
+                onDragOver={handleMainDragOver}
+                onDragLeave={handleMainDragLeave}
               />
             )}
           </View>
+
+          {/* Face Image Upload (only for bandits) */}
+          {item.type === 'bandit' && (
+            <>
+              <Text style={styles.imageLabel}>Face Image (for cards)</Text>
+              <View
+                style={[
+                  styles.imageContainer,
+                  dragOverFace && Platform.OS === 'web' && styles.imageContainerDragOver
+                ]}
+              >
+                <TouchableOpacity onPress={pickFaceImage} style={styles.imageWrapper}>
+                  <Image
+                    source={{ uri: selectedFaceImage || formData.face_image_url || formData.image_url }}
+                    style={styles.modalImage}
+                  />
+                  <View style={styles.imageOverlay}>
+                    <Text style={styles.imageOverlayText}>
+                      {Platform.OS === 'web'
+                        ? (dragOverFace ? 'Drop face image here' : 'Tap to change face image or drag & drop')
+                        : 'Tap to change face image'
+                      }
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                {Platform.OS === 'web' && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0,
+                      cursor: 'pointer'
+                    }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          if (event.target?.result) {
+                            setSelectedFaceImage(event.target.result as string);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    onDrop={handleFaceDrop}
+                    onDragOver={handleFaceDragOver}
+                    onDragLeave={handleFaceDragLeave}
+                  />
+                )}
+              </View>
+            </>
+          )}
 
           {renderFormFields()}
         </ScrollView>
@@ -677,6 +836,13 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: 16,
+  },
+  imageLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   imageContainer: {
     position: 'relative',

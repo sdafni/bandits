@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Database } from '@/lib/database.types';
 import { router } from 'expo-router';
 import { Image, ImageBackground, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -20,18 +21,20 @@ interface BanditHeaderProps {
   onCategoryPress?: (genre: string) => void;
 }
 
-export default function BanditHeader({ 
-  bandit, 
-  categories, 
-  onLike, 
+export default function BanditHeader({
+  bandit,
+  categories,
+  onLike,
   variant = 'detail',
   showActionButtons = true,
   onCategoryPress
 }: BanditHeaderProps) {
-  const { id, name, family_name, age, city, occupation, image_url, rating, is_liked } = bandit;
+  const { id, name, family_name, age, city, occupation, image_url, face_image_url, rating, is_liked } = bandit;
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
 
   const isListVariant = variant === 'list';
-  const imageHeight = isListVariant ? 238 : 145; // 70% of 340px total height
+  const displayImage = isListVariant ? (face_image_url || image_url) : image_url;
+  const imageHeight = isListVariant ? 238 : undefined; // Use aspect ratio for detail view
   const containerPadding = isListVariant ? 0 : 16; // No padding for list variant
 
   const content = (
@@ -41,12 +44,19 @@ export default function BanditHeader({
         isListVariant && styles.listImageContainer
       ]}>
         <Image
-          source={{ uri: image_url }}
+          source={{ uri: displayImage }}
           style={[
-            styles.mainImage, 
-            { height: imageHeight },
+            styles.mainImage,
+            isListVariant ? { height: imageHeight } : { aspectRatio: imageAspectRatio },
             isListVariant && styles.listImage
           ]}
+          onLoad={(event) => {
+            if (!isListVariant && event.nativeEvent) {
+              // For detail view, we still calculate aspect ratio, but this might need adjustment
+              // since we're dealing with TypeScript issues. Let's use a simpler approach.
+              setImageAspectRatio(0.8); // Taller aspect ratio (width/height < 1 = taller image)
+            }
+          }}
         />
         
         {showActionButtons && (

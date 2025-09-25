@@ -10,6 +10,7 @@ export type Database = {
           city: string;
           occupation: string;
           image_url: string;
+          face_image_url: string | null;
           rating: number;
           is_liked: boolean;
           icon: string | null;
@@ -25,6 +26,7 @@ export type Database = {
           city: string;
           occupation: string;
           image_url: string;
+          face_image_url?: string | null;
           rating: number;
           is_liked?: boolean;
           icon?: string | null;
@@ -40,6 +42,7 @@ export type Database = {
           city?: string;
           occupation?: string;
           image_url?: string;
+          face_image_url?: string | null;
           rating?: number;
           is_liked?: boolean;
           icon?: string | null;
