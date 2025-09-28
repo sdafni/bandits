@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import PlatformMapView from '../components/MapView';
+import PlatformMapView from '../components/LeafletMapView';
 
 // Check if we're running on web
 const isWeb = Platform.OS === 'web';
