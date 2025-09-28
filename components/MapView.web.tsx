@@ -100,6 +100,7 @@ export default function PlatformMapView({
         variant="horizontal"
         showButton={false}
         imageHeight={154}
+        contentContainerStyle={styles.eventsContainer}
       />
     </View>
   );
@@ -117,5 +118,8 @@ const styles = StyleSheet.create({
   mapContainer: {
     height: '40%', // Reduced from 50% to 40% (20% reduction)
     backgroundColor: '#f0f0f0',
+  },
+  eventsContainer: {
+    marginTop: 8,
   },
 });

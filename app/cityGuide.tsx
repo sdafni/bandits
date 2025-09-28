@@ -236,5 +236,6 @@ const styles = StyleSheet.create({
   eventsContainer: {
     paddingHorizontal: 8,
     marginBottom: 20,
+    marginTop: 8,
   },
 }); 

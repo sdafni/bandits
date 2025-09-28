@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   eventCardHorizontal: {
     width: 192,
     height: 320,
-    marginRight: 16,
+    marginRight: 8,
     marginBottom: 0,
     backgroundColor: '#FFFFFF',
     borderRadius: 7,

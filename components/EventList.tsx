@@ -194,6 +194,6 @@ const styles = StyleSheet.create({
   },
   horizontalContainer: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 2,
   },
 });
