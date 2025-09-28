@@ -1,9 +1,9 @@
-import { getBanditEventPersonalTip } from '@/app/services/events';
+import React, { useEffect, useState } from 'react';
+import { getBanditEventPersonalTip, isEventLiked, toggleEventLike } from '@/app/services/events';
 import { ThemedView } from '@/components/ThemedView';
 import { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -55,7 +55,7 @@ export default function EventDetailScreen() {
 
           if (!banditError && banditData) {
             setBandit(banditData);
-            
+
             // Fetch personal tip
             const tip = await getBanditEventPersonalTip(
               Array.isArray(banditId) ? banditId[0] : banditId,
@@ -64,6 +64,11 @@ export default function EventDetailScreen() {
             setPersonalTip(tip);
           }
         }
+
+        // Check if event is liked by current user
+        const eventIdString = typeof id === 'string' ? id : id[0];
+        const liked = await isEventLiked(eventIdString);
+        setIsLiked(liked);
 
       } catch (err) {
         console.error('Error fetching event data:', err);
@@ -76,8 +81,13 @@ export default function EventDetailScreen() {
   }, [id, banditId]);
 
   const handleLikePress = async () => {
-    // TODO: Implement like functionality
-    setIsLiked(!isLiked);
+    try {
+      const eventIdString = typeof id === 'string' ? id : id[0];
+      await toggleEventLike(eventIdString, isLiked);
+      setIsLiked(!isLiked);
+    } catch (error) {
+      console.error('Error toggling event like:', error);
+    }
   };
 
 
