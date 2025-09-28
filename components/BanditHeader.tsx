@@ -89,7 +89,7 @@ export default function BanditHeader({
         isListVariant && styles.listInfoContainer
       ]}>
         <View style={styles.nameContainer}>
-          <Text style={styles.name}>{`${name} ${family_name}, ${city}`}</Text>
+          <Text style={styles.name}>{`${name} ${family_name}`}</Text>
           <Text style={styles.descriptionLine}>{`(${age} y/o, local banDit)`}</Text>
           <Text style={styles.occupation}>{occupation}</Text>
         </View>
