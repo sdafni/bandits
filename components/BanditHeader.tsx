@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { Database } from '@/lib/database.types';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
 import { Image, ImageBackground, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import EventCategories from './EventCategories';
 import { ThemedText } from './ThemedText';

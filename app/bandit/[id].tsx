@@ -112,64 +112,60 @@ export default function BanditScreen() {
     });
   };
 
-  return (  
+  return (
     <>
       <Stack.Screen options={{ headerShown: true, title: '' }} />
-      
-  <View style={styles.container}>
-    <BanditHeader
-      bandit={bandit}
-      categories={categories}
-      variant="detail"
-      showActionButtons={true}
-      onCategoryPress={handleCategoryPress}
-    />
-    
-    <Text style={styles.description}>{bandit.description}</Text>
-    
-    <Text style={styles.whyFollowLabel}>{`Why follow ${bandit.name}?`}</Text>
 
-        {bandit.why_follow ? (
-      <Text style={styles.why_follow}>
-        {bandit.why_follow
-          .split('.')
-          .filter(s => s.trim().length > 0)
-          .map((sentence, i) => (
-            <Text key={i}>
-              {'\n• '}{sentence.trim()}.
-            </Text>
-          ))}
-      </Text>
-    ) : null}
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <BanditHeader
+          bandit={bandit}
+          categories={categories}
+          variant="detail"
+          showActionButtons={true}
+          onCategoryPress={handleCategoryPress}
+        />
 
-    {/* Reviews Section */}
-    <View style={styles.reviewsSection}>
-      <Text style={styles.reviewsTitle}>
-        Reviews <Text style={styles.reviewsCount}>({reviews.length})</Text>
-      </Text>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.reviewsContainer}
-      >
-        {reviews.map((review, index) => (
-          <ReviewCard
-            key={index}
-            review={review}
-          />
-        ))}
+        <Text style={styles.description}>{bandit.description}</Text>
+
+        <Text style={styles.whyFollowLabel}>{`Why follow ${bandit.name}?`}</Text>
+
+            {bandit.why_follow ? (
+          <Text style={styles.why_follow}>
+            {bandit.why_follow
+              .split('.')
+              .filter(s => s.trim().length > 0)
+              .map((sentence, i) => (
+                <Text key={i}>
+                  {'\n• '}{sentence.trim()}.
+                </Text>
+              ))}
+          </Text>
+        ) : null}
+
+        {/* Reviews Section */}
+        <View style={styles.reviewsSection}>
+          <Text style={styles.reviewsTitle}>
+            Reviews <Text style={styles.reviewsCount}>({reviews.length})</Text>
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.reviewsContainer}
+          >
+            {reviews.map((review, index) => (
+              <ReviewCard
+                key={index}
+                review={review}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Ask Me Button */}
+        <Pressable style={styles.askMeButton} onPress={handleAskMePress}>
+          <Text style={styles.askMeText}>Ask me</Text>
+        </Pressable>
       </ScrollView>
-    </View>
-    
-    {/* Ask Me Button */}
-    <Pressable style={styles.askMeButton} onPress={handleAskMePress}>
-      <Text style={styles.askMeText}>Ask me</Text>
-    </Pressable>
-    
-  </View>
-
-
-  
     </>
   );
 }
@@ -178,8 +174,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  contentContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 20,
   },
   whyFollowLabel: {
     fontWeight: '600',
