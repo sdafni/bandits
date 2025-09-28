@@ -22,8 +22,7 @@ export default function LeafletMapView({
   initialRegion,
   onMapReady,
   onError,
-  onRegionChange,
-  children
+  onRegionChange
 }: MapViewProps) {
   const eventListRef = useRef<EventListRef>(null);
   const webViewRef = useRef<WebView>(null);
@@ -56,13 +55,6 @@ export default function LeafletMapView({
           address: event.address,
           genre: event.genre,
         }));
-
-      const jsCode = `
-        if (typeof updateMarkers === 'function') {
-          updateMarkers(${JSON.stringify(markersData)});
-        }
-        true;
-      `;
 
       webViewRef.current.postMessage(JSON.stringify({
         type: 'updateMarkers',
@@ -347,7 +339,7 @@ export default function LeafletMapView({
 }
 
 // Export a Marker component for compatibility
-export const LeafletMarker = ({ children }: { children: React.ReactNode }) => {
+export const LeafletMarker = () => {
   return null; // Markers are handled internally
 };
 

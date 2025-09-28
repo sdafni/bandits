@@ -1,5 +1,5 @@
 import { Database } from '@/lib/database.types';
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import EventCard from './EventCard';
 
@@ -55,21 +55,24 @@ const EventList = forwardRef<EventListRef, EventListProps>(({
 
   useImperativeHandle(ref, () => ({
     scrollToEvent: (eventId: string) => {
-      const eventRef = eventRefs.current[eventId];
-      if (eventRef && scrollViewRef.current) {
-        eventRef.measureLayout(
-          scrollViewRef.current.getInnerViewNode(),
-          (x, y, width, height) => {
-            if (isHorizontal) {
-              scrollViewRef.current?.scrollTo({ x, animated: true });
-            } else {
-              scrollViewRef.current?.scrollTo({ y, animated: true });
-            }
-          },
-          () => {
-            console.warn('Failed to measure event layout for scrolling');
-          }
-        );
+      if (!scrollViewRef.current) {
+        return;
+      }
+
+      const eventIndex = events.findIndex(e => e.id === eventId);
+
+      if (eventIndex >= 0) {
+        if (isHorizontal) {
+          const estimatedCardWidth = 180;
+          const estimatedGap = 2;
+          const estimatedX = eventIndex * (estimatedCardWidth + estimatedGap);
+          scrollViewRef.current.scrollTo({ x: estimatedX, animated: true });
+        } else {
+          const estimatedCardHeight = 135;
+          const estimatedGap = 11;
+          const estimatedY = eventIndex * (estimatedCardHeight + estimatedGap);
+          scrollViewRef.current.scrollTo({ y: estimatedY, animated: true });
+        }
       }
     },
   }));
