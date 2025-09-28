@@ -1,8 +1,9 @@
 import { Database } from '@/lib/database.types';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import EventCategories from './EventCategories';
+import MiniMapPreview from './MiniMapPreview';
 import { ThemedText } from './ThemedText';
 
 type Bandit = Database['public']['Tables']['bandit']['Row'];
@@ -68,18 +69,11 @@ export default function BanditHeader({
               <Text style={styles.plusSign}>+</Text>
               <Text style={styles.exploreText}>CITY GUIDE</Text>
             </Pressable>
-            <Pressable
-              style={styles.mapButtonTopLeft}
+            <MiniMapPreview
+              banditId={id}
               onPress={() => router.push(`/cityMap?banditId=${id}`)}
-            >
-              <ImageBackground
-                source={require('@/assets/images/cityButtonB.png')}
-                style={styles.mapButtonBackground}
-                imageStyle={styles.mapButtonBackgroundImage}
-                resizeMode="cover"
-                onError={(error) => console.error('Map button image failed to load:', error)}
-              />
-            </Pressable>
+              style={styles.mapButtonTopLeft}
+            />
           </>
         )}
       </View>
@@ -205,23 +199,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     left: 16,
-    width: 100,
-    height: 70,
-    borderRadius: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
     zIndex: 2,
-    overflow: 'hidden',
-  },
-  mapButtonBackground: {
-    width: '100%',
-    height: '100%',
-  },
-  mapButtonBackgroundImage: {
-    borderRadius: 20,
   },
   exploreText: {
     color: 'white',

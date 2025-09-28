@@ -1,9 +1,13 @@
+import { getEvents } from '@/app/services/events';
 import { useMapEvents } from '@/hooks/useMapEvents';
+import { Database } from '@/lib/database.types';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import EventList, { EventListRef } from './EventList';
+
+type Event = Database['public']['Tables']['event']['Row'];
 
 interface MapViewProps {
   initialRegion: {
@@ -16,25 +20,73 @@ interface MapViewProps {
   onError: (error: any) => void;
   onRegionChange: (region: any) => void;
   children?: React.ReactNode;
+  miniMode?: boolean;
+  banditId?: string;
 }
 
 export default function LeafletMapView({
   initialRegion,
   onMapReady,
   onError,
-  onRegionChange
+  onRegionChange,
+  miniMode = false,
+  banditId
 }: MapViewProps) {
   const eventListRef = useRef<EventListRef>(null);
   const webViewRef = useRef<WebView>(null);
-  const { banditId } = useLocalSearchParams();
+  const { banditId: routeBanditId } = useLocalSearchParams();
   const [mapReady, setMapReady] = useState(false);
+
+  // Use provided banditId prop, or fall back to route param
+  const activeBanditId = banditId || routeBanditId;
 
   // Create a handler that scrolls to the event instead of navigating
   const handleMarkerPress = (event: any) => {
     eventListRef.current?.scrollToEvent(event.id);
   };
 
-  const { events, loading, error, calculateOptimalMapBounds } = useMapEvents();
+  // Custom state for mini map with specific banditId
+  const [customEvents, setCustomEvents] = useState<Event[]>([]);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
+
+  // Use hook for normal mode, custom state for mini mode with banditId
+  const hookData = useMapEvents();
+  const events = banditId ? customEvents : hookData.events;
+  const loading = banditId ? customLoading : hookData.loading;
+  const error = banditId ? customError : hookData.error;
+  const calculateOptimalMapBounds = hookData.calculateOptimalMapBounds;
+
+  // Fetch events for specific banditId when in mini mode
+  useEffect(() => {
+    if (banditId && miniMode) {
+      fetchEventsForBandit();
+    }
+  }, [banditId, miniMode]);
+
+  const fetchEventsForBandit = async () => {
+    try {
+      setCustomLoading(true);
+      setCustomError(null);
+
+      const allEventsData = await getEvents({ banditId });
+
+      // Filter out any events that still have null coordinates
+      const validEvents = allEventsData.filter(event =>
+        event.location_lat != null &&
+        event.location_lng != null &&
+        typeof event.location_lat === 'number' &&
+        typeof event.location_lng === 'number'
+      );
+
+      setCustomEvents(validEvents);
+    } catch (err) {
+      console.error('Error fetching events for bandit:', err);
+      setCustomError(err instanceof Error ? err.message : 'Failed to fetch events');
+    } finally {
+      setCustomLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (error) {
@@ -142,6 +194,14 @@ export default function LeafletMapView({
           box-shadow: 0 2px 6px rgba(0,0,0,0.3);
           cursor: pointer;
         }
+        ${miniMode ? `
+        .leaflet-control-attribution {
+          display: none !important;
+        }
+        .leaflet-control-zoom {
+          display: none !important;
+        }
+        ` : ''}
       </style>
     </head>
     <body>
@@ -222,11 +282,15 @@ export default function LeafletMapView({
             }
           }
 
+          // Smaller markers for mini mode
+          var size = ${miniMode ? '10' : '20'};
+          var borderWidth = ${miniMode ? '1' : '2'};
+
           return L.divIcon({
-            html: '<div style="width: 20px; height: 20px; background-color: ' + color + '; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
+            html: '<div style="width: ' + size + 'px; height: ' + size + 'px; background-color: ' + color + '; border: ' + borderWidth + 'px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
             className: 'custom-marker-container',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
+            iconSize: [size, size],
+            iconAnchor: [size/2, size/2]
           });
         }
 
@@ -301,9 +365,9 @@ export default function LeafletMapView({
   `;
 
   return (
-    <View style={styles.container}>
-      {/* Top 40% - Leaflet Map in WebView */}
-      <View style={styles.mapContainer}>
+    <View style={miniMode ? styles.miniContainer : styles.container}>
+      {/* Map - Full container in mini mode, top 40% in normal mode */}
+      <View style={miniMode ? styles.miniMapContainer : styles.mapContainer}>
         <WebView
           ref={webViewRef}
           source={{ html: htmlContent }}
@@ -315,6 +379,7 @@ export default function LeafletMapView({
           mixedContentMode="compatibility"
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
+          scrollEnabled={!miniMode}
           onError={(error) => {
             console.error('WebView error:', error);
             onError(error);
@@ -322,18 +387,20 @@ export default function LeafletMapView({
         />
       </View>
 
-      {/* Bottom 60% - Events List */}
-      <EventList
-        ref={eventListRef}
-        events={events}
-        loading={loading}
-        error={error}
-        banditId={banditId as string}
-        variant="horizontal"
-        showButton={false}
-        imageHeight={120}
-        contentContainerStyle={styles.eventsContainer}
-      />
+      {/* Bottom 60% - Events List (only in normal mode) */}
+      {!miniMode && (
+        <EventList
+          ref={eventListRef}
+          events={events}
+          loading={loading}
+          error={error}
+          banditId={activeBanditId as string}
+          variant="horizontal"
+          showButton={false}
+          imageHeight={120}
+          contentContainerStyle={styles.eventsContainer}
+        />
+      )}
     </View>
   );
 }
@@ -347,8 +414,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  miniContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   mapContainer: {
     height: '40%',
+    backgroundColor: '#f0f0f0',
+  },
+  miniMapContainer: {
+    flex: 1,
     backgroundColor: '#f0f0f0',
   },
   webview: {
