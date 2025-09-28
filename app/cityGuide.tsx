@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getEvents } from '@/app/services/events';
 import EventCategories from '@/components/EventCategories';
@@ -15,7 +15,6 @@ type Event = Database['public']['Tables']['event']['Row'];
 
 export default function CityGuideScreen() {
   const { banditId, genre } = useLocalSearchParams();
-  const router = useRouter();
   const [bandit, setBandit] = useState<Bandit | null>(null);
   const [allEvents, setAllEvents] = useState<Event[]>([]); // All events for this bandit
   const [selectedGenre, setSelectedGenre] = useState<string>(genre as string || '');
@@ -103,15 +102,15 @@ export default function CityGuideScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: true, title: '' }} />
-      
-      <View style={styles.container}>
+
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <Text style={styles.headerText}>City Guide</Text>
-        
+
         {/* Bandit Profile Section */}
         <View style={styles.profileSection}>
 
-          
+
           <View style={styles.descriptionContent}>
 
             <Text style={styles.descriptionText}>
@@ -129,19 +128,19 @@ export default function CityGuideScreen() {
 
           </View>
         </View>
-        
+
         {/* Event Categories - Only show if there are events in DB */}
         {allEvents.length > 0 && eventCategories.length > 0 && (
           <>
             <Text style={styles.interestsText}>Select Your Interests</Text>
-            <EventCategories 
+            <EventCategories
               categories={eventCategories}
               selectedGenre={selectedGenre}
               onCategoryPress={(genre) => setSelectedGenre(selectedGenre === genre ? '' : genre)}
             />
           </>
         )}
-        
+
         {/* Events List */}
         <EventList
           events={filteredEvents}
@@ -151,8 +150,8 @@ export default function CityGuideScreen() {
           banditId={banditId as string}
           contentContainerStyle={styles.eventsContainer}
         />
-        
-      </View>
+
+      </ScrollView>
     </>
   );
 }
@@ -161,8 +160,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,

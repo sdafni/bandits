@@ -59,7 +59,6 @@ const AnimatedCategoryItem = ({ category, isSelected, onPress }: {
       style={{
         transform: [{ scale: scaleAnim }],
         opacity: opacityAnim,
-        flex: 1,
       }}
     >
       <Pressable
@@ -88,19 +87,14 @@ export default function EventCategories({ categories, selectedGenre, onCategoryP
     return null;
   }
 
-  // Calculate items per row to fit all categories in max 2 rows
+  // Allow categories to wrap naturally without forcing specific rows
   const totalItems = categories.length;
-  const maxRows = 2;
-  const itemsPerRow = Math.ceil(totalItems / maxRows);
-
-  // Calculate flex basis as percentage to ensure items fit
-  const flexBasisPercent = (100 / itemsPerRow) - 2; // Subtract 2% for gaps
 
   return (
     <View style={styles.container}>
       <View style={styles.categoriesContainer}>
         {categories.map((category) => (
-          <View key={category.genre} style={[styles.categoryItem, { flexBasis: `${flexBasisPercent}%` }]}>
+          <View key={category.genre} style={styles.categoryItem}>
             <AnimatedCategoryItem
               category={category}
               isSelected={selectedGenre === category.genre}
@@ -127,7 +121,7 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     marginBottom: 8,
-    minWidth: 0,
+    flexShrink: 0,
   },
   categoryBadge: {
     backgroundColor: '#ECECEC',
@@ -144,11 +138,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
     minHeight: 25,
-    maxHeight: 40,
-    maxWidth: 150,
     borderWidth: 1,
     borderColor: 'transparent',
-    flex: 1,
   },
   categoryBadgeSelected: {
     backgroundColor: '#FFE5E5',
