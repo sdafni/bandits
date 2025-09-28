@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Tabs, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import ExploreIcon from '@/assets/icons/explore.svg';
@@ -8,6 +8,9 @@ import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
+import BottomNavigation from '@/components/BottomNavigation';
+import ProfileModal from '@/components/modals/ProfileModal';
+import TakePartModal from '@/components/modals/TakePartModal';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -15,6 +18,8 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const iconColor = 'white';
   const router = useRouter();
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [takePartModalVisible, setTakePartModalVisible] = useState(false);
 
   // Check if user's email is verified before allowing access to tabs
   useEffect(() => {
@@ -26,7 +31,7 @@ export default function TabLayout() {
         router.replace('/');
       }
     };
-    
+
     checkEmailVerification();
   }, [router]);
 
@@ -77,6 +82,20 @@ export default function TabLayout() {
 
 
     </Tabs>
+    <BottomNavigation
+      onProfilePress={() => setProfileModalVisible(true)}
+      onTakePartPress={() => setTakePartModalVisible(true)}
+    />
+
+    <ProfileModal
+      visible={profileModalVisible}
+      onClose={() => setProfileModalVisible(false)}
+    />
+
+    <TakePartModal
+      visible={takePartModalVisible}
+      onClose={() => setTakePartModalVisible(false)}
+    />
     </View>
   );
 }
