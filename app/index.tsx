@@ -1,8 +1,8 @@
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // const { width, height } = Dimensions.get('window');
 
@@ -33,32 +33,24 @@ export default function Index() {
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
     
-    // Auto-login with hardcoded credentials (TEMPORARY BYPASS)
-    const autoLogin = async () => {
+    // Check for existing session
+    const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.log('🔄 Auto-logging in with hardcoded credentials...');
-          const { error } = await supabase.auth.signInWithPassword({
-            email: 'sdafni.yd@gmail.com',
-            password: 'yuv121bandit'
-          });
-          if (error) {
-            console.error('❌ Auto-login failed:', error);
-            // Fall back to normal flow
-            setUser(null);
-          }
-        } else {
+        if (session) {
           console.log('📋 Session already exists:', session);
           setUser(session.user);
+        } else {
+          console.log('👤 No existing session found');
+          setUser(null);
         }
       } catch (err) {
-        console.error('❌ Error in auto-login:', err);
+        console.error('❌ Error checking session:', err);
         setUser(null);
       }
     };
-    
-    autoLogin();
+
+    checkSession();
     
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('🔄 Auth state changed:', _event, 'session:', session);
