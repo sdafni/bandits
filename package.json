@@ -10,7 +10,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "deploy": "npx expo export --platform web && gh-pages -d dist",
+    "deploy": "npx expo export --platform web && npx netlify-cli deploy --prod --dir=dist",
     "build": "npx expo export --platform web"
   },
   "dependencies": {
@@ -65,7 +65,6 @@
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
-    "gh-pages": "^6.3.0",
     "typescript": "~5.8.3"
   },
   "private": true

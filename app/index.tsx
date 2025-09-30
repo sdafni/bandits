@@ -302,7 +302,7 @@ export default function Index() {
                 onPress={() => setIsSignIn(true)}
               >
                 <Text style={[styles.tabText, isSignIn && styles.activeTabText]}>
-                  Sign in 4
+                  Sign in
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
