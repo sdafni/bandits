@@ -153,21 +153,36 @@ export default function Index() {
     try {
       setError(null);
       setLoading(true);
-      
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      
-      if (userInfo.data?.idToken) {
-        const { error } = await supabase.auth.signInWithIdToken({
+
+      if (Platform.OS === 'web') {
+        // Use Supabase OAuth for web
+        const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          token: userInfo.data.idToken,
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`
+          }
         });
-        
+
         if (error) {
           setError(error.message);
         }
       } else {
-        setError('No Google ID token received');
+        // Use Google Sign-In SDK for native platforms
+        await GoogleSignin.hasPlayServices();
+        const userInfo = await GoogleSignin.signIn();
+
+        if (userInfo.data?.idToken) {
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: userInfo.data.idToken,
+          });
+
+          if (error) {
+            setError(error.message);
+          }
+        } else {
+          setError('No Google ID token received');
+        }
       }
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
