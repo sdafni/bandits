@@ -151,18 +151,10 @@ export default function Index() {
       setLoading(true);
       console.log('🔵 Starting Google Sign-In, Platform:', Platform.OS);
 
-      // Create dynamic redirect URI that works for both localhost and production
-      let redirectUri;
-      if (Platform.OS === 'web') {
-        // On web: use localhost if running locally, otherwise use Netlify
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        redirectUri = isLocalhost
-          ? `${window.location.origin}/auth/callback`
-          : 'https://bandits-app.netlify.app/auth/callback';
-      } else {
-        // On mobile: always use Netlify URL as callback
-        redirectUri = 'https://bandits-app.netlify.app/auth/callback';
-      }
+      // Use production URL for redirect
+      const redirectUri = Platform.OS === 'web'
+        ? `${window.location.origin}/auth/callback`
+        : 'https://bandits-app.netlify.app/auth/callback';
 
       console.log('🔗 Redirect URI:', redirectUri);
 
