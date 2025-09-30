@@ -153,10 +153,12 @@ export default function Index() {
       console.log('🔵 Starting Google Sign-In, Platform:', Platform.OS);
 
       // Create dynamic redirect URI that works for both localhost and production
-      const redirectUri = makeRedirectUri({
-        scheme: 'bandits',
-        path: 'auth/callback'
-      });
+      const redirectUri = Platform.OS === 'web'
+        ? `${window.location.origin}/auth/callback`
+        : makeRedirectUri({
+            scheme: 'bandits',
+            path: 'auth/callback'
+          });
 
       console.log('🔗 Redirect URI:', redirectUri);
 
