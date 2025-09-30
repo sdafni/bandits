@@ -153,8 +153,10 @@ export default function Index() {
     try {
       setError(null);
       setLoading(true);
+      console.log('🔵 Starting Google Sign-In, Platform:', Platform.OS);
 
       if (Platform.OS === 'web') {
+        console.log('🌐 Using Supabase OAuth for web');
         // Use Supabase OAuth for web
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
@@ -164,39 +166,73 @@ export default function Index() {
         });
 
         if (error) {
+          console.error('❌ Supabase OAuth error:', error);
           setError(error.message);
+        } else {
+          console.log('✅ Supabase OAuth initiated successfully');
         }
       } else {
-        // Use Google Sign-In SDK for native platforms
+        console.log('📱 Using Google Sign-In SDK for native platforms');
+        console.log('🔧 Configured webClientId:', process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+
+        // Check Play Services
+        console.log('🔍 Checking Google Play Services...');
         await GoogleSignin.hasPlayServices();
+        console.log('✅ Google Play Services available');
+
+        // Sign in
+        console.log('🚀 Starting GoogleSignin.signIn()...');
         const userInfo = await GoogleSignin.signIn();
+        console.log('📋 GoogleSignin result:', JSON.stringify(userInfo, null, 2));
 
         if (userInfo.data?.idToken) {
+          console.log('🎫 ID Token received, length:', userInfo.data.idToken.length);
+          console.log('👤 User info:', {
+            email: userInfo.data.user?.email,
+            name: userInfo.data.user?.name,
+            id: userInfo.data.user?.id
+          });
+
+          console.log('🔗 Calling Supabase signInWithIdToken...');
           const { error } = await supabase.auth.signInWithIdToken({
             provider: 'google',
             token: userInfo.data.idToken,
           });
 
           if (error) {
+            console.error('❌ Supabase signInWithIdToken error:', error);
             setError(error.message);
+          } else {
+            console.log('✅ Supabase signInWithIdToken successful');
           }
         } else {
+          console.error('❌ No ID token in Google Sign-In response');
+          console.log('📋 Full userInfo object:', JSON.stringify(userInfo, null, 2));
           setError('No Google ID token received');
         }
       }
     } catch (error: any) {
+      console.error('❌ Google Sign-In catch block:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Full error object:', JSON.stringify(error, null, 2));
+
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('ℹ️ User cancelled the login flow');
         // User cancelled the login flow
       } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('ℹ️ Sign-in operation already in progress');
         // Operation is in progress already
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        console.error('❌ Google Play Services not available');
         setError('Google Play Services not available');
       } else {
-        setError('Google Sign-In failed');
-        console.error('Google Sign-In Error:', error);
+        setError('Google Sign-In failed: ' + (error.message || 'Unknown error'));
+        console.error('❌ Google Sign-In Error:', error);
       }
     } finally {
       setLoading(false);
+      console.log('🏁 Google Sign-In process completed');
     }
   };
 
