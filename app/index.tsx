@@ -1,8 +1,8 @@
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { supabase } from '@/lib/supabase';
-import * as WebBrowser from 'expo-web-browser';
-import { useRouter } from 'expo-router';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -310,7 +310,7 @@ export default function Index() {
                 onPress={() => setIsSignIn(true)}
               >
                 <Text style={[styles.tabText, isSignIn && styles.activeTabText]}>
-                  Sign in
+                  Sign in 2
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
