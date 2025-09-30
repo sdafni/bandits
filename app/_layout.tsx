@@ -67,6 +67,7 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <PWAInstallPrompt />
         <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="bandit/[id]" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="cityGuide" options={{ headerShown: true, title: '' }} />
