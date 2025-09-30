@@ -49,7 +49,17 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/bandiTourMAinLogo.png"
+      "favicon": "./assets/images/bandiTourMAinLogo.png",
+      "name": "Banditour",
+      "shortName": "Banditour",
+      "description": "Discover and join local events",
+      "lang": "en",
+      "scope": "/",
+      "startUrl": "/",
+      "backgroundColor": "#ffffff",
+      "themeColor": "#ff0000",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-router",
