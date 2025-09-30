@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { useRouter } from 'expo-router';
+
+WebBrowser.maybeCompleteAuthSession();
 
 // const { width, height } = Dimensions.get('window');
 
@@ -26,13 +29,7 @@ export default function Index() {
 
   useEffect(() => {
     console.log('🔐 Auth useEffect running...');
-    
-    // Configure Google Sign-In
-    GoogleSignin.configure({
-      scopes: ['email', 'profile'],
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    });
-    
+
     // Check for existing session
     const checkSession = async () => {
       try {
@@ -51,7 +48,7 @@ export default function Index() {
     };
 
     checkSession();
-    
+
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('🔄 Auth state changed:', _event, 'session:', session);
       setUser(session?.user ?? null);
@@ -155,81 +152,72 @@ export default function Index() {
       setLoading(true);
       console.log('🔵 Starting Google Sign-In, Platform:', Platform.OS);
 
-      if (Platform.OS === 'web') {
-        console.log('🌐 Using Supabase OAuth for web');
-        // Use Supabase OAuth for web
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/auth/callback`
-          }
-        });
+      // Create dynamic redirect URI that works for both localhost and production
+      const redirectUri = makeRedirectUri({
+        scheme: 'bandits',
+        path: 'auth/callback'
+      });
 
-        if (error) {
-          console.error('❌ Supabase OAuth error:', error);
-          setError(error.message);
-        } else {
-          console.log('✅ Supabase OAuth initiated successfully');
+      console.log('🔗 Redirect URI:', redirectUri);
+
+      // Use Supabase OAuth with expo-auth-session
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri,
+          skipBrowserRedirect: Platform.OS !== 'web'
+        }
+      });
+
+      if (error) {
+        console.error('❌ Supabase OAuth error:', error);
+        setError(error.message);
+        return;
+      }
+
+      if (Platform.OS !== 'web' && data?.url) {
+        console.log('📱 Opening browser for OAuth:', data.url);
+
+        // Open the OAuth URL in browser
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUri
+        );
+
+        console.log('📋 Browser result:', result);
+
+        if (result.type === 'success') {
+          const url = result.url;
+          console.log('✅ OAuth success, callback URL:', url);
+
+          // Extract the tokens from the URL
+          const urlParams = new URL(url).searchParams;
+          const accessToken = urlParams.get('access_token');
+          const refreshToken = urlParams.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            // Set the session with the tokens
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+
+            if (sessionError) {
+              console.error('❌ Session error:', sessionError);
+              setError(sessionError.message);
+            } else {
+              console.log('✅ Session set successfully');
+            }
+          }
+        } else if (result.type === 'cancel') {
+          console.log('ℹ️ User cancelled the login flow');
         }
       } else {
-        console.log('📱 Using Google Sign-In SDK for native platforms');
-        console.log('🔧 Configured webClientId:', process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
-
-        // Check Play Services
-        console.log('🔍 Checking Google Play Services...');
-        await GoogleSignin.hasPlayServices();
-        console.log('✅ Google Play Services available');
-
-        // Sign in
-        console.log('🚀 Starting GoogleSignin.signIn()...');
-        const userInfo = await GoogleSignin.signIn();
-        console.log('📋 GoogleSignin result:', JSON.stringify(userInfo, null, 2));
-
-        if (userInfo.data?.idToken) {
-          console.log('🎫 ID Token received, length:', userInfo.data.idToken.length);
-          console.log('👤 User info:', {
-            email: userInfo.data.user?.email,
-            name: userInfo.data.user?.name,
-            id: userInfo.data.user?.id
-          });
-
-          console.log('🔗 Calling Supabase signInWithIdToken...');
-          const { error } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: userInfo.data.idToken,
-          });
-
-          if (error) {
-            console.error('❌ Supabase signInWithIdToken error:', error);
-            setError(error.message);
-          } else {
-            console.log('✅ Supabase signInWithIdToken successful');
-          }
-        } else {
-          console.error('❌ No ID token in Google Sign-In response');
-          console.log('📋 Full userInfo object:', JSON.stringify(userInfo, null, 2));
-          setError('No Google ID token received');
-        }
+        console.log('✅ Supabase OAuth initiated successfully for web');
       }
     } catch (error: any) {
-      console.error('❌ Google Sign-In catch block:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Full error object:', JSON.stringify(error, null, 2));
-
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('ℹ️ User cancelled the login flow');
-        // User cancelled the login flow
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('ℹ️ Sign-in operation already in progress');
-        // Operation is in progress already
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.error('❌ Google Play Services not available');
-        setError('Google Play Services not available');
-      } else {
-        setError('Google Sign-In failed: ' + (error.message || 'Unknown error'));
-        console.error('❌ Google Sign-In Error:', error);
-      }
+      console.error('❌ Google Sign-In error:', error);
+      setError('Google Sign-In failed: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
       console.log('🏁 Google Sign-In process completed');
