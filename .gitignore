@@ -48,3 +48,5 @@ android/app
 android/build
 .vscode
 python_scripts/bandit_images/
+# Local Netlify folder
+.netlify
