@@ -1,11 +1,11 @@
-# 🏛️ Banditour
+# Banditour
 
 > **Unique local tourist attractions based on indie human recommendations**  
 > The ones you wouldn't find in Google or AI chats.
 
 ---
 
-## 🚀 Tech Stack
+##  Tech Stack
 
 Built with:
 - **React Native** + **Expo**
@@ -14,13 +14,9 @@ Built with:
 
 ---
 
-## 🌍 Demo
+## Demo
 
 **Currently running in Athens:**  
-🔗 [https://bandits--xfd4hjefqa.expo.app/](https://bandits--xjn2zxql3g.expo.app/)
+🔗 https://bandits-app.netlify.app/bandits
 
 ---
-
-## 📝 Note
-
-Sign up without validation (read only)
