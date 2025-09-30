@@ -7,6 +7,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -64,6 +65,7 @@ export default function RootLayout() {
   return (
     <CityProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <PWAInstallPrompt />
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="bandit/[id]" options={{ headerShown: true, title: '' }} />
