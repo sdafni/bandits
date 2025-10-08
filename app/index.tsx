@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -20,6 +20,7 @@ export default function Index() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [googleButtonScale] = useState(new Animated.Value(1));
   const router = useRouter();
   
   console.log('📱 Component state initialized, user:', user, 'error:', error);
@@ -143,6 +144,22 @@ export default function Index() {
       setResendSuccess(true);
     }
     setLoading(false);
+  };
+
+  const handleGoogleButtonPressIn = () => {
+    Animated.spring(googleButtonScale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleGoogleButtonPressOut = () => {
+    Animated.spring(googleButtonScale, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handleGoogleSignIn = async () => {
@@ -375,16 +392,31 @@ export default function Index() {
               </View>
 
               {/* Google Sign In Button */}
-              <TouchableOpacity 
-                style={styles.googleButton}
+              <TouchableOpacity
                 onPress={handleGoogleSignIn}
+                onPressIn={handleGoogleButtonPressIn}
+                onPressOut={handleGoogleButtonPressOut}
                 disabled={loading}
+                activeOpacity={1}
               >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#333333" />
-                ) : (
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
-                )}
+                <Animated.View
+                  style={[
+                    styles.googleButton,
+                    { transform: [{ scale: googleButtonScale }] }
+                  ]}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#333333" />
+                  ) : (
+                    <>
+                      <Image
+                        source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
+                        style={styles.googleIcon}
+                      />
+                      <Text style={styles.googleButtonText}>Continue with Google</Text>
+                    </>
+                  )}
+                </Animated.View>
               </TouchableOpacity>
 
 
@@ -598,17 +630,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 30,
     borderWidth: 1,
-    borderColor: '#adadad',
+    borderColor: '#dadce0',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
   },
   googleButtonText: {
-    color: '#333333',
+    color: '#3c4043',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    letterSpacing: 0.25,
   },
   facebookButton: {
     backgroundColor: '#1877f2',
