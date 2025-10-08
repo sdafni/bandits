@@ -5,12 +5,12 @@ import { View } from 'react-native';
 
 import ExploreIcon from '@/assets/icons/explore.svg';
 import LocalBanditsIcon from '@/assets/icons/localBandits.svg';
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
 import BottomNavigation from '@/components/BottomNavigation';
+import { HapticTab } from '@/components/HapticTab';
 import ProfileModal from '@/components/modals/ProfileModal';
 import TakePartModal from '@/components/modals/TakePartModal';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -48,7 +48,7 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderBottomWidth: 1,
           borderBottomColor: Colors[colorScheme ?? 'light'].tabIconDefault,
-          height: 85,
+          height: 60,
           flexShrink: 0, // Prevent the tab bar from shrinking
         },
         // Ensure content area takes remaining space

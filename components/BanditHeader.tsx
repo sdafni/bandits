@@ -205,8 +205,8 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   mapIcon: {
-    width: 36,
-    height: 36,
+    width: 47,
+    height: 47,
   },
   exploreText: {
     color: 'white',
