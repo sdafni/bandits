@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -257,11 +257,11 @@ export default function Index() {
   if (!user) {
     console.log('🔐 Showing login screen...');
     return (
-      <View style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <Image 
-            source={require('@/assets/images/banditour-logo.png')} 
+          <Image
+            source={require('@/assets/images/banditour-logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -426,7 +426,7 @@ export default function Index() {
             </View>
           </>
         )}
-      </View>
+      </ScrollView>
     );
   }
 
@@ -438,8 +438,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 60,
+    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,

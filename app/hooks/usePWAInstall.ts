@@ -51,10 +51,11 @@ export function usePWAInstall() {
     // (either never installed or was removed)
 
     // Detect iOS Safari
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad on iOS 13+
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
 
-    if (isIOS && isSafari) {
+    if (isIOS) {
       setInstallState('ios-safari');
       return;
     }
