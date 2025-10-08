@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import EventCategories from './EventCategories';
-import MiniMapPreview from './MiniMapPreview';
 import { ThemedText } from './ThemedText';
 
 type Bandit = Database['public']['Tables']['bandit']['Row'];
@@ -69,11 +68,15 @@ export default function BanditHeader({
               <Text style={styles.plusSign}>+</Text>
               <Text style={styles.exploreText}>CITY GUIDE</Text>
             </Pressable>
-            <MiniMapPreview
-              banditId={id}
-              onPress={() => router.push(`/cityMap?banditId=${id}`)}
+            <Pressable
               style={styles.mapButtonTopLeft}
-            />
+              onPress={() => router.push(`/cityMap?banditId=${id}`)}
+            >
+              <Image
+                source={require('@/assets/icons/Alecive-Flatwoken-Apps-Google-Maps.512.png')}
+                style={styles.mapIcon}
+              />
+            </Pressable>
           </>
         )}
       </View>
@@ -200,6 +203,10 @@ const styles = StyleSheet.create({
     top: 16,
     left: 16,
     zIndex: 2,
+  },
+  mapIcon: {
+    width: 36,
+    height: 36,
   },
   exploreText: {
     color: 'white',
