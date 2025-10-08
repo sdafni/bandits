@@ -11,7 +11,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "deploy": "npm run build && npx netlify-cli deploy --prod --dir=dist",
-    "build": "npx expo export --platform web && npx workbox-cli generateSW workbox-config.js && node scripts/inject-sw.js"
+    "build": "npx expo export --platform web && node scripts/prepare-pwa.js && npx workbox-cli generateSW workbox-config.js && node scripts/inject-sw.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",

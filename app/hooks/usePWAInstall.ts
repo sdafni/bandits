@@ -22,11 +22,17 @@ export function usePWAInstall() {
       return;
     }
 
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check if running in standalone mode (app is installed and opened from home screen)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isInWebAppiOS = (window.navigator as any).standalone === true;
+
+    if (isStandalone || isInWebAppiOS) {
       setInstallState('installed');
       return;
     }
+
+    // If not in standalone mode, app is not currently installed
+    // (either never installed or was removed)
 
     // Detect iOS Safari
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -37,6 +43,9 @@ export function usePWAInstall() {
       return;
     }
 
+    // Detect Android
+    const isAndroid = /android/i.test(navigator.userAgent);
+
     // Listen for install prompt (Chrome/Edge on Android/Desktop)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -44,27 +53,35 @@ export function usePWAInstall() {
       setInstallState('installable');
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    // Listen for app installed event
+    const handleAppInstalled = () => {
+      setInstallState('installed');
+      setDeferredPrompt(null);
+    };
 
-    // Check if SW is registered (means PWA is ready)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        // PWA is ready, but if no install prompt came, might be Android Chrome
-        // waiting for engagement heuristics
-        setTimeout(() => {
-          if (installState === 'not-installable' && !deferredPrompt) {
-            // On Android Chrome, show manual instructions after timeout
-            const isAndroid = /android/i.test(navigator.userAgent);
-            if (isAndroid) {
-              setInstallState('installable'); // Show button anyway
-            }
-          }
-        }, 2000);
-      });
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // For Android Chrome, show install button even if no prompt yet
+    // The prompt may come later after user engagement
+    if (isAndroid) {
+      const timer = setTimeout(() => {
+        setInstallState((current) => {
+          // Only set to installable if still not-installable
+          return current === 'not-installable' ? 'installable' : current;
+        });
+      }, 1000);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      };
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
