@@ -1,16 +1,35 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { TouchableOpacity, Text, StyleSheet, View, Modal, Platform } from 'react-native';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
-export function PWAInstallPrompt() {
-  const { installState, canPrompt, promptInstall, debugInfo } = usePWAInstall();
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
+const DISMISSED_KEY = 'pwa-install-dismissed';
 
-  // Don't show anything if not installable or already installed
-  if (installState === 'not-installable' || installState === 'installed') {
+export function PWAInstallPrompt() {
+  const { installState, canPrompt, promptInstall } = usePWAInstall();
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  useEffect(() => {
+    // Check if user has dismissed the banner before
+    if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined') {
+      const dismissed = sessionStorage.getItem(DISMISSED_KEY);
+      if (dismissed === 'true') {
+        setIsDismissed(true);
+      }
+    }
+  }, []);
+
+  // Don't show anything if not installable or already installed or dismissed
+  if (installState === 'not-installable' || installState === 'installed' || isDismissed) {
     return null;
   }
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(DISMISSED_KEY, 'true');
+    }
+  };
 
   const handleInstallClick = async () => {
     if (canPrompt) {
@@ -61,10 +80,10 @@ export function PWAInstallPrompt() {
           <Text style={styles.buttonText}>{getButtonText()}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.debugButton}
-          onPress={() => setShowDebug(true)}
+          style={styles.dismissButton}
+          onPress={handleDismiss}
         >
-          <Text style={styles.debugButtonText}>🐛 Debug Info</Text>
+          <Text style={styles.dismissButtonText}>✕</Text>
         </TouchableOpacity>
       </View>
 
@@ -86,30 +105,6 @@ export function PWAInstallPrompt() {
           </View>
         </View>
       </Modal>
-
-      <Modal
-        visible={showDebug}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDebug(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.instructionTitle}>PWA Debug Info</Text>
-            {debugInfo && Object.entries(debugInfo).map(([key, value]) => (
-              <Text key={key} style={styles.debugText}>
-                {key}: {String(value)}
-              </Text>
-            ))}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowDebug(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -120,6 +115,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff8f0',
     borderBottomWidth: 1,
     borderBottomColor: '#ffddaa',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   button: {
     backgroundColor: '#ff0000',
@@ -127,6 +125,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 20,
     alignItems: 'center',
+    flex: 1,
   },
   buttonText: {
     color: '#ffffff',
@@ -172,20 +171,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  debugButton: {
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  dismissButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ffddaa',
   },
-  debugButtonText: {
-    color: '#666666',
-    fontSize: 12,
-  },
-  debugText: {
-    fontSize: 14,
-    marginBottom: 8,
-    color: '#333333',
-    fontFamily: 'monospace',
+  dismissButtonText: {
+    fontSize: 16,
+    color: '#999999',
+    fontWeight: 'bold',
   },
 });
