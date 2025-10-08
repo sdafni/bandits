@@ -46,7 +46,7 @@ if (fs.existsSync(iconSrc)) {
 // Inject manifest link into HTML files
 const manifestLink = '<link rel="manifest" href="/manifest.json" />';
 const appleIconLink = '<link rel="apple-touch-icon" href="/icon-192.png" />';
-const themeColor = '<meta name="theme-color" content="#ff0000" />';
+const themeColor = '<meta name="theme-color" content="#ffffff" />';
 
 function injectManifestLinks(htmlPath) {
   if (!fs.existsSync(htmlPath)) {

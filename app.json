@@ -57,7 +57,7 @@
       "scope": "/",
       "startUrl": "/",
       "backgroundColor": "#ffffff",
-      "themeColor": "#ff0000",
+      "themeColor": "#ffffff",
       "display": "standalone",
       "orientation": "portrait"
     },

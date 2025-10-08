@@ -74,7 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="event/[id]" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="+not-found" />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" backgroundColor="#ffffff" />
       </ThemeProvider>
     </CityProvider>
   );
