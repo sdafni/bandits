@@ -16,19 +16,27 @@ if (fs.existsSync(manifestSrc)) {
   console.error('❌ manifest.json not found in public/');
 }
 
-// Copy app icon as PWA icons
+// Copy and resize app icon as PWA icons
 const iconSrc = path.join(assetsDir, 'bandiTourMAinLogo.png');
 
 if (fs.existsSync(iconSrc)) {
-  // For now, just copy the icon as both sizes
-  // In production, you should resize these properly
   const icon192 = path.join(distDir, 'icon-192.png');
   const icon512 = path.join(distDir, 'icon-512.png');
 
-  fs.copyFileSync(iconSrc, icon192);
-  fs.copyFileSync(iconSrc, icon512);
+  // Resize icons using sips (macOS) or just copy if resize fails
+  const { execSync } = require('child_process');
 
-  console.log('✅ Copied app icons to dist/');
+  try {
+    execSync(`sips -z 192 192 "${iconSrc}" --out "${icon192}"`, { stdio: 'pipe' });
+    execSync(`sips -z 512 512 "${iconSrc}" --out "${icon512}"`, { stdio: 'pipe' });
+    console.log('✅ Resized and copied app icons to dist/');
+  } catch (err) {
+    // Fallback: just copy if resize fails
+    fs.copyFileSync(iconSrc, icon192);
+    fs.copyFileSync(iconSrc, icon512);
+    console.log('⚠️  Copied icons without resizing (sips failed)');
+  }
+
   console.log('   - icon-192.png');
   console.log('   - icon-512.png');
 } else {
@@ -53,9 +61,9 @@ function injectManifestLinks(htmlPath) {
     return;
   }
 
-  // Inject before </head> tag
+  // Inject before </head> tag (works with minified HTML too)
   if (html.includes('</head>')) {
-    const injection = `${manifestLink}\n${appleIconLink}\n${themeColor}\n</head>`;
+    const injection = `${manifestLink}${appleIconLink}${themeColor}</head>`;
     html = html.replace('</head>', injection);
     fs.writeFileSync(htmlPath, html);
     console.log(`✅ Injected manifest link into ${path.basename(htmlPath)}`);

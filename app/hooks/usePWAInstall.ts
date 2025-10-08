@@ -15,6 +15,7 @@ export type InstallState =
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installState, setInstallState] = useState<InstallState>('not-installable');
+  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -26,7 +27,22 @@ export function usePWAInstall() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;
 
-    if (isStandalone || isInWebAppiOS) {
+    // Check for PWA launch via start_url parameter (more reliable on Android)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFromPWA = urlParams.get('source') === 'pwa';
+
+    // Collect debug info
+    setDebugInfo({
+      isStandalone,
+      isInWebAppiOS,
+      isFromPWA,
+      urlParams: window.location.search,
+      userAgent: navigator.userAgent,
+      platform: Platform.OS,
+      displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+    });
+
+    if (isStandalone || isInWebAppiOS || isFromPWA) {
       setInstallState('installed');
       return;
     }
@@ -107,6 +123,7 @@ export function usePWAInstall() {
   return {
     installState,
     canPrompt: !!deferredPrompt,
-    promptInstall
+    promptInstall,
+    debugInfo
   };
 }

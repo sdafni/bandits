@@ -3,8 +3,9 @@ import { TouchableOpacity, Text, StyleSheet, View, Modal } from 'react-native';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export function PWAInstallPrompt() {
-  const { installState, canPrompt, promptInstall } = usePWAInstall();
+  const { installState, canPrompt, promptInstall, debugInfo } = usePWAInstall();
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Don't show anything if not installable or already installed
   if (installState === 'not-installable' || installState === 'installed') {
@@ -59,6 +60,12 @@ export function PWAInstallPrompt() {
         <TouchableOpacity style={styles.button} onPress={handleInstallClick}>
           <Text style={styles.buttonText}>{getButtonText()}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.debugButton}
+          onPress={() => setShowDebug(true)}
+        >
+          <Text style={styles.debugButtonText}>🐛 Debug Info</Text>
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -75,6 +82,30 @@ export function PWAInstallPrompt() {
               onPress={() => setShowInstructions(false)}
             >
               <Text style={styles.closeButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showDebug}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDebug(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.instructionTitle}>PWA Debug Info</Text>
+            {debugInfo && Object.entries(debugInfo).map(([key, value]) => (
+              <Text key={key} style={styles.debugText}>
+                {key}: {String(value)}
+              </Text>
+            ))}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowDebug(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -140,5 +171,21 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  debugButton: {
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    color: '#666666',
+    fontSize: 12,
+  },
+  debugText: {
+    fontSize: 14,
+    marginBottom: 8,
+    color: '#333333',
+    fontFamily: 'monospace',
   },
 });

@@ -10,7 +10,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "deploy": "npm run build && npx netlify-cli deploy --prod --dir=dist",
+    "deploy": "npm run build && npx netlify-cli deploy  --dir=dist",
+    "deploy-prod": "npm run build && npx netlify-cli deploy  --prod --dir=dist",
     "build": "npx expo export --platform web && node scripts/prepare-pwa.js && npx workbox-cli generateSW workbox-config.js && node scripts/inject-sw.js"
   },
   "dependencies": {
