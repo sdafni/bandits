@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface BottomNavigationProps {
   onProfilePress: () => void;
@@ -30,7 +30,7 @@ export default function BottomNavigation({ onProfilePress, onTakePartPress }: Bo
       <TouchableOpacity style={styles.button} onPress={onTakePartPress}>
         <IconSymbol name="person.2.circle" size={24} color={Colors[colorScheme ?? 'light'].text} />
         <Text style={[styles.buttonText, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Take Part
+          Take Part indeed
         </Text>
       </TouchableOpacity>
     </View>
