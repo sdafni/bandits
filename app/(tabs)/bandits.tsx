@@ -1,10 +1,27 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { getBandits, getUniqueCities, toggleBanditLike } from '@/app/services/bandits';
+import {
+  // getBandits, 
+  // ↑ Earlier method WITHOUT vibes/tags.
+  // Kept commented intentionally for reference / rollback.
+  getBanditsWithTags, // ✅ Correct method: fetches bandits + bandit_tags + tags
+  getUniqueCities,
+  toggleBanditLike,
+} from '@/app/services/bandits';
+
 import { getBanditEventCategories } from '@/app/services/events';
 import BanditHeader from '@/components/BanditHeader';
+import VibeFilterModal from '@/components/VibeFilterModal';
+import { TAG_EMOJI_MAP } from '@/constants/tagNameToEmoji';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 type Bandit = Database['public']['Tables']['bandit']['Row'];
@@ -14,100 +31,33 @@ interface EventCategory {
   count: number;
 }
 
-const CityDropdown = ({ cities, selectedCity, onSelectCity }: {
-  cities: string[];
-  selectedCity: string;
-  onSelectCity: (city: string) => void;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
+/* ---------------- TAG CONFIG ---------------- */
+/**
+ * Vibes = how the bandit feels / their angle
+ * Categories = what the bandit recommends
+ * These are intentionally separated layers.
+ */
 
-  // Show city name as header text if there's only one city
-  if (cities.length === 1) {
-    return (
-      <View style={[styles.searchWrapper, styles.singleCityWrapper]}>
-        <Text style={styles.cityHeaderText}>{cities[0]}</Text>
-      </View>
-    );
-  }
+const ALL_TAGS = Object.keys(TAG_EMOJI_MAP);
 
-  return (
-    <View style={styles.searchWrapper}>
-      <TouchableOpacity
-        style={styles.citySelectContainer}
-        onPress={() => setIsOpen(true)}
-      >
-        <Text style={styles.placeholder}>Where to?</Text>
-        <Text style={styles.selectedCityText}>
-          {selectedCity || 'Select a city'}
-        </Text>
-      </TouchableOpacity>
-      
-      <Modal
-        visible={isOpen}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsOpen(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setIsOpen(false)}
-        >
-          <View style={styles.modalContent}>
-            <ScrollView style={styles.modalScrollView}>
-              <TouchableOpacity
-                style={[
-                  styles.modalItem,
-                  !selectedCity && styles.modalItemClear
-                ]}
-                onPress={() => {
-                  onSelectCity('');
-                  setIsOpen(false);
-                }}
-              >
-                <Text style={[
-                  styles.modalItemText,
-                  !selectedCity && styles.modalItemTextClear
-                ]}>
-                  Any City
-                </Text>
-              </TouchableOpacity>
-              {cities.map(city => (
-                <TouchableOpacity
-                  key={city}
-                  style={[
-                    styles.modalItem,
-                    selectedCity === city && styles.modalItemSelected
-                  ]}
-                  onPress={() => {
-                    onSelectCity(city);
-                    setIsOpen(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.modalItemText,
-                    selectedCity === city && styles.modalItemTextSelected
-                  ]}>
-                    {city}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
-  );
-};
+/* ---------------- SCREEN ---------------- */
 
 export default function BanditsScreen() {
   const router = useRouter();
-  const [bandits, setBandits] = useState<Bandit[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
-  const [banditCategories, setBanditCategories] = useState<Record<string, EventCategory[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const { selectedCity, setSelectedCity } = useCity();
+
+  const [bandits, setBandits] = useState<any[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [banditCategories, setBanditCategories] = useState<
+    Record<string, EventCategory[]>
+  >({});
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  /* ---------------- INITIAL LOAD ---------------- */
 
   useEffect(() => {
     loadInitialData();
@@ -116,235 +66,218 @@ export default function BanditsScreen() {
   const loadInitialData = async () => {
     try {
       const [banditsData, citiesData] = await Promise.all([
-        getBandits(),
-        getUniqueCities()
+        // IMPORTANT:
+        // Using getBanditsWithTags so bandit_tags are available
+        // for:
+        // 1. Rendering vibe chips on cards
+        // 2. Client-side vibe filtering
+        getBanditsWithTags(),
+        getUniqueCities(),
       ]);
+
       setBandits(banditsData);
       setCities(citiesData);
 
-      // Auto-select the city if there's only one
+      // Auto-select city if only one exists
       if (citiesData.length === 1) {
         setSelectedCity(citiesData[0]);
       }
 
-      // Fetch categories for each bandit
-      if (banditsData.length > 0) {
-        const categoriesPromises = banditsData.map(async (bandit) => {
-          try {
-            const categoriesData = await getBanditEventCategories(bandit.id);
-            return { banditId: bandit.id, categories: categoriesData };
-          } catch (categoriesError) {
-            console.warn('Failed to fetch categories for bandit:', bandit.id, categoriesError);
-            return { banditId: bandit.id, categories: [] };
-          }
-        });
+      // Fetch event categories per bandit
+      const categoriesPromises = banditsData.map(async (bandit) => {
+        try {
+          const categoriesData = await getBanditEventCategories(bandit.id);
+          return { banditId: bandit.id, categories: categoriesData };
+        } catch {
+          return { banditId: bandit.id, categories: [] };
+        }
+      });
 
-        const allCategoriesData = await Promise.all(categoriesPromises);
-        const categoriesMap = allCategoriesData.reduce((acc, { banditId, categories }) => {
-          acc[banditId] = categories;
-          return acc;
-        }, {} as Record<string, EventCategory[]>);
+      const allCategoriesData = await Promise.all(categoriesPromises);
 
-        setBanditCategories(categoriesMap);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
+      const categoriesMap = allCategoriesData.reduce((acc, item) => {
+        acc[item.banditId] = item.categories;
+        return acc;
+      }, {} as Record<string, EventCategory[]>);
+
+      setBanditCategories(categoriesMap);
     } finally {
       setLoading(false);
     }
   };
 
+  /* ---------------- FILTER LOGIC ---------------- */
+  /**
+   * Filters are purely client-side for the pilot.
+   * Combined logic:
+   * - City
+   * - Search text
+   * - Vibe tags
+   */
+
+  const filteredBandits = useMemo(() => {
+    return bandits.filter((bandit) => {
+      const matchesCity =
+        !selectedCity || bandit.city === selectedCity;
+
+      const matchesSearch =
+        !searchTerm ||
+        bandit.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const banditTagNames =
+        bandit.bandit_tags?.map((bt: any) => bt.tags?.name) || [];
+
+      const matchesTags =
+        selectedTags.length === 0 ||
+        selectedTags.some((tag) => banditTagNames.includes(tag));
+
+      return matchesCity && matchesSearch && matchesTags;
+    });
+  }, [bandits, selectedCity, searchTerm, selectedTags]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
   const handleLike = async (id: string, currentLikeStatus: boolean) => {
-    try {
-      await toggleBanditLike(id, currentLikeStatus);
-      setBandits(bandits.map(bandit => 
-        bandit.id === id ? { ...bandit, is_liked: !currentLikeStatus } : bandit
-      ));
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
+    await toggleBanditLike(id, currentLikeStatus);
+    setBandits((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, is_liked: !currentLikeStatus } : b
+      )
+    );
   };
 
-  const handleCategoryPress = (banditId: string, genre: string) => {
-    router.push(`/cityGuide?banditId=${banditId}&genre=${genre}`);
-  };
-
-  const filteredBandits = bandits.filter(bandit => {
-    const matchesCity = !selectedCity || bandit.city === selectedCity;
-    const matchesSearch = !searchTerm || bandit.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCity && matchesSearch;
-  });
+  /* ---------------- UI ---------------- */
 
   return (
     <View style={styles.mainContainer}>
-      <CityDropdown 
-        cities={cities}
-        selectedCity={selectedCity}
-        onSelectCity={setSelectedCity}
-      />
-      <View style={styles.searchBarContainer}>
+      {/* SEARCH + FILTER ROW */}
+      <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search bandits..."
           value={searchTerm}
           onChangeText={setSearchTerm}
-          placeholderTextColor="#666"
         />
+
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setFilterOpen(true)}
+        >
+          <Text style={styles.filterText}>Filter</Text>
+
+          {selectedTags.length > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>
+                {selectedTags.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
-      <ScrollView style={styles.scrollView}>
+
+      {/* BANDIT LIST */}
+      <ScrollView>
         <View style={styles.container}>
           {filteredBandits.map((bandit) => (
             <BanditHeader
               key={bandit.id}
               bandit={bandit}
               categories={banditCategories[bandit.id] || []}
-              onLike={() => handleLike(bandit.id, bandit.is_liked)}
               variant="list"
-              showActionButtons={true}
-              onCategoryPress={(genre) => handleCategoryPress(bandit.id, genre)}
+              showActionButtons
+              onLike={() =>
+                handleLike(bandit.id, bandit.is_liked)
+              }
+              onCategoryPress={(genre) =>
+                router.push(
+                  `/cityGuide?banditId=${bandit.id}&genre=${genre}`
+                )
+              }
             />
           ))}
         </View>
       </ScrollView>
+
+      {/* VIBE FILTER MODAL */}
+      <VibeFilterModal
+        visible={filterOpen}
+        tags={ALL_TAGS}
+        selectedTags={selectedTags}
+        tagEmojiMap={TAG_EMOJI_MAP}
+        onToggleTag={toggleTag}
+        onClear={() => setSelectedTags([])}
+        onClose={() => setFilterOpen(false)}
+        onApply={() => setFilterOpen(false)}
+      />
     </View>
   );
 }
+
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  searchWrapper: {
-    marginTop: 13,
-    marginBottom: 5,
-    marginHorizontal: 16,
-    height: 64,
+
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 16,
+    gap: 8,
   },
-  singleCityWrapper: {
-    marginBottom: 2.5, // Half of the original 5
-    height: 40,
-  },
-  citySelectContainer: {
+
+  // Restored bordered search input (no elevation)
+  searchInput: {
+    flex: 1,
+    height: 48,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    height: '100%',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    justifyContent: 'center',
-    minWidth: 200,
-    maxWidth: 300,
-    alignSelf: 'center',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.2, // Slightly reduced opacity for smoother look
-    shadowRadius: 8, // Increased from 4 to 8 for smoother dissipation
-    elevation: 8,
-  },
-  placeholder: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 2,
-    textAlign: 'center',
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  selectedCityText: {
-    fontSize: 16,
-    color: '#000000',
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  cityHeaderText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#3C3C3C',
-    textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+
+  filterButton: {
+    height: 48,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    maxHeight: 300,
-    minWidth: 200,
-    maxWidth: 300,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalScrollView: {
-    maxHeight: 300,
-  },
-  modalItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    marginHorizontal: 8,
-    marginVertical: 2,
-  },
-  modalItemSelected: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
-  },
-  modalItemClear: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    marginHorizontal: 8,
-    marginVertical: 2,
-  },
-  modalItemText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  modalItemTextSelected: {
-    color: '#007AFF',
-    fontWeight: 'bold',
-  },
-  modalItemTextClear: {
+
+  filterText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  scrollView: {
-    flex: 1,
+
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FFB800',
+    borderRadius: 10,
+    paddingHorizontal: 6,
   },
-  searchBarContainer: {
-    marginHorizontal: 16,
-    marginBottom: 13,
+
+  filterBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
-  searchInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    height: 48,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#000000',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
+
   container: {
-    flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 0,
     paddingBottom: 60,
-    gap: 11, // Reduced from 16 to 11 (approximately 70%)
+    gap: 11,
   },
-}); 
+});

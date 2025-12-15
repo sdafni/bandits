@@ -1,7 +1,17 @@
 import { Database } from '@/lib/database.types';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import TagChip from '@/components/TagChip';
+import { TAG_EMOJI_MAP } from './../constants/tagNameToEmoji';
 import EventCategories from './EventCategories';
 import { ThemedText } from './ThemedText';
 
@@ -27,38 +37,56 @@ export default function BanditHeader({
   onLike,
   variant = 'detail',
   showActionButtons = true,
-  onCategoryPress
+  onCategoryPress,
 }: BanditHeaderProps) {
-  const { id, name, family_name, age, city, occupation, image_url, face_image_url, rating, is_liked } = bandit;
+  const {
+    id,
+    name,
+    family_name,
+    age,
+    occupation,
+    image_url,
+    face_image_url,
+    rating,
+    is_liked,
+    bandit_tags,
+  } = bandit as any;
+
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
 
   const isListVariant = variant === 'list';
-  const displayImage = isListVariant ? (face_image_url || image_url) : image_url;
-  const imageHeight = isListVariant ? 238 : undefined; // Use aspect ratio for detail view
-  const containerPadding = isListVariant ? 0 : 16; // No padding for list variant
+  const displayImage = isListVariant
+    ? face_image_url || image_url
+    : image_url;
+
+  const imageHeight = isListVariant ? 238 : undefined;
+  const containerPadding = isListVariant ? 0 : 16;
 
   const content = (
     <>
-      <View style={[
-        styles.imageContainer,
-        isListVariant && styles.listImageContainer
-      ]}>
+      {/* IMAGE */}
+      <View
+        style={[
+          styles.imageContainer,
+          isListVariant && styles.listImageContainer,
+        ]}
+      >
         <Image
           source={{ uri: displayImage }}
           style={[
             styles.mainImage,
-            isListVariant ? { height: imageHeight } : { aspectRatio: imageAspectRatio },
-            isListVariant && styles.listImage
+            isListVariant
+              ? { height: imageHeight }
+              : { aspectRatio: imageAspectRatio },
+            isListVariant && styles.listImage,
           ]}
-          onLoad={(event) => {
-            if (!isListVariant && event.nativeEvent) {
-              // For detail view, we still calculate aspect ratio, but this might need adjustment
-              // since we're dealing with TypeScript issues. Let's use a simpler approach.
-              setImageAspectRatio(0.8); // Taller aspect ratio (width/height < 1 = taller image)
+          onLoad={() => {
+            if (!isListVariant) {
+              setImageAspectRatio(0.8);
             }
           }}
         />
-        
+
         {showActionButtons && (
           <>
             <Pressable
@@ -68,6 +96,7 @@ export default function BanditHeader({
               <Text style={styles.plusSign}>+</Text>
               <Text style={styles.exploreText}>CITY GUIDE</Text>
             </Pressable>
+
             <Pressable
               style={styles.mapButtonTopLeft}
               onPress={() => router.push(`/cityMap?banditId=${id}`)}
@@ -81,13 +110,18 @@ export default function BanditHeader({
         )}
       </View>
 
-      <View style={[
-        styles.infoContainer,
-        isListVariant && styles.listInfoContainer
-      ]}>
+      {/* INFO */}
+      <View
+        style={[
+          styles.infoContainer,
+          isListVariant && styles.listInfoContainer,
+        ]}
+      >
         <View style={styles.nameContainer}>
           <Text style={styles.name}>{`${name} ${family_name}`}</Text>
-          <Text style={styles.descriptionLine}>{`(${age} y/o, local banDit)`}</Text>
+          <Text style={styles.descriptionLine}>
+            {`(${age} y/o, local banDit)`}
+          </Text>
           <Text style={styles.occupation}>{occupation}</Text>
         </View>
 
@@ -96,7 +130,7 @@ export default function BanditHeader({
             <ThemedText style={styles.stars}>⭐️</ThemedText>
             <ThemedText style={styles.rating}>{rating}</ThemedText>
             {onLike && (
-              <Pressable 
+              <Pressable
                 onPress={() => onLike(id, is_liked)}
                 style={styles.likeButton}
               >
@@ -107,23 +141,42 @@ export default function BanditHeader({
         )}
       </View>
 
+      {/* CATEGORIES + VIBES */}
       <View style={isListVariant ? styles.listCategoriesWrapper : undefined}>
-        <EventCategories 
-          categories={categories} 
+        <EventCategories
+          categories={categories}
           onCategoryPress={onCategoryPress}
         />
+
+        {bandit_tags?.length > 0 && (
+          <View style={styles.vibesContainer}>
+            {bandit_tags.map((bt: any) => {
+              const tagName = bt.tags?.name;
+              if (!tagName) return null;
+
+              return (
+                <TagChip
+                  key={tagName}
+                  label={`${TAG_EMOJI_MAP[tagName] ?? ''} ${tagName}`}
+                />
+              );
+            })}
+          </View>
+        )}
       </View>
     </>
   );
 
   return (
-    <View style={[
-      styles.container, 
-      { paddingHorizontal: containerPadding },
-      isListVariant && styles.listContainer
-    ]}>
+    <View
+      style={[
+        styles.container,
+        { paddingHorizontal: containerPadding },
+        isListVariant && styles.listContainer,
+      ]}
+    >
       {isListVariant ? (
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.push(`/bandit/${id}`)}
           activeOpacity={0.8}
           style={styles.touchableContainer}
@@ -137,6 +190,8 @@ export default function BanditHeader({
   );
 }
 
+/* ---------------- STYLES ---------------- */
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
@@ -145,10 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginVertical: 8,
     shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -162,17 +214,13 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     position: 'relative',
     zIndex: 1,
-    overflow: 'visible',
   },
   listImageContainer: {
     marginBottom: 0,
-    overflow: 'visible',
   },
   mainImage: {
     width: '100%',
     borderRadius: 20,
-    opacity: 1,
-    zIndex: 1,
   },
   listImage: {
     borderTopLeftRadius: 20,
@@ -192,17 +240,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     gap: 4,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    zIndex: 2,
   },
   mapButtonTopLeft: {
     position: 'absolute',
     top: 16,
     left: 16,
-    zIndex: 2,
   },
   mapIcon: {
     width: 47,
@@ -222,17 +264,18 @@ const styles = StyleSheet.create({
   infoContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
     marginBottom: 16,
   },
   listInfoContainer: {
-    height: 80, // 30% of 340px total height
+    height: 80,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 0,
   },
   listCategoriesWrapper: {
     paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
   nameContainer: {
     flex: 1,
@@ -244,7 +287,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   descriptionLine: {
-    fontWeight: '400',
     fontSize: 12,
     color: '#3C3C3C',
     marginBottom: 4,
@@ -263,11 +305,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   rating: {
-    fontFamily: 'Caros-Bold',
     fontSize: 14,
-    color: '#000000',
+    fontWeight: '700',
   },
   likeButton: {
     marginLeft: 8,
+  },
+  vibesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+    marginBottom: 14,
   },
 });

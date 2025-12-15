@@ -19,6 +19,29 @@ export async function getBandits(): Promise<Bandit[]> {
   return data || [];
 }
 
+// additional function included to deal with the tags connection with the bandits fetch as well, i didnt remove the previous method, just in case.
+export async function getBanditsWithTags() {
+  const { data, error } = await supabase
+    .from('bandit')
+    .select(`
+      *,
+      bandit_tags (
+        tags (
+          id,
+          name
+        )
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching bandits:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
 export async function toggleBanditLike(id: string, currentLikeStatus: boolean): Promise<void> {
   const { error } = await supabase
     .from('bandit')

@@ -22,26 +22,22 @@ export default function TagChip({ label, onPress }: TagChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 18,
-
-    backgroundColor: '#FAFAFA',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-
-    marginRight: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: '#F3F3F3',
+    marginRight: 6,
     marginBottom: 6,
+  },
+  text: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#3C3C3C',
+    letterSpacing: 0.2,
   },
 
   pressed: {
     backgroundColor: '#F0F0F0',
   },
 
-  text: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#4A4A4A',
-    letterSpacing: 0.2,
-  },
 });

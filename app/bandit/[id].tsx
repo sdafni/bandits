@@ -19,7 +19,7 @@ import BanditHeader from '@/components/BanditHeader';
 import ReviewCard from '@/components/ReviewCard';
 import TagChip from '@/components/TagChip';
 
-import { TAG_EMOJI_MAP } from '@/app/constants/tagNameToEmoji';
+import { TAG_EMOJI_MAP } from '@/constants/tagNameToEmoji';
 import { Database } from '@/lib/database.types';
 
 type Bandit = Database['public']['Tables']['bandit']['Row'];
