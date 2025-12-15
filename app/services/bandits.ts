@@ -104,4 +104,26 @@ export async function getBanditById(id: string): Promise<Bandit | null> {
   }
 
   return data;
-} 
+}
+
+export async function getBanditTags(banditId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('bandit_tags')
+    .select(`
+      tags (
+        name
+      )
+    `)
+    .eq('bandit_id', banditId);
+
+  if (error) {
+    console.error('Error fetching bandit tags:', error);
+    throw error;
+  }
+
+  return (
+    data
+      ?.map((row: any) => row.tags?.name)
+      .filter(Boolean) || []
+  );
+}
