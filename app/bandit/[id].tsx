@@ -19,6 +19,7 @@ import BanditHeader from '@/components/BanditHeader';
 import ReviewCard from '@/components/ReviewCard';
 import TagChip from '@/components/TagChip';
 
+import { TAG_EMOJI_MAP } from '@/app/constants/tagNameToEmoji';
 import { Database } from '@/lib/database.types';
 
 type Bandit = Database['public']['Tables']['bandit']['Row'];
@@ -33,8 +34,8 @@ export default function BanditScreen() {
   const router = useRouter();
 
   const [bandit, setBandit] = useState<Bandit | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
   const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [reviews, setReviews] = useState<
     Database['public']['Tables']['user_bandit']['Row'][]
   >([]);
@@ -53,20 +54,20 @@ export default function BanditScreen() {
         if (!banditData) throw new Error('Bandit not found');
         setBandit(banditData);
 
-        // Tags
-        try {
-          const tagData = await getBanditTags(id as string);
-          setTags(tagData);
-        } catch {
-          setTags([]);
-        }
-
-        // Categories
+        // Categories (what they recommend)
         try {
           const categoriesData = await getBanditEventCategories(id as string);
           setCategories(categoriesData);
         } catch {
           setCategories([]);
+        }
+
+        // Vibes (how it feels)
+        try {
+          const tagData = await getBanditTags(id as string);
+          setTags(tagData);
+        } catch {
+          setTags([]);
         }
 
         // Reviews
@@ -106,6 +107,10 @@ export default function BanditScreen() {
     router.push(`/cityGuide?banditId=${id}&genre=${genre}`);
   };
 
+  const handleVibePress = (tag: string) => {
+    router.push(`/cityGuide?vibe=${encodeURIComponent(tag)}`);
+  };
+
   const handleAskMePress = () => {
     const phoneNumber = '+972544717932';
     const whatsappUrl = `whatsapp://send?phone=${phoneNumber}`;
@@ -121,7 +126,11 @@ export default function BanditScreen() {
     <>
       <Stack.Screen options={{ headerShown: true, title: '' }} />
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* HEADER + CATEGORIES */}
         <BanditHeader
           bandit={bandit}
           categories={categories}
@@ -130,8 +139,30 @@ export default function BanditScreen() {
           onCategoryPress={handleCategoryPress}
         />
 
+        {/* VIBES (directly under Categories) */}
+        {tags.length > 0 && (
+          <View style={styles.vibesSection}>
+            <Text style={styles.vibesLabel}>Vibes</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.vibesContainer}
+            >
+              {tags.map((tag, index) => (
+                <TagChip
+                key={index}
+                label={`${TAG_EMOJI_MAP[tag] ?? '✨'} ${tag}`}
+                />
+              
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* DESCRIPTION */}
         <Text style={styles.description}>{bandit.description}</Text>
 
+        {/* WHY FOLLOW */}
         <Text style={styles.whyFollowLabel}>
           {`Why follow ${bandit.name}?`}
         </Text>
@@ -145,27 +176,6 @@ export default function BanditScreen() {
                 <Text key={i}>{`\n• ${sentence.trim()}.`}</Text>
               ))}
           </Text>
-        )}
-
-        {/* TAGS SECTION */}
-        {tags.length > 0 && (
-          <View style={styles.tagsSection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tagsContainer}
-            >
-              {tags.map((tag, index) => (
-                <TagChip
-                  key={index}
-                  label={tag}
-                  onPress={() =>
-                    router.push(`/cityGuide?tag=${encodeURIComponent(tag)}`)
-                  }
-                />
-              ))}
-            </ScrollView>
-          </View>
         )}
 
         {/* REVIEWS */}
@@ -185,7 +195,7 @@ export default function BanditScreen() {
           </ScrollView>
         </View>
 
-        {/* ASK ME */}
+        {/* CTA */}
         <Pressable style={styles.askMeButton} onPress={handleAskMePress}>
           <Text style={styles.askMeText}>Ask me</Text>
         </Pressable>
@@ -195,7 +205,10 @@ export default function BanditScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   contentContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -218,13 +231,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     marginBottom: 8,
   },
-  tagsSection: {
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  tagsContainer: {
-    paddingVertical: 4,
-  },
+
   reviewsSection: {
     marginTop: 20,
     marginBottom: 20,
@@ -245,6 +252,22 @@ const styles = StyleSheet.create({
   reviewsContainer: {
     paddingHorizontal: 8,
   },
+  vibesSection: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  
+  vibesLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B6B6B',
+    marginBottom: 6,
+  },
+  
+  vibesContainer: {
+    paddingVertical: 4,
+  },
+  
   askMeButton: {
     backgroundColor: '#ff0000',
     borderRadius: 25,
@@ -260,6 +283,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Caros',
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

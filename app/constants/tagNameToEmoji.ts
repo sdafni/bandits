@@ -1,0 +1,17 @@
+export const TAG_EMOJI_MAP: Record<string, string> = {
+  'Arty Corners': '🎨',
+  'Bars with a Soul': '🍸',
+  'Breakfast of Rebels': '🥐',
+  'Coffee & Chill': '☕',
+  'Culture Fix': '🏛️',
+  'Date Night Approved': '💕',
+  'Hidden Bites': '🍽️',
+  'Live & Loud': '🎸',
+  'Local Legends': '🏆',
+  'Markets & Makers': '🛍️',
+  'Nature Escape': '🌿',
+  'Queer & Fabulous': '🌈',
+  'Second-Hand Heaven': '♻️',
+  'Sunset Spots': '🌅',
+  'Weird & Wonderful': '🌀',
+};

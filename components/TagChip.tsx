@@ -8,11 +8,12 @@ interface TagChipProps {
 export default function TagChip({ label, onPress }: TagChipProps) {
   return (
     <Pressable
+      disabled={!onPress}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        pressed && styles.pressed,
+        pressed && onPress && styles.pressed,
       ]}
-      onPress={onPress}
     >
       <Text style={styles.text}>{label}</Text>
     </Pressable>
@@ -21,19 +22,26 @@ export default function TagChip({ label, onPress }: TagChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F2F2F2',
+    borderRadius: 18,
+
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+
     marginRight: 8,
-    marginBottom: 8,
+    marginBottom: 6,
   },
+
   pressed: {
-    opacity: 0.85,
+    backgroundColor: '#F0F0F0',
   },
+
   text: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#3C3C3C',
+    color: '#4A4A4A',
+    letterSpacing: 0.2,
   },
 });
