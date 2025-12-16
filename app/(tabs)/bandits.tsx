@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -182,45 +183,52 @@ export default function BanditsScreen() {
       </View>
 
       {/* BANDIT LIST */}
-      <ScrollView>
-      <View style={styles.container}>
-        {filteredBandits.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>
-              No bandits found
-            </Text>
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#000" />
+        </View>
+      ) : (
+        <ScrollView>
+          <View style={styles.container}>
+            {filteredBandits.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>
+                  No bandits found
+                </Text>
 
-            <Text style={styles.emptySubtitle}>
-              {searchTerm
-                ? `Try adjusting your search`
-                : selectedTags.length > 0
-                ? `No bandits match these vibes`
-                : selectedCity
-                ? `No bandits available in ${selectedCity}`
-                : `Try changing your filters`}
-            </Text>
+                <Text style={styles.emptySubtitle}>
+                  {searchTerm
+                    ? `Try adjusting your search`
+                    : selectedTags.length > 0
+                    ? `No bandits match these vibes`
+                    : selectedCity
+                    ? `No bandits available in ${selectedCity}`
+                    : `Try changing your filters`}
+                </Text>
+              </View>
+            ) : (
+              filteredBandits.map((bandit) => (
+                <BanditHeader
+                  key={bandit.id}
+                  bandit={bandit}
+                  categories={banditCategories[bandit.id] || []}
+                  variant="list"
+                  showActionButtons
+                  onLike={() =>
+                    handleLike(bandit.id, bandit.is_liked)
+                  }
+                  onCategoryPress={(genre) =>
+                    router.push(
+                      `/cityGuide?banditId=${bandit.id}&genre=${genre}`
+                    )
+                  }
+                />
+              ))
+            )}
           </View>
-        ) : (
-          filteredBandits.map((bandit) => (
-            <BanditHeader
-              key={bandit.id}
-              bandit={bandit}
-              categories={banditCategories[bandit.id] || []}
-              variant="list"
-              showActionButtons
-              onLike={() =>
-                handleLike(bandit.id, bandit.is_liked)
-              }
-              onCategoryPress={(genre) =>
-                router.push(
-                  `/cityGuide?banditId=${bandit.id}&genre=${genre}`
-                )
-              }
-            />
-          ))
-        )}
-      </View>
-      </ScrollView>
+        </ScrollView>
+      )}
+
 
       {/* VIBE FILTER MODAL */}
       <VibeFilterModal
@@ -317,6 +325,11 @@ const styles = StyleSheet.create({
     color: '#8A8A8A',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
 });
