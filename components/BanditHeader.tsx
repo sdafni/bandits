@@ -10,8 +10,6 @@ import {
   View,
 } from 'react-native';
 
-import TagChip from '@/components/TagChip';
-import { TAG_EMOJI_MAP } from './../constants/tagNameToEmoji';
 import EventCategories from './EventCategories';
 import { ThemedText } from './ThemedText';
 
@@ -147,8 +145,8 @@ export default function BanditHeader({
           categories={categories}
           onCategoryPress={onCategoryPress}
         />
-
-        {bandit_tags?.length > 0 && (
+        {/* Bandit Tags made invisible. */}
+        {/* {bandit_tags?.length > 0 && (
           <View style={styles.vibesContainer}>
             {bandit_tags.map((bt: any) => {
               const tagName = bt.tags?.name;
@@ -162,7 +160,7 @@ export default function BanditHeader({
               );
             })}
           </View>
-        )}
+        )} */}
       </View>
     </>
   );

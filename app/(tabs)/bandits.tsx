@@ -183,8 +183,25 @@ export default function BanditsScreen() {
 
       {/* BANDIT LIST */}
       <ScrollView>
-        <View style={styles.container}>
-          {filteredBandits.map((bandit) => (
+      <View style={styles.container}>
+        {filteredBandits.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>
+              No bandits found
+            </Text>
+
+            <Text style={styles.emptySubtitle}>
+              {searchTerm
+                ? `Try adjusting your search`
+                : selectedTags.length > 0
+                ? `No bandits match these vibes`
+                : selectedCity
+                ? `No bandits available in ${selectedCity}`
+                : `Try changing your filters`}
+            </Text>
+          </View>
+        ) : (
+          filteredBandits.map((bandit) => (
             <BanditHeader
               key={bandit.id}
               bandit={bandit}
@@ -200,8 +217,9 @@ export default function BanditsScreen() {
                 )
               }
             />
-          ))}
-        </View>
+          ))
+        )}
+      </View>
       </ScrollView>
 
       {/* VIBE FILTER MODAL */}
@@ -280,4 +298,25 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
     gap: 11,
   },
+
+  emptyState: {
+    marginTop: 80,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#3C3C3C',
+    marginBottom: 6,
+  },
+  
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#8A8A8A',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  
 });

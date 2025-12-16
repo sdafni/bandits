@@ -142,7 +142,6 @@ export default function BanditScreen() {
         {/* VIBES (directly under Categories) */}
         {tags.length > 0 && (
           <View style={styles.vibesSection}>
-            <Text style={styles.vibesLabel}>Vibes</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -150,10 +149,9 @@ export default function BanditScreen() {
             >
               {tags.map((tag, index) => (
                 <TagChip
-                key={index}
-                label={`${TAG_EMOJI_MAP[tag] ?? '✨'} ${tag}`}
+                  key={index}
+                  label={`${TAG_EMOJI_MAP[tag] ?? '✨'} ${tag}`}
                 />
-              
               ))}
             </ScrollView>
           </View>
@@ -253,19 +251,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   vibesSection: {
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  
-  vibesLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B6B6B',
-    marginBottom: 6,
+    marginTop: -6,     // pulls it closer to categories
+    marginBottom: 8,
   },
   
   vibesContainer: {
-    paddingVertical: 4,
+    paddingVertical: 2, // tighter chip row
+    gap: 6,             
   },
   
   askMeButton: {
