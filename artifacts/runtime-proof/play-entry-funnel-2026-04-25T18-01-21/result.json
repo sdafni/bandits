@@ -1,8 +1,0 @@
-{
-  "prod": "https://bandits-two.vercel.app",
-  "fullIntroTestId": 1,
-  "fastSkipTestId": 0,
-  "hasMessageBottle": true,
-  "pageErrors": [],
-  "pass": true
-}
