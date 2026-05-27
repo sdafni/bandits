@@ -85,7 +85,9 @@ export function NewCheckForm() {
 
       <FormStatusMessage state={state} />
 
-      <SubmitButton pendingLabel="Creating check...">Create SafeKey check</SubmitButton>
+      <SubmitButton pendingLabel="Creating check..." variant="workspace">
+        Create SafeKey check
+      </SubmitButton>
     </form>
   );
 }

@@ -8,7 +8,7 @@ type SubmitButtonProps = {
   className?: string;
   disabled?: boolean;
   pendingLabel?: string;
-  variant?: "primary" | "secondary" | "billing";
+  variant?: "primary" | "secondary" | "billing" | "workspace";
 };
 
 export function SubmitButton({
@@ -25,6 +25,7 @@ export function SubmitButton({
     <button
       className={cn(
         variant === "billing" && "billing-cta",
+        variant === "workspace" && "workspace-cta w-full sm:w-auto",
         variant === "primary" && "primary-action min-h-14",
         variant === "secondary" && "secondary-action min-h-14",
         variant === "billing" && "min-h-12",

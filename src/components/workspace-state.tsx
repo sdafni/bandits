@@ -75,7 +75,7 @@ export function WorkspaceState({
       <h3 className="mt-5 text-lg font-semibold text-slate-950">{title}</h3>
       <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-700">{description}</p>
       {actionHref && actionLabel ? (
-        <Link className="primary-action mt-6 inline-flex min-h-12 rounded-[18px] px-5 py-3" href={actionHref}>
+        <Link className="workspace-cta mt-6" href={actionHref}>
           {actionLabel}
         </Link>
       ) : null}
