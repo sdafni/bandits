@@ -63,10 +63,19 @@ export default async function DashboardBillingPage({
             `202605270002_stripe_webhook_idempotency.sql` before enabling live checkout.
           </div>
         ) : null}
-        {!stripeReadiness.isReady ? (
+        {!stripeReadiness.isCheckoutReady ? (
           <div className="status-message border-amber-300 bg-amber-50 text-amber-950">
-            Stripe production keys or live price IDs are missing. Configure all `STRIPE_*` environment variables
-            before accepting payments.
+            Stripe production keys or live price IDs are missing. Set{" "}
+            {stripeReadiness.missingCheckoutKeys.length > 0
+              ? stripeReadiness.missingCheckoutKeys.join(", ")
+              : "STRIPE_SECRET_KEY, STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID, STRIPE_PREMIUM_PRICE_ID, STRIPE_SCREENING_PRICE_ID"}{" "}
+            in Vercel Production, then redeploy.
+          </div>
+        ) : null}
+        {stripeReadiness.isCheckoutReady && !stripeReadiness.hasWebhookSecret ? (
+          <div className="status-message border-[#e9dfc5] bg-[#fcfaf4] text-[#5d4e31]">
+            Checkout is configured. Add `STRIPE_WEBHOOK_SECRET` in Vercel Production so subscription and payment
+            events sync into SafeKey.
           </div>
         ) : null}
         {checkoutState === "success" ? (

@@ -16,7 +16,8 @@ export const env = {
   stripePremiumPriceId: process.env.STRIPE_PREMIUM_PRICE_ID ?? "",
   stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID ?? "",
   stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
-  stripeScreeningPriceId: process.env.STRIPE_SCREENING_PRICE_ID ?? "",
+  stripeScreeningPriceId:
+    process.env.STRIPE_SCREENING_PRICE_ID ?? process.env.STRIPE_SCREENING_ID ?? "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   supabaseAnonKey:
@@ -86,12 +87,41 @@ export function hasStripePriceEnv() {
   );
 }
 
+/** Checkout + billing UI: secret key and all live price IDs (matches Vercel production checklist). */
+export function hasStripeCheckoutEnv() {
+  return hasStripeServerEnv() && hasStripePriceEnv();
+}
+
+export function getStripeCheckoutMissingKeys() {
+  const missing: string[] = [];
+
+  if (!env.stripeSecretKey) {
+    missing.push("STRIPE_SECRET_KEY");
+  }
+  if (!env.stripeBasicPriceId) {
+    missing.push("STRIPE_BASIC_PRICE_ID");
+  }
+  if (!env.stripeProPriceId) {
+    missing.push("STRIPE_PRO_PRICE_ID");
+  }
+  if (!env.stripePremiumPriceId) {
+    missing.push("STRIPE_PREMIUM_PRICE_ID");
+  }
+  if (!env.stripeScreeningPriceId) {
+    missing.push("STRIPE_SCREENING_PRICE_ID");
+  }
+
+  return missing;
+}
+
 export function getStripeProductionReadiness() {
   return {
     hasPriceIds: hasStripePriceEnv(),
     hasPublishableKey: Boolean(env.stripePublishableKey),
     hasSecretKey: Boolean(env.stripeSecretKey),
     hasWebhookSecret: Boolean(env.stripeWebhookSecret),
-    isReady: hasStripeServerEnv() && hasStripeWebhookEnv() && hasStripePriceEnv(),
+    isCheckoutReady: hasStripeCheckoutEnv(),
+    isReady: hasStripeCheckoutEnv() && hasStripeWebhookEnv(),
+    missingCheckoutKeys: getStripeCheckoutMissingKeys(),
   };
 }
