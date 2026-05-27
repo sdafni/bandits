@@ -37,7 +37,8 @@ export async function POST(request: Request) {
       error: result.error,
       detail: result.detail,
     });
-    return NextResponse.json(result, { status: 502 });
+    const status = result.error.includes("Sign in required") ? 401 : 502;
+    return NextResponse.json(result, { status });
   }
 
   console.info("[safekey-checkout] api:success", { planKey, mode: result.mode });

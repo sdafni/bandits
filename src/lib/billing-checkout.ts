@@ -1,6 +1,6 @@
 import "server-only";
 
-import { requireLandlord } from "@/lib/auth";
+import { getLandlordContextForApi, requireLandlord } from "@/lib/auth";
 import { isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
 import { getBillingOverviewForUser, isBillingSchemaReady } from "@/lib/billing-queries";
 import { hasStripeServerEnv } from "@/lib/env";
@@ -42,7 +42,14 @@ export async function startSubscriptionCheckoutForUser(
   }
 
   try {
-    const { profile } = await requireLandlord();
+    const landlordContext =
+      source === "api" ? await getLandlordContextForApi() : await requireLandlord();
+
+    if (!landlordContext) {
+      return { ok: false, error: "Sign in required to start checkout." };
+    }
+
+    const { profile } = landlordContext;
     console.info("[safekey-checkout] subscription:landlord", { userId: profile.id, source });
 
     const overview = await getBillingOverviewForUser(profile.id, { admin: true });

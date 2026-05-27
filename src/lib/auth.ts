@@ -41,6 +41,21 @@ export async function requireLandlord() {
   return context;
 }
 
+/** For API routes: return null instead of redirecting when unauthenticated. */
+export async function getLandlordContextForApi() {
+  const context = await getCurrentUserContext();
+
+  if (!context.user || !context.profile) {
+    return null;
+  }
+
+  if (isAdminContext(context.profile.email, context.profile.role)) {
+    return null;
+  }
+
+  return context;
+}
+
 export async function requireAdmin() {
   const context = await requireAuthenticatedUser();
 
