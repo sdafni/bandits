@@ -88,6 +88,10 @@ export async function createSubscriptionCheckoutSession({
     cancel_url: buildAppUrl(`/dashboard/billing?checkout=cancelled&plan=${planKey}`),
     client_reference_id: userId,
     customer: customerId,
+    customer_update: {
+      address: "auto",
+      name: "auto",
+    },
     line_items: [
       {
         price: getBillingPlanPriceId(planKey),

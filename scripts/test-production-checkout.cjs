@@ -54,16 +54,18 @@ async function main() {
   console.log("\n=== Production checkout test ===\n");
   console.log("App URL:", appUrl);
 
-  const link = await admin.auth.admin.generateLink({
-    type: "signup",
+  const created = await admin.auth.admin.createUser({
     email,
+    email_confirm: true,
     password,
-    options: { redirectTo: `${appUrl}/auth/callback?next=/dashboard/billing` },
+    user_metadata: { full_name: "Checkout Verify", role: "landlord" },
   });
 
-  if (link.error) {
-    throw link.error;
+  if (created.error) {
+    throw created.error;
   }
+
+  const userId = created.data.user?.id ?? null;
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
@@ -89,8 +91,14 @@ async function main() {
     }
   });
 
-  await page.goto(link.data.properties.action_link, { waitUntil: "domcontentloaded", timeout: 120000 });
-  await page.waitForURL(/\/dashboard/, { timeout: 120000 }).catch(() => {});
+  await page.goto(`${appUrl}/login`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.getByRole("button", { name: "Sign in" }).first().click();
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).last().click();
+  await page.waitForFunction(() => window.location.pathname.startsWith("/dashboard"), null, {
+    timeout: 120000,
+  });
 
   await page.goto(`${appUrl}/dashboard/billing`, { waitUntil: "domcontentloaded", timeout: 120000 });
   console.log("Billing page URL:", page.url());
@@ -103,8 +111,22 @@ async function main() {
     data: { planKey: "pro" },
     headers: { "Content-Type": "application/json" },
   });
-  const apiBody = await apiResult.json().catch(() => null);
+  const apiRaw = await apiResult.text();
+  let apiBody = null;
+  try {
+    apiBody = JSON.parse(apiRaw);
+  } catch {
+    apiBody = { raw: apiRaw.slice(0, 500) };
+  }
   console.log("\n[direct API POST]", apiResult.status(), JSON.stringify(apiBody, null, 2));
+
+  const pageText = await page.locator("body").innerText().catch(() => "");
+  if (pageText.includes("Billing tables")) {
+    console.error("\nBLOCKER: Billing migrations not applied on production Supabase.");
+  }
+  if (pageText.includes("Stripe production keys")) {
+    console.error("\nBLOCKER: Stripe env vars missing in production.");
+  }
   checkoutResponses.push({ status: apiResult.status(), body: apiBody });
 
   if (apiBody?.ok && apiBody.url) {
@@ -141,6 +163,11 @@ async function main() {
   }
 
   await browser.close();
+
+  if (userId) {
+    await admin.auth.admin.deleteUser(userId).catch(() => {});
+  }
+
   process.exit(onStripe ? 0 : 1);
 }
 

@@ -57,11 +57,14 @@ export async function GET() {
     });
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      allow_promotion_codes: true,
+      billing_address_collection: "auto",
+      cancel_url: "https://getsafekey.app/dashboard/billing?checkout=cancelled&plan=pro",
       customer: customer.id,
       line_items: [{ price: getBillingPlanPriceId("pro"), quantity: 1 }],
-      success_url: "https://getsafekey.app/dashboard/billing?checkout=success",
-      cancel_url: "https://getsafekey.app/dashboard/billing?checkout=cancelled",
+      mode: "subscription",
+      success_url: "https://getsafekey.app/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+      tax_id_collection: { enabled: true },
     });
 
     result.checkoutTest = {
