@@ -9,10 +9,7 @@ export default function NotFound() {
         <p className="text-sm leading-7 text-slate-600">
           The SafeKey upload or review link may be invalid, expired, or no longer available.
         </p>
-        <Link
-          className="inline-flex items-center justify-center rounded-full bg-[#0f2343] px-5 py-3 text-sm font-semibold text-white"
-          href="/"
-        >
+        <Link className="primary-action rounded-full px-5 py-3" href="/">
           Return home
         </Link>
       </div>

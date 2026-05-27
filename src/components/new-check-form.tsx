@@ -68,7 +68,7 @@ export function NewCheckForm() {
         <div className="grid gap-3 md:grid-cols-2">
           {REQUESTED_DOCUMENT_OPTIONS.map((option, index) => (
             <label
-              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+              className="selection-chip"
               key={option.value}
             >
               <input

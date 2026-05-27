@@ -6,6 +6,13 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { z } from "zod";
 import { generateTenantRiskReport } from "@/lib/ai";
 import { requireAdmin, requireLandlord } from "@/lib/auth";
+import {
+  getBillingEligibilityForCheck,
+  getBillingOverviewForUser,
+  isBillingSchemaReady,
+} from "@/lib/billing-queries";
+import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
+import { isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
 import type { InsuranceEligibilityStatus } from "@/lib/database.types";
 import {
   buildStoragePath,
@@ -13,11 +20,22 @@ import {
   getUploadMimeType,
   validateUploadFiles,
 } from "@/lib/documents";
-import { env, getSupabaseBrowserEnvIssue, hasSupabaseServiceEnv } from "@/lib/env";
+import {
+  env,
+  getSupabaseBrowserEnvIssue,
+  hasStripeServerEnv,
+  hasSupabaseServiceEnv,
+} from "@/lib/env";
 import type { TenantCheckDetail } from "@/lib/queries";
-import { getAdminCheckDetail, getPublicCheckByToken } from "@/lib/queries";
+import { getAdminCheckDetail, getLandlordCheckDetail, getPublicCheckByToken } from "@/lib/queries";
 import { buildProtectionAssessment, getFallbackProtectionPackages } from "@/lib/protection";
 import { createSecureToken, hashToken } from "@/lib/security";
+import {
+  createBillingPortalSession,
+  createScreeningCheckoutSession,
+  createSubscriptionCheckoutSession,
+  getOrCreateStripeCustomer,
+} from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -119,7 +137,7 @@ export async function signInAction(_prevState: ActionState, formData: FormData):
     }
 
     revalidatePath("/", "layout");
-    redirect("/dashboard");
+    redirect(getSafeRedirectPath(formData.get("next")));
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -150,11 +168,14 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
     }
 
     const supabase = await createClient();
+    const nextPath = resolveAuthRedirectPath(formData.get("next"), formData.get("plan"));
+    const callbackUrl = new URL("/auth/callback", env.appUrl);
+    callbackUrl.searchParams.set("next", nextPath);
     const { data, error } = await supabase.auth.signUp({
       email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: new URL("/auth/callback?next=/dashboard", env.appUrl).toString(),
+        emailRedirectTo: callbackUrl.toString(),
         data: {
           full_name: parsed.data.fullName,
           company_name: normalizeOptionalString(parsed.data.companyName),
@@ -174,7 +195,7 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
 
     if (!signInResult.error) {
       revalidatePath("/", "layout");
-      redirect("/dashboard");
+      redirect(nextPath);
     }
 
     return {
@@ -194,6 +215,217 @@ export async function signOutAction() {
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+export async function startSubscriptionCheckoutAction(
+  planKey: BillingPlanKey,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    if (!hasStripeServerEnv()) {
+      return { error: "Billing is not configured yet. Add the Stripe server keys before enabling checkout." };
+    }
+
+    if (!(await isBillingSchemaReady({ admin: true }))) {
+      return {
+        error: "Billing database tables are not deployed yet. Apply the latest Supabase billing migrations.",
+      };
+    }
+
+    const { profile } = await requireLandlord();
+    const overview = await getBillingOverviewForUser(profile.id, { admin: true });
+    const customer = overview.customer ?? (await getOrCreateStripeCustomer(profile));
+
+    if (overview.activeSubscription && isEntitledSubscriptionStatus(overview.activeSubscription.status)) {
+      const portalSession = await createBillingPortalSession({
+        customerId: customer.stripe_customer_id,
+      });
+      redirect(portalSession.url);
+    }
+
+    const session = await createSubscriptionCheckoutSession({
+      customerId: customer.stripe_customer_id,
+      planKey,
+      userId: profile.id,
+    });
+
+    const admin = createAdminClient();
+    await admin.from("billing_checkout_sessions").upsert(
+      {
+        amount_total: session.amount_total,
+        cancel_url: session.cancel_url,
+        completed_at: null,
+        currency: session.currency,
+        mode: "subscription",
+        payment_status: session.payment_status,
+        plan_key: planKey,
+        status: "open",
+        stripe_checkout_session_id: session.id,
+        stripe_customer_id: customer.stripe_customer_id,
+        stripe_subscription_id:
+          typeof session.subscription === "string" ? session.subscription : session.subscription?.id ?? null,
+        success_url: session.success_url,
+        tenant_check_id: null,
+        user_id: profile.id,
+      },
+      { onConflict: "stripe_checkout_session_id" },
+    );
+
+    if (!session.url) {
+      return { error: "Stripe checkout could not be created for this plan." };
+    }
+
+    redirect(session.url);
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: error instanceof Error ? error.message : "The subscription checkout could not be started.",
+    };
+  }
+}
+
+export async function openBillingPortalAction(
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    if (!hasStripeServerEnv()) {
+      return { error: "Billing is not configured yet. Add the Stripe server keys before enabling portal access." };
+    }
+
+    if (!(await isBillingSchemaReady({ admin: true }))) {
+      return {
+        error: "Billing database tables are not deployed yet. Apply the latest Supabase billing migrations.",
+      };
+    }
+
+    const { profile } = await requireLandlord();
+    const overview = await getBillingOverviewForUser(profile.id, { admin: true });
+    const customer = overview.customer;
+
+    if (!customer) {
+      return {
+        error: "No billing account exists yet. Choose a plan or purchase a screening first.",
+      };
+    }
+
+    const portalSession = await createBillingPortalSession({
+      customerId: customer.stripe_customer_id,
+    });
+    redirect(portalSession.url);
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: error instanceof Error ? error.message : "The billing portal could not be opened.",
+    };
+  }
+}
+
+export async function startScreeningCheckoutAction(
+  checkId: string,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    if (!hasStripeServerEnv()) {
+      return { error: "Billing is not configured yet. Add the Stripe server keys before enabling checkout." };
+    }
+
+    if (!(await isBillingSchemaReady({ admin: true }))) {
+      return {
+        error: "Billing database tables are not deployed yet. Apply the latest Supabase billing migrations.",
+      };
+    }
+
+    const { profile } = await requireLandlord();
+    const detail = await getLandlordCheckDetail(checkId);
+
+    if (!detail) {
+      return { error: "This tenant case no longer exists." };
+    }
+
+    const eligibility = await getBillingEligibilityForCheck({
+      checkId,
+      landlordId: profile.id,
+      useAdmin: true,
+    });
+
+    if (eligibility.activeSubscription && isEntitledSubscriptionStatus(eligibility.activeSubscription.status)) {
+      return {
+        success: "Your active plan already covers this tenant screening.",
+      };
+    }
+
+    if (eligibility.screeningPayment?.status === "paid") {
+      return {
+        success: "This tenant screening payment has already been completed.",
+      };
+    }
+
+    const customer = eligibility.customer ?? (await getOrCreateStripeCustomer(profile));
+    const session = await createScreeningCheckoutSession({
+      checkId,
+      customerId: customer.stripe_customer_id,
+      userId: profile.id,
+    });
+
+    const admin = createAdminClient();
+    await admin.from("billing_checkout_sessions").upsert(
+      {
+        amount_total: session.amount_total,
+        cancel_url: session.cancel_url,
+        completed_at: null,
+        currency: session.currency,
+        mode: "payment",
+        payment_status: session.payment_status,
+        plan_key: null,
+        status: "open",
+        stripe_checkout_session_id: session.id,
+        stripe_customer_id: customer.stripe_customer_id,
+        stripe_payment_intent_id:
+          typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
+        stripe_subscription_id: null,
+        success_url: session.success_url,
+        tenant_check_id: checkId,
+        user_id: profile.id,
+      },
+      { onConflict: "stripe_checkout_session_id" },
+    );
+    await admin.from("screening_payments").upsert(
+      {
+        amount_total: session.amount_total,
+        currency: session.currency ?? "eur",
+        status: "pending",
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id:
+          typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
+        tenant_check_id: checkId,
+        user_id: profile.id,
+      },
+      { onConflict: "tenant_check_id" },
+    );
+
+    if (!session.url) {
+      return { error: "Stripe checkout could not be created for this screening." };
+    }
+
+    redirect(session.url);
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: error instanceof Error ? error.message : "The screening checkout could not be started.",
+    };
+  }
 }
 
 export async function createTenantCheckAction(
@@ -438,6 +670,19 @@ export async function generateReportAction(
     return { error: "At least one uploaded document is required before generating a report." };
   }
 
+  const billingEligibility = await getBillingEligibilityForCheck({
+    checkId: detail.id,
+    landlordId: detail.landlord_id,
+    useAdmin: true,
+  });
+
+  if (!billingEligibility.hasBillingAccess) {
+    return {
+      error:
+        "This case requires an active subscription or a completed one-time screening payment before a report can be generated.",
+    };
+  }
+
   const { error: reviewStartError } = await supabase
     .from("tenant_checks")
     .update({
@@ -600,6 +845,11 @@ export async function updateProtectionReviewAction(
 function normalizeOptionalString(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+function getSafeRedirectPath(value: FormDataEntryValue | null) {
+  const nextPath = typeof value === "string" ? value.trim() : "";
+  return nextPath.startsWith("/") ? nextPath : "/dashboard";
 }
 
 function formatAuthActionError(error: unknown, action: "sign in" | "sign up") {

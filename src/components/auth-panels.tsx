@@ -1,26 +1,34 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signInAction, signUpAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
+import { buildBillingPath, parseBillingPlanIntent } from "@/lib/billing-navigation";
 
 const initialState: ActionState = {};
 
 export function AuthPanels() {
+  const searchParams = useSearchParams();
+  const selectedPlan = parseBillingPlanIntent(searchParams.get("plan"));
+  const nextPath =
+    searchParams.get("next") ??
+    (selectedPlan ? buildBillingPath(selectedPlan, { autoCheckout: selectedPlan !== "screening" }) : "/dashboard");
+  const hasPlanIntent = Boolean(selectedPlan);
   const [signInState, signInFormAction] = useActionState(signInAction, initialState);
   const [signUpState, signUpFormAction] = useActionState(signUpAction, initialState);
-  const [activeTab, setActiveTab] = useState<"sign_in" | "sign_up">("sign_in");
+  const [activeTab, setActiveTab] = useState<"sign_in" | "sign_up">(hasPlanIntent ? "sign_up" : "sign_in");
 
   return (
     <section className="card auth-card w-full max-w-[760px] space-y-6 border border-[#e5ebf3] bg-white/98 p-5 sm:space-y-7 sm:p-10">
       <div className="space-y-4 sm:space-y-5">
         <div className="inline-flex w-full rounded-[18px] bg-[#f7f9fc] p-1 sm:rounded-[20px]">
           <button
-            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[16px] px-3 py-2.5 text-sm font-semibold transition sm:min-h-12 sm:rounded-[18px] sm:px-4 sm:py-3 ${
+            className={`tab-action min-h-11 flex-1 gap-2 sm:min-h-12 ${
               activeTab === "sign_in"
-                ? "bg-white text-[#0f2343] shadow-[0_4px_12px_rgba(15,35,67,0.05)]"
-                : "text-slate-500 hover:text-[#0f2343]"
+                ? "bg-white text-[#0f2343] shadow-[0_8px_18px_rgba(15,35,67,0.07)]"
+                : "text-slate-500 hover:bg-white/60 hover:text-[#0f2343]"
             }`}
             onClick={() => setActiveTab("sign_in")}
             type="button"
@@ -28,10 +36,10 @@ export function AuthPanels() {
             Sign in
           </button>
           <button
-            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[16px] px-3 py-2.5 text-sm font-semibold transition sm:min-h-12 sm:rounded-[18px] sm:px-4 sm:py-3 ${
+            className={`tab-action min-h-11 flex-1 gap-2 sm:min-h-12 ${
               activeTab === "sign_up"
-                ? "bg-white text-[#0f2343] shadow-[0_4px_12px_rgba(15,35,67,0.05)]"
-                : "text-slate-500 hover:text-[#0f2343]"
+                ? "bg-white text-[#0f2343] shadow-[0_8px_18px_rgba(15,35,67,0.07)]"
+                : "text-slate-500 hover:bg-white/60 hover:text-[#0f2343]"
             }`}
             onClick={() => setActiveTab("sign_up")}
             type="button"
@@ -50,10 +58,21 @@ export function AuthPanels() {
               : "Create your workspace and start screening securely."}
           </p>
         </div>
+
+        {hasPlanIntent ? (
+          <div className="rounded-[22px] border border-[#e9dfc5] bg-[#fcfaf4] px-4 py-4 text-sm leading-7 text-[#5d4e31]">
+            You&apos;re starting with{" "}
+            <span className="font-semibold capitalize">
+              {selectedPlan === "screening" ? "single screening" : `${selectedPlan} plan`}
+            </span>
+            . After authentication, SafeKey will take you to billing and start checkout when applicable.
+          </div>
+        ) : null}
       </div>
 
       {activeTab === "sign_in" ? (
         <form action={signInFormAction} className="space-y-6">
+          <input name="next" type="hidden" value={nextPath} />
           <div className="space-y-4">
             <label className="space-y-2.5">
               <span className="text-sm font-medium text-[#42526b]">Email</span>
@@ -75,6 +94,8 @@ export function AuthPanels() {
         </form>
       ) : (
         <form action={signUpFormAction} className="space-y-6">
+          <input name="next" type="hidden" value={nextPath} />
+          {selectedPlan ? <input name="plan" type="hidden" value={selectedPlan} /> : null}
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2.5">
               <span className="text-sm font-medium text-[#42526b]">Full name</span>

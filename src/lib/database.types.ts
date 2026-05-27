@@ -24,6 +24,21 @@ export type DepositProtectionQuoteStatus =
   | "indicative_quote_ready"
   | "needs_more_documents"
   | "not_available";
+export type BillingPlanKey = "basic" | "pro" | "premium";
+export type BillingSubscriptionStatus =
+  | "incomplete"
+  | "incomplete_expired"
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid"
+  | "paused";
+export type BillingInvoiceStatus = "draft" | "open" | "paid" | "uncollectible" | "void";
+export type BillingCheckoutMode = "subscription" | "payment";
+export type BillingCheckoutStatus = "open" | "completed" | "expired" | "canceled";
+export type ScreeningPaymentStatus = "pending" | "paid" | "failed" | "canceled";
+export type StripeWebhookEventStatus = "processing" | "processed" | "failed" | "duplicate";
 
 export type TenantRiskReasoning = {
   documentCompleteness?: number | null;
@@ -70,6 +85,164 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["ai_reports"]["Insert"]>;
+        Relationships: [];
+      };
+      billing_checkout_sessions: {
+        Row: {
+          amount_total: number | null;
+          cancel_url: string | null;
+          completed_at: string | null;
+          created_at: string;
+          currency: string | null;
+          id: string;
+          mode: BillingCheckoutMode;
+          payment_status: string | null;
+          plan_key: BillingPlanKey | null;
+          status: BillingCheckoutStatus;
+          stripe_checkout_session_id: string;
+          stripe_customer_id: string | null;
+          stripe_payment_intent_id: string | null;
+          stripe_subscription_id: string | null;
+          success_url: string | null;
+          tenant_check_id: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount_total?: number | null;
+          cancel_url?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          currency?: string | null;
+          id?: string;
+          mode: BillingCheckoutMode;
+          payment_status?: string | null;
+          plan_key?: BillingPlanKey | null;
+          status?: BillingCheckoutStatus;
+          stripe_checkout_session_id: string;
+          stripe_customer_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          stripe_subscription_id?: string | null;
+          success_url?: string | null;
+          tenant_check_id?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["billing_checkout_sessions"]["Insert"]>;
+        Relationships: [];
+      };
+      billing_customers: {
+        Row: {
+          created_at: string;
+          default_payment_method_brand: string | null;
+          default_payment_method_last4: string | null;
+          email: string;
+          name: string | null;
+          stripe_customer_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          default_payment_method_brand?: string | null;
+          default_payment_method_last4?: string | null;
+          email: string;
+          name?: string | null;
+          stripe_customer_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["billing_customers"]["Insert"]>;
+        Relationships: [];
+      };
+      billing_invoices: {
+        Row: {
+          amount_due: number | null;
+          amount_paid: number | null;
+          created_at: string;
+          currency: string;
+          due_date: string | null;
+          hosted_invoice_url: string | null;
+          id: string;
+          invoice_created_at: string | null;
+          invoice_pdf: string | null;
+          paid_at: string | null;
+          period_end: string | null;
+          period_start: string | null;
+          status: BillingInvoiceStatus;
+          stripe_customer_id: string;
+          stripe_invoice_id: string;
+          stripe_subscription_id: string | null;
+          subtotal: number | null;
+          total: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount_due?: number | null;
+          amount_paid?: number | null;
+          created_at?: string;
+          currency?: string;
+          due_date?: string | null;
+          hosted_invoice_url?: string | null;
+          id?: string;
+          invoice_created_at?: string | null;
+          invoice_pdf?: string | null;
+          paid_at?: string | null;
+          period_end?: string | null;
+          period_start?: string | null;
+          status: BillingInvoiceStatus;
+          stripe_customer_id: string;
+          stripe_invoice_id: string;
+          stripe_subscription_id?: string | null;
+          subtotal?: number | null;
+          total?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["billing_invoices"]["Insert"]>;
+        Relationships: [];
+      };
+      billing_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean;
+          created_at: string;
+          currency: string;
+          current_period_end: string | null;
+          current_period_start: string | null;
+          id: string;
+          metadata: Json;
+          plan_key: BillingPlanKey;
+          status: BillingSubscriptionStatus;
+          stripe_customer_id: string;
+          stripe_price_id: string | null;
+          stripe_product_id: string | null;
+          stripe_subscription_id: string;
+          trial_end: string | null;
+          trial_start: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          currency?: string;
+          current_period_end?: string | null;
+          current_period_start?: string | null;
+          id?: string;
+          metadata?: Json;
+          plan_key: BillingPlanKey;
+          status: BillingSubscriptionStatus;
+          stripe_customer_id: string;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          stripe_subscription_id: string;
+          trial_end?: string | null;
+          trial_start?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["billing_subscriptions"]["Insert"]>;
         Relationships: [];
       };
       deposit_protection_quotes: {
@@ -182,6 +355,60 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["protection_packages"]["Insert"]>;
+        Relationships: [];
+      };
+      screening_payments: {
+        Row: {
+          amount_total: number | null;
+          created_at: string;
+          currency: string;
+          id: string;
+          paid_at: string | null;
+          status: ScreeningPaymentStatus;
+          stripe_checkout_session_id: string | null;
+          stripe_payment_intent_id: string | null;
+          tenant_check_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount_total?: number | null;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          paid_at?: string | null;
+          status?: ScreeningPaymentStatus;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          tenant_check_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["screening_payments"]["Insert"]>;
+        Relationships: [];
+      };
+      stripe_webhook_events: {
+        Row: {
+          created_at: string;
+          error_message: string | null;
+          event_type: string;
+          id: string;
+          processed_at: string | null;
+          status: StripeWebhookEventStatus;
+          stripe_event_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          error_message?: string | null;
+          event_type: string;
+          id?: string;
+          processed_at?: string | null;
+          status?: StripeWebhookEventStatus;
+          stripe_event_id: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["stripe_webhook_events"]["Insert"]>;
         Relationships: [];
       };
       tenant_checks: {

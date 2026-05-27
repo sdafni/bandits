@@ -9,6 +9,7 @@ SafeKey is AI-powered tenant screening and rental protection infrastructure for 
 - Tenant profile and document uploads into Supabase Storage
 - Admin review, risk scoring, protection eligibility, and package assignment
 - Landlord-facing final report with score, recommendation, red flags, and protection outlook
+- Stripe-powered subscriptions, billing portal management, invoices, and one-time screening checkout
 - Curated presentation scenarios for investor and insurance-partner walkthroughs
 
 ## Stack
@@ -17,6 +18,7 @@ SafeKey is AI-powered tenant screening and rental protection infrastructure for 
 - Supabase Auth, Postgres, Storage, and Row Level Security
 - Tailwind CSS
 - Optional OpenAI integration with heuristic fallback
+- Stripe Checkout, Billing Portal, and webhooks for SaaS billing
 
 ## Environment variables
 
@@ -31,6 +33,13 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 OPENAI_API_KEY=
 ADMIN_EMAILS=admin@getsafekey.app
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_BASIC_PRICE_ID=
+STRIPE_PRO_PRICE_ID=
+STRIPE_PREMIUM_PRICE_ID=
+STRIPE_SCREENING_PRICE_ID=
 ```
 
 Use either `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
@@ -43,6 +52,8 @@ Use either `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_
 4. Add the public and service role keys to `.env.local`.
 5. Add at least one admin email to `ADMIN_EMAILS`, or update the row in `public.users` to `role = 'admin'`.
 6. Configure Auth URL settings for your current environment.
+7. Create Stripe products and prices that match the SafeKey catalog, then add the Stripe keys and price IDs to `.env.local`.
+8. Configure the Stripe webhook endpoint to point at `/api/stripe/webhook`.
 
 ## Local development
 
@@ -80,3 +91,4 @@ Use the Vercel deployment guide in `docs/vercel-deployment.md` for:
 - Upload links are hashed and stored in Postgres.
 - If `OPENAI_API_KEY` is missing, SafeKey falls back to a deterministic heuristic report generator.
 - The current tenant document upload flow posts files through a server action. This is fine locally, but large document uploads are a known deployment consideration on Vercel. See `docs/vercel-deployment.md`.
+- Stripe billing depends on webhook delivery for durable subscription, invoice, and payment state. The webhook secret and price IDs must be configured in every environment.

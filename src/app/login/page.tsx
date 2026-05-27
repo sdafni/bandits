@@ -1,14 +1,45 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AuthPanels } from "@/components/auth-panels";
 import { PlatformPreview } from "@/components/platform-preview";
+import { PublicSiteFooter } from "@/components/public-site-footer";
 import { SafeKeyBrand } from "@/components/safekey-brand";
+import { getCurrentUserContext, isAdminContext } from "@/lib/auth";
+import { buildBillingPath, isSubscriptionPlanIntent, parseBillingPlanIntent } from "@/lib/billing-navigation";
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Access SafeKey and launch Tenant Passport Greece checks for the Greek rental market.",
+  description:
+    "Access SafeKey to launch tenant checks, collect documents securely, and review screening and protection workflows for the Greek rental market.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; plan?: string }>;
+}) {
+  const params = await searchParams;
+  const planIntent = parseBillingPlanIntent(params.plan);
+  const { user, profile } = await getCurrentUserContext();
+
+  if (user && profile) {
+    if (isAdminContext(profile.email, profile.role)) {
+      redirect("/admin/review");
+    }
+
+    if (planIntent) {
+      if (isSubscriptionPlanIntent(planIntent)) {
+        redirect(`/dashboard/billing/start?plan=${planIntent}`);
+      }
+
+      redirect(buildBillingPath("screening"));
+    }
+
+    const nextPath = params.next?.startsWith("/") ? params.next : "/dashboard";
+    redirect(nextPath);
+  }
+
   return (
     <main className="px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
       <div className="mx-auto max-w-[1500px]">
@@ -39,7 +70,9 @@ export default function LoginPage() {
             </div>
 
             <div className="xl:justify-self-end xl:w-full xl:max-w-[700px] 2xl:max-w-[740px]">
-              <AuthPanels />
+              <Suspense fallback={<div className="card auth-card h-[420px] animate-pulse rounded-[32px] bg-slate-100" />}>
+                <AuthPanels />
+              </Suspense>
             </div>
           </div>
         </section>
@@ -54,6 +87,8 @@ export default function LoginPage() {
 
           <PlatformPreview />
         </section>
+
+        <PublicSiteFooter showTrustLayer={false} />
       </div>
     </main>
   );

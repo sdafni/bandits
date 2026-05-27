@@ -1,4 +1,5 @@
-import type { Database, InsuranceEligibilityStatus } from "@/lib/database.types";
+import type { Database, InsuranceEligibilityStatus, TenantCheckStatus } from "@/lib/database.types";
+import { env } from "@/lib/env";
 
 type TenantCheckListItem = Database["public"]["Tables"]["tenant_checks"]["Row"] & {
   properties: Database["public"]["Tables"]["properties"]["Row"] | null;
@@ -288,6 +289,110 @@ const demoCases: DemoCase[] = [
     },
     uploadToken: "demo-high-risk-token",
   }),
+  buildDemoCase({
+    caseId: "demo-expat-pending",
+    createdOffsetDays: 2,
+    currentAddress: "Currently in Berlin, relocating to Greece",
+    depositFee: null,
+    descriptionLabel: "Expat applicant — awaiting upload",
+    eligibilityReason: "Screening has not started because the tenant upload pack is still outstanding.",
+    eligibilityStatus: "pending_more_documents",
+    employmentStatus: "full_time",
+    employerName: "Remote SaaS employer (EU)",
+    missingRequirements: ["Government ID", "Proof of income", "Employment letter", "Bank statement"],
+    packageStatuses: {
+      "Deposit Protection": "pending_more_documents",
+      "Full Rental Shield": "pending_more_documents",
+      "Rent Protection": "pending_more_documents",
+    },
+    property: {
+      address_line1: "4 Eleftheriou Venizelou",
+      city: "Chania",
+      monthly_rent: 1100,
+      name: "Old Town Expat Flat",
+      postal_code: "73100",
+    },
+    protectionRecommendation: null,
+    rentAmount: 1100,
+    status: "pending_upload",
+    tenant: {
+      email: "sophie.expat.demo@safekey.gr",
+      full_name: "Sophie Weber",
+      monthly_income: 4200,
+      phone: "+49 151 200 3301",
+    },
+    uploadToken: "demo-expat-pending-token",
+  }),
+  buildDemoCase({
+    aiReport: null,
+    caseId: "demo-documents-received",
+    createdOffsetDays: 5,
+    currentAddress: "12 Vasilissis Sofias, Athens",
+    depositFee: null,
+    descriptionLabel: "Documents received — analyst queue",
+    eligibilityReason: "Core documents are in place and the case is ready for analyst review.",
+    eligibilityStatus: "pending_more_documents",
+    employmentStatus: "full_time",
+    employerName: "Athens Legal Services",
+    missingRequirements: ["Employment letter still pending final signature."],
+    packageStatuses: {
+      "Deposit Protection": "pending_more_documents",
+      "Full Rental Shield": "pending_more_documents",
+      "Rent Protection": "pending_more_documents",
+    },
+    property: {
+      address_line1: "3 Panepistimiou",
+      city: "Athens",
+      monthly_rent: 1450,
+      name: "Syntagma Professional Flat",
+      postal_code: "10564",
+    },
+    protectionRecommendation: null,
+    rentAmount: 1450,
+    status: "documents_received",
+    tenant: {
+      email: "dimitra.pipeline.demo@safekey.gr",
+      full_name: "Dimitra Nikolaidou",
+      monthly_income: 3900,
+      phone: "+30 698 100 1004",
+    },
+    uploadToken: "demo-documents-received-token",
+  }),
+  buildDemoCase({
+    aiReport: null,
+    caseId: "demo-under-review",
+    createdOffsetDays: 7,
+    currentAddress: "55 Poseidonos Avenue, Glyfada",
+    depositFee: null,
+    descriptionLabel: "Under analyst review",
+    eligibilityReason: "Analyst review is in progress before the final recommendation is published.",
+    eligibilityStatus: "pending_more_documents",
+    employmentStatus: "self_employed",
+    employerName: "Independent hospitality consultant",
+    missingRequirements: ["Final reference confirmation pending."],
+    packageStatuses: {
+      "Deposit Protection": "pending_more_documents",
+      "Full Rental Shield": "pending_more_documents",
+      "Rent Protection": "pending_more_documents",
+    },
+    property: {
+      address_line1: "55 Poseidonos Avenue",
+      city: "Glyfada",
+      monthly_rent: 1680,
+      name: "Coastal Glyfada Apartment",
+      postal_code: "16674",
+    },
+    protectionRecommendation: null,
+    rentAmount: 1680,
+    status: "under_review",
+    tenant: {
+      email: "petros.review.demo@safekey.gr",
+      full_name: "Petros Angelopoulos",
+      monthly_income: 5100,
+      phone: "+30 698 100 1005",
+    },
+    uploadToken: "demo-under-review-token",
+  }),
 ];
 
 const demoCaseMap = new Map(demoCases.map((item) => [item.id, item]));
@@ -339,14 +444,132 @@ export function getDemoCasePresentationCards() {
 }
 
 export function getDemoDashboardAnalytics(): DemoAnalytics {
+  const cases = demoCases.map((item) => item.detail);
+  const completed = cases.filter((item) => item.status === "report_ready" && item.ai_reports);
+  const averageRiskScore =
+    completed.length > 0
+      ? Math.round(
+          completed.reduce((total, item) => total + (item.ai_reports?.score ?? 0), 0) / completed.length,
+        )
+      : 0;
+  const eligible = demoCases.filter(
+    (item) =>
+      item.protection.insuranceEligibility?.status === "eligible" ||
+      item.protection.insuranceEligibility?.status === "conditionally_eligible",
+  ).length;
+
   return {
-    activeCases: "18",
-    averageRiskScore: "74",
-    awaitingReview: "3",
-    pendingDocuments: "6",
-    protectedRentals: "11",
-    protectionEligibilityRate: "72%",
+    activeCases: String(cases.length),
+    averageRiskScore: String(averageRiskScore),
+    awaitingReview: String(cases.filter((item) => item.status === "under_review").length),
+    pendingDocuments: String(
+      cases.filter((item) => item.status === "pending_upload" || item.status === "documents_received").length,
+    ),
+    protectedRentals: String(eligible),
+    protectionEligibilityRate: `${Math.round((eligible / Math.max(cases.length, 1)) * 100)}%`,
   };
+}
+
+export function mergeLandlordChecksWithDemo(liveChecks: TenantCheckListItem[]) {
+  const liveIds = new Set(liveChecks.map((check) => check.id));
+  const merged = [...liveChecks, ...getDemoLandlordChecks().filter((check) => !liveIds.has(check.id))];
+
+  return merged.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
+}
+
+export function mergeAdminChecksWithDemo(liveChecks: TenantCheckListItem[]) {
+  return mergeLandlordChecksWithDemo(liveChecks);
+}
+
+export type DemoPaymentRecord = {
+  amount: string;
+  createdAt: string;
+  id: string;
+  label: string;
+  status: "paid" | "failed" | "open";
+  type: "subscription" | "screening";
+};
+
+export function getDemoPaymentHistory(): DemoPaymentRecord[] {
+  return [
+    {
+      amount: "€89.00",
+      createdAt: isoDaysAgo(12),
+      id: "demo-payment-sub-pro",
+      label: "Pro plan subscription",
+      status: "paid",
+      type: "subscription",
+    },
+    {
+      amount: "€39.00",
+      createdAt: isoDaysAgo(16),
+      id: "demo-payment-screening-approved",
+      label: "One-time screening — Maria Papadopoulou",
+      status: "paid",
+      type: "screening",
+    },
+    {
+      amount: "€39.00",
+      createdAt: isoDaysAgo(8),
+      id: "demo-payment-screening-failed",
+      label: "One-time screening — Alex Johnson",
+      status: "failed",
+      type: "screening",
+    },
+    {
+      amount: "€89.00",
+      createdAt: isoDaysAgo(1),
+      id: "demo-payment-invoice-open",
+      label: "Pro plan renewal invoice",
+      status: "open",
+      type: "subscription",
+    },
+  ];
+}
+
+export function getDemoWalkthroughSteps() {
+  return [
+    {
+      description: "Create a tenant check, choose documents, and issue the secure upload link.",
+      href: "/dashboard",
+      step: "01",
+      title: "Landlord opens a case",
+    },
+    {
+      description: "Tenant submits identity, income, and residency evidence through a private upload page.",
+      href: "/upload/demo-documents-received-token",
+      step: "02",
+      title: "Tenant upload flow",
+    },
+    {
+      description: "Analyst reviews files, protection signals, and publishes the structured recommendation.",
+      href: "/admin/review/demo-conditional-tenant",
+      step: "03",
+      title: "Admin review desk",
+    },
+    {
+      description: "Risk score, red flags, and approve / conditional / decline output for the landlord.",
+      href: "/dashboard/checks/demo-approved-tenant",
+      step: "04",
+      title: "AI screening report",
+    },
+    {
+      description: "Subscription or per-case screening unlocks report generation and protection packaging.",
+      href: "/dashboard/billing",
+      step: "05",
+      title: "Billing and entitlements",
+    },
+    {
+      description: "Approved, conditional, and declined outcomes with protection eligibility states.",
+      href: "/demo",
+      step: "06",
+      title: "Decision outcomes",
+    },
+  ] as const;
+}
+
+export function getDemoLandlords() {
+  return demoLandlords;
 }
 
 export function getDemoProtectionCards() {
@@ -366,20 +589,26 @@ export function getDemoRouteExamples() {
     adminApproved: "/admin/review/demo-approved-tenant",
     adminConditional: "/admin/review/demo-conditional-tenant",
     adminHighRisk: "/admin/review/demo-high-risk-tenant",
+    adminUnderReview: "/admin/review/demo-under-review",
     landlordApproved: "/dashboard/checks/demo-approved-tenant",
     landlordConditional: "/dashboard/checks/demo-conditional-tenant",
     landlordHighRisk: "/dashboard/checks/demo-high-risk-tenant",
+    landlordPending: "/dashboard/checks/demo-expat-pending",
     uploadApproved: "/upload/demo-approved-token",
     uploadConditional: "/upload/demo-conditional-token",
     uploadHighRisk: "/upload/demo-high-risk-token",
+    uploadPending: "/upload/demo-expat-pending-token",
+    walkthrough: "/demo",
   };
 }
 
 function buildDemoCase(input: {
-  aiReport: Omit<
-    Database["public"]["Tables"]["ai_reports"]["Row"],
-    "created_at" | "generated_by" | "id" | "tenant_check_id" | "updated_at"
-  >;
+  aiReport?:
+    | Omit<
+        Database["public"]["Tables"]["ai_reports"]["Row"],
+        "created_at" | "generated_by" | "id" | "tenant_check_id" | "updated_at"
+      >
+    | null;
   caseId: string;
   createdOffsetDays: number;
   currentAddress: string;
@@ -406,11 +635,17 @@ function buildDemoCase(input: {
     monthly_income: number;
     phone: string;
   };
+  status?: TenantCheckStatus;
   uploadToken: string;
 }): DemoCase {
+  const status = input.status ?? "report_ready";
   const createdAt = isoDaysAgo(input.createdOffsetDays);
-  const reviewRequestedAt = isoDaysAgo(Math.max(1, input.createdOffsetDays - 2));
-  const reviewCompletedAt = isoDaysAgo(Math.max(1, input.createdOffsetDays - 1));
+  const reviewRequestedAt =
+    status === "pending_upload" ? null : isoDaysAgo(Math.max(1, input.createdOffsetDays - 2));
+  const reviewCompletedAt =
+    status === "report_ready" ? isoDaysAgo(Math.max(1, input.createdOffsetDays - 1)) : null;
+  const resolvedActivityAt = reviewCompletedAt ?? createdAt;
+  const resolvedReviewRequestedAt = reviewRequestedAt ?? createdAt;
   const propertyId = `${input.caseId}-property`;
   const profileId = `${input.caseId}-profile`;
   const reportId = `${input.caseId}-report`;
@@ -427,12 +662,12 @@ function buildDemoCase(input: {
     name: input.property.name,
     notes: null,
     postal_code: input.property.postal_code,
-    updated_at: reviewCompletedAt,
+    updated_at: resolvedActivityAt,
   };
 
   const tenantProfile: Database["public"]["Tables"]["tenant_public_profiles"]["Row"] = {
     consent_confirmed: true,
-    created_at: reviewRequestedAt,
+    created_at: resolvedReviewRequestedAt,
     current_address: input.currentAddress,
     email: input.tenant.email,
     employer_name: input.employerName,
@@ -446,60 +681,26 @@ function buildDemoCase(input: {
       "Applicant confirms move-in readiness and can provide further supporting material during the final review process.",
     phone: input.tenant.phone,
     tenant_check_id: input.caseId,
-    updated_at: reviewCompletedAt,
+    updated_at: resolvedActivityAt,
   };
 
-  const tenantDocuments: Database["public"]["Tables"]["tenant_documents"]["Row"][] = [
-    buildDemoDocument({
-      caseId: input.caseId,
-      createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 3)),
-      documentType: "government_id",
-      extractedText:
-        "Passport verified. Name matches tenant profile. Expiry valid. Residency document references Athens address.",
-      fileName: "passport-and-residency-pack.pdf",
-    }),
-    buildDemoDocument({
-      caseId: input.caseId,
-      createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 2)),
-      documentType:
-        input.caseId === "demo-high-risk-tenant" ? "supporting_document" : "proof_of_income",
-      extractedText:
-        input.caseId === "demo-high-risk-tenant"
-          ? "Submitted supporting note with limited financial detail."
-          : "Salary deposit and payroll evidence provided for the most recent month.",
-      fileName:
-        input.caseId === "demo-high-risk-tenant"
-          ? "supporting-note.txt"
-          : "income-verification-pack.pdf",
-    }),
-    ...(input.caseId === "demo-approved-tenant"
-      ? [
-          buildDemoDocument({
-            caseId: input.caseId,
-            createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 2)),
-            documentType: "bank_statement",
-            extractedText: "Bank statement confirms stable monthly income and healthy balance coverage.",
-            fileName: "bank-statement-mar-apr.pdf",
-          }),
-          buildDemoDocument({
-            caseId: input.caseId,
-            createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 1)),
-            documentType: "rental_reference",
-            extractedText: "Previous landlord confirms timely rent payments and clean departure.",
-            fileName: "landlord-reference-letter.pdf",
-          }),
-        ]
-      : []),
-  ];
+  const tenantDocuments = buildDemoDocumentsForStatus({
+    caseId: input.caseId,
+    createdOffsetDays: input.createdOffsetDays,
+    status,
+  });
 
-  const aiReport: Database["public"]["Tables"]["ai_reports"]["Row"] = {
-    ...input.aiReport,
-    created_at: reviewCompletedAt,
-    generated_by: "demo-seed",
-    id: reportId,
-    tenant_check_id: input.caseId,
-    updated_at: reviewCompletedAt,
-  };
+  const aiReport: Database["public"]["Tables"]["ai_reports"]["Row"] | null =
+    status === "report_ready" && input.aiReport
+      ? {
+          ...input.aiReport,
+          created_at: reviewCompletedAt ?? createdAt,
+          generated_by: "demo-seed",
+          id: reportId,
+          tenant_check_id: input.caseId,
+          updated_at: reviewCompletedAt ?? createdAt,
+        }
+      : null;
 
   const tenantCheck: TenantCheckDetail = {
     ai_reports: aiReport,
@@ -525,7 +726,7 @@ function buildDemoCase(input: {
     tenant_full_name: input.tenant.full_name,
     tenant_phone: input.tenant.phone,
     tenant_public_profiles: tenantProfile,
-    updated_at: reviewCompletedAt,
+    updated_at: resolvedActivityAt,
     upload_token_expires_at: isoDaysFromNow(10),
     upload_token_hash: `demo-hash-${input.caseId}`,
   };
@@ -544,7 +745,7 @@ function buildDemoCase(input: {
     protection: {
       depositQuote: {
         coverage_amount: input.rentAmount * 2,
-        created_at: reviewCompletedAt,
+        created_at: resolvedActivityAt,
         id: quoteId,
         landlord_id: demoLandlords[0].id,
         proposed_protection_fee: input.depositFee,
@@ -560,7 +761,7 @@ function buildDemoCase(input: {
         traditional_deposit_amount: input.rentAmount * 2,
       },
       insuranceEligibility: {
-        created_at: reviewCompletedAt,
+        created_at: resolvedActivityAt,
         eligibility_reason: input.eligibilityReason,
         id: eligibilityId,
         manual_override_note:
@@ -570,14 +771,14 @@ function buildDemoCase(input: {
         missing_requirements: input.missingRequirements,
         recommended_package: input.protectionRecommendation,
         review_source: input.caseId === "demo-conditional-tenant" ? "admin_override" : "system",
-        risk_score: input.aiReport.score,
+        risk_score: input.aiReport?.score ?? 0,
         status: input.eligibilityStatus,
         tenant_check_id: input.caseId,
-        updated_at: reviewCompletedAt,
+        updated_at: resolvedActivityAt,
       },
       protectionOptions: [
         {
-          created_at: reviewCompletedAt,
+          created_at: resolvedActivityAt,
           eligibility_status: input.packageStatuses["Deposit Protection"],
           id: protectionOptionIds.deposit,
           package_id: protectionPackages.deposit.id,
@@ -591,7 +792,7 @@ function buildDemoCase(input: {
           tenant_check_id: input.caseId,
         },
         {
-          created_at: reviewCompletedAt,
+          created_at: resolvedActivityAt,
           eligibility_status: input.packageStatuses["Rent Protection"],
           id: protectionOptionIds.rent,
           package_id: protectionPackages.rent.id,
@@ -605,7 +806,7 @@ function buildDemoCase(input: {
           tenant_check_id: input.caseId,
         },
         {
-          created_at: reviewCompletedAt,
+          created_at: resolvedActivityAt,
           eligibility_status: input.packageStatuses["Full Rental Shield"],
           id: protectionOptionIds.full,
           package_id: protectionPackages.full.id,
@@ -675,6 +876,77 @@ function buildProtectionPackage(input: {
     type: input.type,
     updated_at: isoDaysAgo(8),
   };
+}
+
+function buildDemoDocumentsForStatus(input: {
+  caseId: string;
+  createdOffsetDays: number;
+  status: TenantCheckStatus;
+}) {
+  if (input.status === "pending_upload") {
+    return [];
+  }
+
+  const baseDocuments: Database["public"]["Tables"]["tenant_documents"]["Row"][] = [
+    buildDemoDocument({
+      caseId: input.caseId,
+      createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 3)),
+      documentType: "government_id",
+      extractedText:
+        "Passport verified. Name matches tenant profile. Expiry valid. Residency document references Greece.",
+      fileName: "passport-and-residency-pack.pdf",
+    }),
+    buildDemoDocument({
+      caseId: input.caseId,
+      createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 2)),
+      documentType:
+        input.caseId === "demo-high-risk-tenant" ? "supporting_document" : "proof_of_income",
+      extractedText:
+        input.caseId === "demo-high-risk-tenant"
+          ? "Submitted supporting note with limited financial detail."
+          : "Salary deposit and payroll evidence provided for the most recent month.",
+      fileName:
+        input.caseId === "demo-high-risk-tenant"
+          ? "supporting-note.txt"
+          : "income-verification-pack.pdf",
+    }),
+  ];
+
+  if (input.status === "documents_received") {
+    return baseDocuments;
+  }
+
+  const extendedDocuments = [
+    ...baseDocuments,
+    buildDemoDocument({
+      caseId: input.caseId,
+      createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 2)),
+      documentType: "bank_statement",
+      extractedText: "Bank statement confirms monthly income coverage against requested rent.",
+      fileName: "bank-statement-recent.pdf",
+    }),
+    buildDemoDocument({
+      caseId: input.caseId,
+      createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 1)),
+      documentType: "employment_letter",
+      extractedText: "Employer letter confirms role, compensation band, and contract continuity.",
+      fileName: "employment-letter.pdf",
+    }),
+  ];
+
+  if (input.caseId === "demo-approved-tenant") {
+    extendedDocuments.push(
+      buildDemoDocument({
+        caseId: input.caseId,
+        createdAt: isoDaysAgo(Math.max(1, input.createdOffsetDays - 1)),
+        documentType: "rental_reference",
+        extractedText: "Previous landlord confirms timely rent payments and clean departure.",
+        fileName: "landlord-reference-letter.pdf",
+      }),
+    );
+  }
+
+  return extendedDocuments;
 }
 
 function buildDemoDocument(input: {

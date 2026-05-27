@@ -1,20 +1,22 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
-import { NewCheckForm } from "@/components/new-check-form";
+import { DemoWalkthroughBanner } from "@/components/demo-walkthrough-banner";
+import { LandlordDashboardBoard } from "@/components/landlord-dashboard-board";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { StatCard } from "@/components/stat-card";
+import { getBillingPlanName } from "@/lib/billing";
+import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import {
   getDemoCasePresentationCards,
   getDemoDashboardAnalytics,
+  getDemoPaymentHistory,
   getDemoProtectionCards,
+  mergeLandlordChecksWithDemo,
 } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
-import { getOperationalState, getOperationalTimestamp, getVerificationChecklist } from "@/lib/operations";
 import { getLandlordChecks } from "@/lib/queries";
-import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -41,10 +43,13 @@ function humanize(value: string) {
 
 export default async function DashboardPage() {
   const { profile } = await requireLandlord();
-  const checks = await getLandlordChecks();
+  const liveChecks = await getLandlordChecks();
+  const checks = mergeLandlordChecksWithDemo(liveChecks);
+  const billingOverview = await getBillingOverviewForUser(profile.id);
   const demoCases = getDemoCasePresentationCards();
   const demoAnalytics = getDemoDashboardAnalytics();
   const demoProtectionCards = getDemoProtectionCards();
+  const demoPayments = getDemoPaymentHistory();
 
   const completedChecks = checks.filter((check) => check.status === "report_ready");
   const pendingUploads = checks.filter((check) => check.status === "pending_upload");
@@ -61,14 +66,18 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen">
       <AppHeader
+        activeNav="dashboard"
+        homeHref="/dashboard"
         subtitle={`Welcome ${profile.full_name ?? profile.email}. Open tenant checks, share secure upload links, and review screening plus rental protection outcomes from one SafeKey workspace.`}
         title="SafeKey dashboard"
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
+        <DemoWalkthroughBanner />
+
         <section className="brand-hero grid gap-6 p-4 sm:p-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="relative z-[1] space-y-5">
-            <SafeKeyBrand variant="lockup" />
+            <SafeKeyBrand href="/dashboard" variant="lockup" />
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#5a6980]">
                 Tenant Passport Greece
@@ -143,28 +152,77 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatCard
-            hint="All SafeKey screening cases"
-            label="Total checks"
-            value={String(checks.length)}
-          />
-          <StatCard
-            hint="Cases waiting on tenant documents"
-            label="Pending upload"
-            value={String(pendingUploads.length)}
-          />
-          <StatCard
-            hint="Cases where files have been received"
-            label="Documents received"
-            value={String(documentsReceived.length)}
-          />
-          <StatCard
-            hint="Reports ready for landlord review"
-            label="Report ready"
-            value={String(completedChecks.length)}
-          />
-        </div>
+        <LandlordDashboardBoard checks={checks} />
+
+        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="card space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Billing</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-950">Workspace billing status</h2>
+              </div>
+              <Badge tone={billingOverview.activeSubscription ? "success" : "warning"}>
+                {billingOverview.activeSubscription ? billingOverview.activeSubscription.status.replaceAll("_", " ") : "No plan"}
+              </Badge>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-500">Current plan</p>
+                <p className="mt-2 text-base font-semibold text-slate-950">
+                  {getBillingPlanName(billingOverview.activeSubscription?.plan_key ?? null)}
+                </p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-500">Invoices</p>
+                <p className="mt-2 text-base font-semibold text-slate-950">{billingOverview.invoices.length}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-500">One-time screenings</p>
+                <p className="mt-2 text-base font-semibold text-slate-950">
+                  {billingOverview.recentScreeningPayments.filter((payment) => payment.status === "paid").length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card space-y-5">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Billing workflow</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Subscriptions and pay-as-you-go</h2>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                "Choose Basic, Pro, or Premium for subscription coverage.",
+                "Use the Stripe billing portal for upgrades, downgrades, cards, and invoices.",
+                "If no plan is active, pay for a single screening directly from the case detail view.",
+              ].map((item) => (
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700" key={item}>
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              {demoPayments.slice(0, 3).map((payment) => (
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4" key={payment.id}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-950">{payment.label}</p>
+                    <Badge tone={payment.status === "paid" ? "success" : payment.status === "failed" ? "danger" : "warning"}>
+                      {payment.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">{payment.amount}</p>
+                </div>
+              ))}
+            </div>
+
+            <Link className="primary-action min-h-12 w-full rounded-[18px] px-5 py-3" href="/dashboard/billing">
+              Open billing workspace
+            </Link>
+          </div>
+        </section>
 
         <section className="card space-y-6">
           <div className="space-y-2">
@@ -240,128 +298,6 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] xl:gap-8">
-          <section className="card space-y-6">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Create tenant flow</p>
-              <h2 className="text-2xl font-semibold text-slate-950">Open a new tenant check</h2>
-              <p className="text-sm leading-7 text-slate-600">
-                Add the property, tenant, and requested documents. SafeKey will create the case and generate
-                the secure applicant upload link immediately.
-              </p>
-            </div>
-            <NewCheckForm />
-          </section>
-
-          <section className="card space-y-6">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Active checks</p>
-              <h2 className="text-2xl font-semibold text-slate-950">Landlord case overview</h2>
-              <p className="text-sm leading-7 text-slate-600">
-                See each case status, risk score, recommendation, and document progress at a glance.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {checks.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-                  No checks yet. Create your first Tenant Passport Greece screening case from the form on the left.
-                </div>
-              ) : (
-                checks.map((check) => {
-                  const state = getOperationalState(check.status);
-                  const uploadedCount = check.tenant_documents.length;
-                  const requestedCount = check.requested_documents.length;
-                  const recommendation = check.ai_reports?.recommendation ?? null;
-
-                  return (
-                    <Link
-                      className="block rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition hover:border-slate-300 hover:bg-white"
-                      href={`/dashboard/checks/${check.id}`}
-                      key={check.id}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-semibold text-slate-950">{check.tenant_full_name}</h3>
-                            {recommendation ? (
-                              <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
-                            ) : null}
-                          </div>
-                          <p className="text-sm text-slate-600">
-                            {check.properties?.name ?? "Property"} • Created {formatDate(check.created_at)}
-                          </p>
-                        </div>
-                        <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
-                      </div>
-
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Status</p>
-                          <p className="mt-2 text-sm font-medium text-[#0f2343]">{state.humanState}</p>
-                        </div>
-                        <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Documents received</p>
-                          <p className="mt-2 text-sm font-medium text-[#0f2343]">
-                            {uploadedCount}/{requestedCount}
-                          </p>
-                        </div>
-                        <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Risk score</p>
-                          <p className="mt-2 text-sm font-medium text-[#0f2343]">
-                            {check.ai_reports ? `${check.ai_reports.score}/100` : "Pending"}
-                          </p>
-                        </div>
-                        <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Recommendation</p>
-                          <p className="mt-2 text-sm font-medium text-[#0f2343]">
-                            {recommendation ? humanize(recommendation) : "Pending review"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid gap-3 sm:grid-cols-[1.25fr_0.75fr]">
-                        <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Next step</p>
-                          <p className="mt-2 text-sm font-medium text-[#0f2343]">{state.nextStep}</p>
-                          <p className="mt-2 text-xs leading-6 text-slate-500">{getOperationalTimestamp(check)}</p>
-                        </div>
-                        <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Requested checks</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {getVerificationChecklist(check.requested_documents).map((item) => (
-                              <span
-                                className="rounded-full border border-[#dbe2eb] bg-[#fbfcfe] px-3 py-1.5 text-xs font-medium text-[#42526b]"
-                                key={item}
-                              >
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-200 pt-4 text-sm">
-                        <span className="text-slate-600">
-                          {check.status === "pending_upload"
-                            ? "Secure upload link ready for tenant sharing."
-                            : uploadedCount > 0
-                              ? `${uploadedCount} file(s) now visible in the dashboard.`
-                              : "Waiting for the first tenant upload."}
-                        </span>
-                        <span className="inline-flex items-center gap-2 font-medium text-[#0f2343]">
-                          Open case
-                          <ArrowRight className="h-4 w-4" />
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })
-              )}
-            </div>
-          </section>
-        </div>
-
         <section className="card space-y-6">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Presentation cases</p>
@@ -391,7 +327,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <Link
-                    className="inline-flex min-h-12 flex-1 items-center justify-center rounded-[18px] bg-[#0f2343] px-4 py-3 text-sm font-semibold text-white"
+                    className="primary-action min-h-12 flex-1 rounded-[18px] px-4 py-3"
                     href={`/dashboard/checks/${item.id}`}
                   >
                     View landlord report

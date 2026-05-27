@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { StatCard } from "@/components/stat-card";
-import { getDemoCasePresentationCards } from "@/lib/demo-data";
+import { getDemoCasePresentationCards, mergeAdminChecksWithDemo } from "@/lib/demo-data";
 import { requireAdmin } from "@/lib/auth";
 import { getOperationalState, getOperationalTimestamp, getVerificationChecklist } from "@/lib/operations";
 import { getAdminChecks } from "@/lib/queries";
@@ -25,7 +25,7 @@ const STATUS_TONE = {
 
 export default async function AdminReviewPage() {
   const { profile } = await requireAdmin();
-  const checks = await getAdminChecks();
+  const checks = mergeAdminChecksWithDemo(await getAdminChecks());
   const demoCases = getDemoCasePresentationCards();
   const awaitingReview = checks.filter((check) => check.status !== "report_ready");
   const queue = checks.slice(0, 3);
@@ -33,14 +33,16 @@ export default async function AdminReviewPage() {
   return (
     <main className="min-h-screen">
       <AppHeader
+        homeHref="/admin/review"
         subtitle={`Admin workspace for ${profile.full_name ?? profile.email}. Review SafeKey uploads, inspect extracted text, and publish screening plus protection outcomes.`}
         title="SafeKey review desk"
+        variant="admin"
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
         <section className="brand-hero grid gap-6 p-4 sm:p-6 lg:grid-cols-[1fr_0.95fr] lg:items-center">
           <div className="relative z-[1] space-y-4">
-            <SafeKeyBrand variant="lockup" />
+            <SafeKeyBrand href="/admin/review" variant="lockup" />
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#5a6980]">
               Tenant Passport Greece
             </p>
@@ -252,7 +254,7 @@ export default async function AdminReviewPage() {
                   </button>
                 </div>
                 <Link
-                  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[18px] bg-[#0f2343] px-4 py-3 text-sm font-semibold text-white"
+                  className="primary-action mt-4 min-h-12 w-full rounded-[18px] px-4 py-3"
                   href={`/admin/review/${item.id}`}
                 >
                   Open review case

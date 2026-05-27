@@ -26,11 +26,7 @@ export default function GlobalError({
           </div>
         ) : null}
         <div className="flex flex-wrap gap-3">
-          <button
-            className="rounded-full bg-[#0f2343] px-5 py-3 text-sm font-semibold text-white"
-            onClick={reset}
-            type="button"
-          >
+          <button className="primary-action rounded-full px-5 py-3" onClick={reset} type="button">
             Try again
           </button>
           <button

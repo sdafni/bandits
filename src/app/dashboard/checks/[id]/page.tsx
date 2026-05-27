@@ -1,10 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AiScreeningReport } from "@/components/ai-screening-report";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
+import { ScreeningCheckoutForm } from "@/components/screening-checkout-form";
+import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { isDemoCheckId } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
@@ -24,23 +26,16 @@ export const metadata: Metadata = {
   description: "Review a SafeKey tenant screening case and final report.",
 };
 
-const RECOMMENDATION_TONE = {
-  approve: "success",
-  conditional: "warning",
-  decline: "danger",
-} as const;
-
-function formatMetricValue(value: number | null | undefined) {
-  return value == null ? "Pending" : `${Math.round(value)}/100`;
-}
-
 export default async function LandlordCheckDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string }>;
 }) {
-  await requireLandlord();
+  const { profile } = await requireLandlord();
   const { id } = await params;
+  const query = await searchParams;
   const detail = await getLandlordCheckDetail(id);
 
   if (!detail) {
@@ -50,6 +45,13 @@ export default async function LandlordCheckDetailPage({
   const supabase = await createClient();
   const protectionSnapshot = await getProtectionSnapshot(id);
   const isDemoCase = isDemoCheckId(id);
+  const billingEligibility = isDemoCase
+    ? { activeSubscription: null, customer: null, hasBillingAccess: true, screeningPayment: null }
+    : await getBillingEligibilityForCheck({
+        checkId: id,
+        landlordId: profile.id,
+        useAdmin: true,
+      });
 
   const documents = isDemoCase
     ? detail.tenant_documents.map((document: Database["public"]["Tables"]["tenant_documents"]["Row"]) => ({
@@ -139,17 +141,29 @@ export default async function LandlordCheckDetailPage({
       <AppHeader
         actions={
           <Link
-            className="rounded-full border border-[#d8c490] px-4 py-2 text-sm font-medium text-[#0f2343] transition hover:bg-[#fffaf0]"
+            className="secondary-action min-h-12 rounded-[18px] px-5 py-3"
             href="/dashboard"
           >
             Back to dashboard
           </Link>
         }
+        homeHref="/dashboard"
         subtitle={`${detail.properties?.name ?? "Property"} • Tenant Passport Greece case created ${formatDate(detail.created_at)}`}
         title={`SafeKey case: ${detail.tenant_full_name}`}
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
+        {query.payment === "success" ? (
+          <div className="status-message border-emerald-200 bg-emerald-50 text-emerald-800">
+            Screening payment received. SafeKey can now generate the report once the admin review runs.
+          </div>
+        ) : null}
+        {query.payment === "cancelled" ? (
+          <div className="status-message border-[#e9dfc5] bg-[#fcfaf4] text-[#5d4e31]">
+            Payment was canceled. This case remains unpaid until a screening checkout is completed.
+          </div>
+        ) : null}
+
         <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
           <div className="card space-y-5">
             <div className="flex items-center justify-between gap-4">
@@ -195,95 +209,57 @@ export default async function LandlordCheckDetailPage({
                 ))}
               </div>
             </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Billing status</p>
+                  <p className="mt-2 text-base font-semibold text-slate-950">
+                    {billingEligibility.activeSubscription
+                      ? "Covered by active subscription"
+                      : billingEligibility.screeningPayment?.status === "paid"
+                        ? "One-time screening paid"
+                        : "Payment required before report generation"}
+                  </p>
+                </div>
+                <Badge
+                  tone={
+                    billingEligibility.hasBillingAccess ? "success" : "warning"
+                  }
+                >
+                  {billingEligibility.hasBillingAccess ? "Eligible" : "Pending payment"}
+                </Badge>
+              </div>
+
+              <p className="mt-3 text-sm leading-7 text-slate-700">
+                {billingEligibility.activeSubscription
+                  ? "This tenant case is covered by your active SafeKey plan."
+                  : billingEligibility.screeningPayment?.status === "paid"
+                    ? "A one-time Stripe payment has been recorded for this screening."
+                    : "Complete a single screening payment for this case or activate a subscription from the billing workspace."}
+              </p>
+
+              {!billingEligibility.hasBillingAccess ? (
+                <div className="mt-4">
+                  <ScreeningCheckoutForm checkId={detail.id} className="w-full" />
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="card space-y-5">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Final report</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">SafeKey recommendation</h2>
-            </div>
-
-            <div className="brand-visual-frame">
-              <Image
-                alt="SafeKey AI risk report visual"
-                className="h-auto w-full rounded-[24px]"
-                height={640}
-                src="/brand/safekey/ui-visuals/ai-risk-report-visual.svg"
-                width={900}
-              />
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Screening report</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">SafeKey screening decision</h2>
             </div>
 
             {detail.ai_reports ? (
-              <>
-                <div className="rounded-3xl bg-slate-950 p-6 text-white">
-                  <div className="flex items-end justify-between gap-6">
-                    <div>
-                      <p className="text-5xl font-semibold">{detail.ai_reports.score}</p>
-                      <p className="mt-2 text-sm text-slate-300">Trust score</p>
-                    </div>
-                    <Badge tone={RECOMMENDATION_TONE[detail.ai_reports.recommendation]}>
-                      {detail.ai_reports.recommendation}
-                    </Badge>
-                  </div>
-                  <p className="mt-4 text-sm leading-7 text-slate-200">{detail.ai_reports.summary}</p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Identity confidence</p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {formatMetricValue(detail.ai_reports.reasoning.identityConfidence)}
-                    </p>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Income stability</p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {formatMetricValue(detail.ai_reports.reasoning.incomeStability)}
-                    </p>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Rent affordability</p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {formatMetricValue(detail.ai_reports.reasoning.rentAffordability)}
-                    </p>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Employment / residency</p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {formatMetricValue(detail.ai_reports.reasoning.employmentResidencyConfidence)}
-                    </p>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Document completeness</p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {formatMetricValue(detail.ai_reports.reasoning.documentCompleteness)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Red flags</p>
-                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                      {detail.ai_reports.red_flags.length > 0 ? (
-                        detail.ai_reports.red_flags.map((flag) => <li key={flag}>• {flag}</li>)
-                      ) : (
-                        <li>No major red flags detected.</li>
-                      )}
-                    </ul>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-500">Missing documents</p>
-                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                      {detail.ai_reports.missing_documents.length > 0 ? (
-                        detail.ai_reports.missing_documents.map((item) => <li key={item}>• {item}</li>)
-                      ) : (
-                        <li>All requested documents were submitted.</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </>
+              <AiScreeningReport
+                applicantName={detail.tenant_full_name}
+                propertyMonthlyRent={detail.properties?.monthly_rent ?? null}
+                report={detail.ai_reports}
+                tenantMonthlyIncome={detail.tenant_public_profiles?.monthly_income ?? null}
+              />
             ) : (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-sm text-slate-500">
                 The report has not been generated yet. Once the admin review runs, the final score and

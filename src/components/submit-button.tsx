@@ -7,21 +7,37 @@ type SubmitButtonProps = {
   children: React.ReactNode;
   className?: string;
   pendingLabel?: string;
+  variant?: "primary" | "secondary";
 };
 
-export function SubmitButton({ children, className, pendingLabel = "Working..." }: SubmitButtonProps) {
+export function SubmitButton({
+  children,
+  className,
+  pendingLabel = "Working...",
+  variant = "primary",
+}: SubmitButtonProps) {
   const { pending } = useFormStatus();
 
   return (
     <button
       className={cn(
-        "inline-flex min-h-14 items-center justify-center rounded-[20px] border border-[#102947] bg-[#0f2343] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,35,67,0.08)] transition hover:bg-[#102947] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0f2343]/12 disabled:cursor-not-allowed disabled:opacity-60",
+        variant === "primary" ? "primary-action" : "secondary-action",
+        "min-h-14 gap-2 disabled:cursor-not-allowed",
+        variant === "secondary" && "disabled:opacity-70",
+        pending && "cta-breathe",
         className,
       )}
       disabled={pending}
       type="submit"
     >
-      {pending ? pendingLabel : children}
+      {pending ? (
+        <>
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          {pendingLabel}
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }
