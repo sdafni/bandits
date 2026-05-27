@@ -24,7 +24,7 @@ export function SubmitButton({
   return (
     <button
       className={cn(
-        variant === "billing" && "billing-cta",
+        variant === "billing" && "workspace-cta-secondary w-full min-h-10",
         variant === "workspace" && "workspace-cta w-full sm:w-auto",
         variant === "primary" && "primary-action min-h-14",
         variant === "secondary" && "secondary-action min-h-14",

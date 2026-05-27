@@ -11,14 +11,14 @@ export function BillingPortalForm({
   className,
   label = "Manage billing",
   pendingLabel = "Opening billing...",
-  variant = "billing",
+  variant = "workspace",
   disabled = false,
 }: {
   className?: string;
   disabled?: boolean;
   label?: string;
   pendingLabel?: string;
-  variant?: "primary" | "secondary" | "billing";
+  variant?: "primary" | "secondary" | "billing" | "workspace";
 }) {
   const [state, formAction] = useActionState(openBillingPortalAction, initialState);
 

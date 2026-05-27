@@ -8,7 +8,6 @@ import { NewCheckForm } from "@/components/new-check-form";
 import { WorkspaceState } from "@/components/workspace-state";
 import { isDemoCheckId } from "@/lib/demo-data";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { getOperationalState } from "@/lib/operations";
 
 type DashboardCheck = {
   id: string;
@@ -168,8 +167,8 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
       <section className="workspace-card space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Operations</p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-950 sm:text-2xl">Tenant cases</h2>
+            <p className="section-label">Tenant cases</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">Case board</h2>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -234,9 +233,8 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
             variant="filter"
           />
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-2">
             {filteredChecks.map((check) => {
-              const state = getOperationalState(check.status);
               const uploadedCount = check.tenant_documents.length;
               const requestedCount = Math.max(check.requested_documents.length, 1);
               const uploadProgress = getUploadProgress(uploadedCount, requestedCount);
@@ -246,69 +244,39 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
 
               return (
                 <Link
-                  className="workspace-case-card group flex flex-col rounded-2xl border border-slate-200/90 bg-white p-4 transition duration-200"
+                  className="workspace-case-card group flex items-center gap-3 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 transition duration-200 sm:gap-4 sm:px-4"
                   href={`/dashboard/checks/${check.id}`}
                   key={check.id}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <h3 className="truncate text-base font-semibold text-slate-950">{check.tenant_full_name}</h3>
-                        {isDemoCheckId(check.id) ? (
-                          <Badge tone="neutral">Demo</Badge>
-                        ) : null}
-                      </div>
-                      <p className="truncate text-xs text-slate-600">
-                        {check.properties?.name ?? "Property"} · {check.properties?.city ?? "Greece"}
-                      </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h3 className="truncate text-sm font-semibold text-slate-950">{check.tenant_full_name}</h3>
+                      {isDemoCheckId(check.id) ? <Badge tone="neutral">Demo</Badge> : null}
+                      <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
+                      {recommendation ? (
+                        <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
+                      ) : null}
                     </div>
-                    <p className="shrink-0 text-xs font-medium text-slate-500">{formatCurrency(check.properties?.monthly_rent)}</p>
+                    <p className="mt-0.5 truncate text-xs text-slate-500">
+                      {check.properties?.name ?? "Property"} · {formatCurrency(check.properties?.monthly_rent)} ·{" "}
+                      {formatDate(check.created_at)}
+                    </p>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
-                    {recommendation ? (
-                      <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-3 gap-2 border-y border-slate-100 py-3">
-                    <div>
+                  <div className="hidden shrink-0 gap-4 sm:flex">
+                    <div className="text-right">
                       <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Risk</p>
-                      <p className={cn("mt-0.5 text-sm font-semibold", risk.text)}>
+                      <p className={cn("text-sm font-semibold tabular-nums", risk.text)}>
                         {riskScore == null ? "—" : riskScore}
                       </p>
                     </div>
-                    <div>
+                    <div className="text-right">
                       <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Upload</p>
-                      <p className="mt-0.5 text-sm font-semibold text-slate-900">{uploadProgress}%</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Stage</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs font-medium leading-4 text-slate-800">{state.humanState}</p>
+                      <p className="text-sm font-semibold tabular-nums text-slate-900">{uploadProgress}%</p>
                     </div>
                   </div>
 
-                  {check.ai_reports?.summary ? (
-                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-600">{check.ai_reports.summary}</p>
-                  ) : (
-                    <p className="mt-3 text-xs leading-5 text-slate-500">{state.nextStep}</p>
-                  )}
-
-                  <div className="mt-4 flex items-center justify-between gap-2 pt-1">
-                    <span className="text-xs text-slate-500">Opened {formatDate(check.created_at)}</span>
-                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-900">
-                      Open case
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
-
-                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className={cn("h-full rounded-full transition-[width] duration-500", risk.bar)}
-                      style={{ width: `${riskScore ?? uploadProgress}%` }}
-                    />
-                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-700" />
                 </Link>
               );
             })}

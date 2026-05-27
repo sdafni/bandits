@@ -14,7 +14,7 @@ export function SubscriptionCheckoutForm({
   label,
   pendingLabel,
   planKey,
-  variant = "billing",
+  variant = "workspace",
   disabled = false,
 }: {
   className?: string;
@@ -23,7 +23,7 @@ export function SubscriptionCheckoutForm({
   label: string;
   pendingLabel: string;
   planKey: BillingPlanKey;
-  variant?: "primary" | "secondary" | "billing";
+  variant?: "primary" | "secondary" | "billing" | "workspace";
 }) {
   const action = startSubscriptionCheckoutAction.bind(null, planKey);
   const [state, formAction] = useActionState(action, initialState);
