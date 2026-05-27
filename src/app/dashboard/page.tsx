@@ -32,23 +32,23 @@ export default async function DashboardPage() {
             completedChecks.length,
         )
       : null;
+  const elevatedRisk = checks.filter((check) => check.ai_reports != null && check.ai_reports.score < 60).length;
+  const readyForDecision = completedChecks.length;
 
-  const firstName = profile.full_name?.split(" ")[0] ?? "there";
   const planLabel = getBillingPlanName(billingOverview.activeSubscription?.plan_key ?? null);
 
   return (
-    <main className="min-h-screen bg-slate-50/50">
+    <main className="min-h-screen bg-slate-100/80">
       <AppHeader
         activeNav="dashboard"
         homeHref="/dashboard"
-        subtitle="Operational command center for tenant screening."
-        title="Dashboard"
+        subtitle={`${checks.length} active cases · ${pendingReview.length} in review queue`}
+        title="Operations"
       />
 
-      <div className="mx-auto max-w-7xl space-y-4 px-4 py-4 sm:px-6 sm:py-6">
+      <div className="mx-auto max-w-[1400px] space-y-2 px-3 py-3 sm:px-4 sm:py-4">
         <DashboardCommandCenter
           checks={checks}
-          firstName={firstName}
           hasBillingPlan={Boolean(billingOverview.activeSubscription)}
           planLabel={planLabel}
           stats={{
@@ -56,14 +56,14 @@ export default async function DashboardPage() {
             awaitingUpload: pendingUploads.length,
             averageScore,
             completed: completedChecks.length,
+            elevatedRisk,
             pendingReview: pendingReview.length,
+            readyForDecision,
           }}
           subscriptionStatus={billingOverview.activeSubscription?.status ?? null}
         />
 
-        <div id="tenant-cases">
-          <LandlordDashboardBoard checks={checks} />
-        </div>
+        <LandlordDashboardBoard checks={checks} />
       </div>
     </main>
   );

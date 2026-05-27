@@ -40,10 +40,117 @@ a {
   }
 
   .workspace-card {
-    @apply rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5;
-    box-shadow:
-      0 1px 2px rgba(15, 23, 42, 0.04),
-      0 6px 18px rgba(15, 23, 42, 0.035);
+    @apply rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-3.5;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  }
+
+  .command-shell {
+    @apply overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .command-shell__bar {
+    @apply flex flex-col gap-2 border-b border-slate-200 bg-slate-900 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4;
+  }
+
+  .command-shell__body {
+    @apply space-y-2 p-2.5 sm:p-3;
+  }
+
+  .ops-kpi {
+    @apply rounded-md border border-slate-200 bg-white px-2.5 py-2;
+  }
+
+  .ops-kpi--alert {
+    @apply border-amber-200/80 bg-amber-50/50;
+  }
+
+  .ops-kpi__label {
+    @apply text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500;
+  }
+
+  .ops-kpi__value {
+    @apply mt-0.5 flex items-baseline gap-1.5 text-xl font-semibold tabular-nums tracking-tight text-slate-950;
+  }
+
+  .ops-kpi__hint {
+    @apply mt-0.5 text-[10px] leading-4 text-slate-500;
+  }
+
+  .ops-panel {
+    @apply rounded-md border border-slate-200 bg-slate-50/80;
+  }
+
+  .ops-panel__head {
+    @apply flex items-center justify-between gap-2 border-b border-slate-200/80 px-2.5 py-1.5;
+  }
+
+  .ops-panel__title {
+    @apply text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600;
+  }
+
+  .ops-panel__count {
+    @apply rounded bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-700;
+  }
+
+  .ops-panel__body {
+    @apply p-1;
+  }
+
+  .ops-queue-row {
+    @apply flex items-center gap-2 rounded px-2 py-1.5 transition hover:bg-white;
+  }
+
+  .ops-table-wrap {
+    @apply overflow-hidden rounded-lg border border-slate-200 bg-white;
+  }
+
+  .ops-table-head {
+    @apply grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500;
+  }
+
+  .ops-table-row {
+    @apply grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b border-slate-100 px-3 py-2 text-sm transition last:border-b-0 hover:bg-slate-50/80;
+  }
+
+  .risk-chip {
+    @apply inline-flex min-w-[3.25rem] flex-col items-end rounded border border-slate-200 bg-white px-2 py-1 text-right;
+  }
+
+  .risk-chip__score {
+    @apply text-sm font-semibold tabular-nums leading-none text-slate-950;
+  }
+
+  .risk-chip__label {
+    @apply mt-0.5 text-[9px] font-medium uppercase tracking-wide text-slate-500;
+  }
+
+  .risk-chip--low {
+    @apply border-emerald-200/80 bg-emerald-50/40;
+  }
+
+  .risk-chip--low .risk-chip__score {
+    @apply text-emerald-800;
+  }
+
+  .risk-chip--moderate {
+    @apply border-amber-200/80 bg-amber-50/40;
+  }
+
+  .risk-chip--moderate .risk-chip__score {
+    @apply text-amber-900;
+  }
+
+  .risk-chip--elevated {
+    @apply border-rose-200/80 bg-rose-50/40;
+  }
+
+  .risk-chip--elevated .risk-chip__score {
+    @apply text-rose-800;
+  }
+
+  .risk-chip--pending {
+    @apply border-slate-200 bg-slate-50;
   }
 
   .auth-card {
@@ -155,12 +262,12 @@ a {
   }
 
   .workspace-disclosure {
-    @apply overflow-hidden rounded-2xl border border-slate-200/90 bg-white;
+    @apply overflow-hidden rounded-lg border border-slate-200 bg-white;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
 
   .workspace-disclosure__summary {
-    @apply flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 sm:px-5;
+    @apply flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5;
   }
 
   .workspace-disclosure__summary::-webkit-details-marker {
@@ -172,11 +279,15 @@ a {
   }
 
   .workspace-disclosure__content {
-    @apply border-t border-slate-100 px-4 pb-5 pt-4 sm:px-5;
+    @apply border-t border-slate-100 px-3 pb-3 pt-2.5;
   }
 
   .filter-chip {
-    @apply inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition duration-200 hover:border-slate-300 hover:bg-slate-50;
+    @apply inline-flex min-h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition duration-200 hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .input--compact {
+    @apply min-h-9 rounded-md px-3 py-2 text-sm;
   }
 
   .filter-chip--active {
@@ -268,15 +379,25 @@ a {
   }
 
   .metric-tile {
-    @apply rounded-xl border border-slate-200/90 bg-slate-50/60 px-3 py-2.5;
+    @apply rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2;
   }
 
   .metric-tile__label {
-    @apply text-[10px] font-medium uppercase tracking-wide text-slate-500;
+    @apply text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500;
   }
 
   .metric-tile__value {
-    @apply mt-1 flex items-center gap-1.5 text-base font-semibold text-slate-950;
+    @apply mt-0.5 flex items-center gap-1 text-base font-semibold tabular-nums text-slate-950;
+  }
+
+  .workspace-cta--compact,
+  a.workspace-cta--compact {
+    @apply min-h-9 rounded-md px-3 py-2 text-xs;
+  }
+
+  .workspace-cta-secondary--compact,
+  a.workspace-cta-secondary--compact {
+    @apply min-h-9 rounded-md px-3 py-1.5 text-xs;
   }
 
   .tab-action {

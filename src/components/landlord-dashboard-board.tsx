@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, ArrowUpDown, ChevronDown, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Search } from "lucide-react";
 import { Badge } from "@/components/badge";
 import { NewCheckForm } from "@/components/new-check-form";
+import { RiskChip } from "@/components/risk-chip";
 import { WorkspaceState } from "@/components/workspace-state";
 import { isDemoCheckId } from "@/lib/demo-data";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
@@ -13,22 +14,17 @@ type DashboardCheck = {
   id: string;
   status: "pending_upload" | "documents_received" | "under_review" | "report_ready";
   created_at: string;
-  review_requested_at: string | null;
-  review_completed_at: string | null;
   requested_documents: string[];
   tenant_full_name: string;
   tenant_email: string | null;
-  tenant_phone: string | null;
   properties: {
     city: string | null;
     monthly_rent: number | null;
     name: string;
   } | null;
   ai_reports: {
-    created_at: string;
     recommendation: "approve" | "conditional" | "decline";
     score: number;
-    summary: string;
   } | null;
   tenant_documents: Array<{ id: string }>;
 };
@@ -48,17 +44,17 @@ const RECOMMENDATION_TONE = {
 
 const FILTERS = [
   { id: "all", label: "All" },
-  { id: "pending_review", label: "Pending review" },
+  { id: "pending_review", label: "In review" },
   { id: "completed", label: "Completed" },
-  { id: "awaiting_upload", label: "Awaiting upload" },
+  { id: "awaiting_upload", label: "Upload" },
 ] as const;
 
 const SORT_OPTIONS = [
-  { id: "recent", label: "Newest first" },
-  { id: "oldest", label: "Oldest first" },
-  { id: "score_desc", label: "Highest score" },
+  { id: "recent", label: "Newest" },
+  { id: "oldest", label: "Oldest" },
+  { id: "score_desc", label: "Lowest risk" },
   { id: "score_asc", label: "Highest risk" },
-  { id: "progress_desc", label: "Upload progress" },
+  { id: "progress_desc", label: "Upload %" },
 ] as const;
 
 type FilterId = (typeof FILTERS)[number]["id"];
@@ -74,19 +70,6 @@ function getUploadProgress(uploadedCount: number, requestedCount: number) {
   }
 
   return Math.min(100, Math.round((uploadedCount / requestedCount) * 100));
-}
-
-function getRiskLabel(score: number | null) {
-  if (score == null) {
-    return { bar: "bg-slate-300", label: "Pending", text: "text-slate-500" };
-  }
-  if (score >= 80) {
-    return { bar: "bg-emerald-500", label: "Low risk", text: "text-emerald-700" };
-  }
-  if (score >= 60) {
-    return { bar: "bg-amber-500", label: "Moderate", text: "text-amber-700" };
-  }
-  return { bar: "bg-rose-500", label: "Elevated", text: "text-rose-700" };
 }
 
 export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] }) {
@@ -148,15 +131,15 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
   }, [activeFilter, checks, searchQuery, sortBy]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <details className="workspace-disclosure group" open={checks.length === 0}>
         <summary className="workspace-disclosure__summary">
           <div>
-            <p className="text-sm font-semibold text-slate-950">Create new screening</p>
-            <p className="text-xs text-slate-600">Open a tenant case and issue the secure upload link.</p>
+            <p className="text-xs font-semibold text-slate-950">New screening</p>
+            <p className="text-[10px] text-slate-500">Create case · issue upload link</p>
           </div>
           <span className="workspace-disclosure__chevron">
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3.5 w-3.5" />
           </span>
         </summary>
         <div className="workspace-disclosure__content">
@@ -164,122 +147,128 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
         </div>
       </details>
 
-      <section className="workspace-card space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <section className="workspace-card space-y-2" id="tenant-cases">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="section-label">Tenant cases</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-950">Case board</h2>
+            <p className="section-label">Case registry</p>
+            <h2 className="text-sm font-semibold text-slate-950">Tenant screening file</h2>
           </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label className="relative min-w-0 sm:min-w-[240px]">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="input min-h-11 py-3 pl-10 text-sm"
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search tenant or property"
-                type="search"
-                value={searchQuery}
-              />
-            </label>
-            <label className="relative min-w-0 sm:min-w-[200px]">
-              <ArrowUpDown className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <select
-                className="input min-h-11 appearance-none py-3 pl-10 text-sm"
-                onChange={(event) => setSortBy(event.target.value as SortId)}
-                value={sortBy}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {FILTERS.map((filter) => (
+              <button
+                className={cn("filter-chip", activeFilter === filter.id && "filter-chip--active")}
+                key={filter.id}
+                onClick={() => setActiveFilter(filter.id)}
+                type="button"
               >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                {filter.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {FILTERS.map((filter) => (
-            <button
-              className={cn("filter-chip", activeFilter === filter.id && "filter-chip--active")}
-              key={filter.id}
-              onClick={() => setActiveFilter(filter.id)}
-              type="button"
+        <div className="flex flex-col gap-1.5 sm:flex-row">
+          <label className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              className="input input--compact w-full pl-8"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search tenant or property"
+              type="search"
+              value={searchQuery}
+            />
+          </label>
+          <label className="relative min-w-0 sm:w-40">
+            <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <select
+              className="input input--compact w-full appearance-none pl-8"
+              onChange={(event) => setSortBy(event.target.value as SortId)}
+              value={sortBy}
             >
-              <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5 opacity-70" />
-              {filter.label}
-            </button>
-          ))}
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <p className="text-xs text-slate-600">
-          Showing <span className="font-semibold text-slate-900">{filteredChecks.length}</span> of{" "}
-          <span className="font-semibold text-slate-900">{checks.length}</span> cases
+        <p className="text-[10px] text-slate-500">
+          {filteredChecks.length} of {checks.length} cases
         </p>
 
         {checks.length === 0 ? (
           <WorkspaceState
-            actionHref="#create"
-            actionLabel="Create screening above"
-            description="Use the form above to open your first tenant case and share the upload link."
-            title="No tenant cases yet"
+            actionHref="#tenant-cases"
+            actionLabel="Create screening"
+            description="Open a tenant case to begin the screening workflow."
+            title="No cases in registry"
             variant="empty"
           />
         ) : filteredChecks.length === 0 ? (
           <WorkspaceState
-            description="Try a broader search or reset filters."
-            title="No cases match your filters"
+            description="Adjust filters or search."
+            title="No matching cases"
             variant="filter"
           />
         ) : (
-          <div className="space-y-2">
-            {filteredChecks.map((check) => {
-              const uploadedCount = check.tenant_documents.length;
-              const requestedCount = Math.max(check.requested_documents.length, 1);
-              const uploadProgress = getUploadProgress(uploadedCount, requestedCount);
-              const recommendation = check.ai_reports?.recommendation ?? null;
-              const riskScore = check.ai_reports?.score ?? null;
-              const risk = getRiskLabel(riskScore);
+          <div className="ops-table-wrap">
+            <div className="ops-table-head hidden lg:grid">
+              <span>Tenant</span>
+              <span>Property</span>
+              <span>Status</span>
+              <span className="text-right">Risk</span>
+              <span className="text-right">Upload</span>
+            </div>
+            <div>
+              {filteredChecks.map((check) => {
+                const uploadedCount = check.tenant_documents.length;
+                const requestedCount = Math.max(check.requested_documents.length, 1);
+                const uploadProgress = getUploadProgress(uploadedCount, requestedCount);
+                const recommendation = check.ai_reports?.recommendation ?? null;
+                const riskScore = check.ai_reports?.score ?? null;
 
-              return (
-                <Link
-                  className="workspace-case-card group flex items-center gap-3 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 transition duration-200 sm:gap-4 sm:px-4"
-                  href={`/dashboard/checks/${check.id}`}
-                  key={check.id}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <h3 className="truncate text-sm font-semibold text-slate-950">{check.tenant_full_name}</h3>
-                      {isDemoCheckId(check.id) ? <Badge tone="neutral">Demo</Badge> : null}
+                return (
+                  <Link
+                    className="ops-table-row group block lg:grid"
+                    href={`/dashboard/checks/${check.id}`}
+                    key={check.id}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="truncate text-sm font-medium text-slate-950">{check.tenant_full_name}</span>
+                        {isDemoCheckId(check.id) ? <Badge tone="neutral">Demo</Badge> : null}
+                      </div>
+                      <p className="text-[10px] text-slate-500 lg:hidden">
+                        {formatDate(check.created_at)} · {formatCurrency(check.properties?.monthly_rent)}
+                      </p>
+                    </div>
+                    <div className="min-w-0 text-xs text-slate-600">
+                      <p className="truncate font-medium text-slate-800">{check.properties?.name ?? "—"}</p>
+                      <p className="truncate text-[10px] text-slate-500">
+                        {check.properties?.city ?? "Greece"} · {formatCurrency(check.properties?.monthly_rent)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1">
                       <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
                       {recommendation ? (
                         <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
                       ) : null}
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-slate-500">
-                      {check.properties?.name ?? "Property"} · {formatCurrency(check.properties?.monthly_rent)} ·{" "}
-                      {formatDate(check.created_at)}
-                    </p>
-                  </div>
-
-                  <div className="hidden shrink-0 gap-4 sm:flex">
-                    <div className="text-right">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Risk</p>
-                      <p className={cn("text-sm font-semibold tabular-nums", risk.text)}>
-                        {riskScore == null ? "—" : riskScore}
-                      </p>
+                    <div className="flex justify-start lg:justify-end">
+                      <RiskChip score={riskScore} />
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Upload</p>
-                      <p className="text-sm font-semibold tabular-nums text-slate-900">{uploadProgress}%</p>
+                    <div className="flex items-center justify-between gap-2 lg:justify-end">
+                      <span className="text-sm font-semibold tabular-nums text-slate-900">{uploadProgress}%</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400 group-hover:text-slate-700">
+                        Open
+                      </span>
                     </div>
-                  </div>
-
-                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-700" />
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>
