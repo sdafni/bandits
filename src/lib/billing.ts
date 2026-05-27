@@ -70,6 +70,11 @@ export const BILLING_PLANS = [
 
 export const SCREENING_PAYMENT_PRODUCT = {
   description: "One-off payment to unlock a screening report for a single tenant case.",
+  features: [
+    "Purchase from any active tenant case",
+    "Unlock report generation for that case",
+    "No subscription required",
+  ],
   name: "Single screening",
   priceLabel: "Pay per screening",
 } as const;

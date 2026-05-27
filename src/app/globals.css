@@ -184,6 +184,63 @@ a {
     transform: translateY(-1px);
   }
 
+  .billing-cta,
+  a.billing-cta,
+  button.billing-cta {
+    @apply inline-flex w-full min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[18px] border bg-white px-5 py-3 text-sm font-semibold text-[#0f2343] transition duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0f2343]/10;
+    border-color: #d8c490;
+    box-shadow:
+      0 10px 22px rgba(15, 35, 67, 0.05),
+      0 1px 4px rgba(15, 35, 67, 0.03);
+  }
+
+  a.billing-cta:link,
+  a.billing-cta:visited,
+  a.billing-cta:hover,
+  a.billing-cta:focus-visible,
+  a.billing-cta:active {
+    color: #0f2343;
+  }
+
+  .billing-cta:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #c5aa66;
+    box-shadow:
+      0 14px 28px rgba(15, 35, 67, 0.08),
+      0 2px 6px rgba(15, 35, 67, 0.04);
+    transform: translateY(-1px);
+  }
+
+  .billing-cta:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .billing-cta:disabled,
+  button.billing-cta:disabled {
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    color: #94a3b8;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .billing-plan-card {
+    @apply flex h-full flex-col p-5 sm:p-6;
+  }
+
+  .billing-plan-card__body {
+    @apply flex flex-1 flex-col;
+  }
+
+  .billing-plan-card__features {
+    @apply mt-4 flex-1 space-y-2.5;
+  }
+
+  .billing-plan-card__footer {
+    @apply mt-5 shrink-0 border-t border-slate-100 pt-5;
+  }
+
   .tab-action {
     @apply inline-flex items-center justify-center rounded-[16px] px-3 py-2.5 text-sm font-semibold transition sm:rounded-[18px] sm:px-4 sm:py-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0f2343]/10;
   }

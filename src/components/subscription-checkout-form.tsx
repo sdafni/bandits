@@ -14,21 +14,23 @@ export function SubscriptionCheckoutForm({
   label,
   pendingLabel,
   planKey,
-  variant = "primary",
+  variant = "billing",
+  disabled = false,
 }: {
   className?: string;
+  disabled?: boolean;
   formId?: string;
   label: string;
   pendingLabel: string;
   planKey: BillingPlanKey;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "billing";
 }) {
   const action = startSubscriptionCheckoutAction.bind(null, planKey);
   const [state, formAction] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="space-y-3" id={formId}>
-      <SubmitButton className={className} pendingLabel={pendingLabel} variant={variant}>
+    <form action={formAction} className="space-y-2" id={formId}>
+      <SubmitButton className={className} disabled={disabled} pendingLabel={pendingLabel} variant={variant}>
         {label}
       </SubmitButton>
       <FormStatusMessage state={state} />
