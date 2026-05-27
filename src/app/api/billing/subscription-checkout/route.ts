@@ -1,0 +1,45 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { startSubscriptionCheckoutForUser } from "@/lib/billing-checkout";
+import type { BillingPlanKey } from "@/lib/billing";
+
+const bodySchema = z.object({
+  planKey: z.enum(["basic", "pro", "premium"]),
+});
+
+export async function POST(request: Request) {
+  console.info("[safekey-checkout] api:POST /api/billing/subscription-checkout");
+
+  let planKey: BillingPlanKey;
+
+  try {
+    const json = await request.json();
+    const parsed = bodySchema.safeParse(json);
+
+    if (!parsed.success) {
+      console.warn("[safekey-checkout] api:invalid-body", parsed.error.flatten());
+      return NextResponse.json(
+        { ok: false, error: "Invalid plan. Choose basic, pro, or premium." },
+        { status: 400 },
+      );
+    }
+
+    planKey = parsed.data.planKey;
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid request body." }, { status: 400 });
+  }
+
+  const result = await startSubscriptionCheckoutForUser(planKey, "api");
+
+  if (!result.ok) {
+    console.warn("[safekey-checkout] api:failed", {
+      planKey,
+      error: result.error,
+      detail: result.detail,
+    });
+    return NextResponse.json(result, { status: 502 });
+  }
+
+  console.info("[safekey-checkout] api:success", { planKey, mode: result.mode });
+  return NextResponse.json(result);
+}

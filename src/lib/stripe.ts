@@ -14,8 +14,11 @@ export function getStripe() {
   assertStripeServerEnv();
 
   if (!stripeClient) {
-    stripeClient = new Stripe(env.stripeSecretKey, {
+    const secretKey = env.stripeSecretKey.trim();
+    stripeClient = new Stripe(secretKey, {
       apiVersion: "2026-04-22.dahlia",
+      maxNetworkRetries: 1,
+      timeout: 30_000,
     });
   }
 

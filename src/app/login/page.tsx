@@ -7,6 +7,7 @@ import { PublicSiteFooter } from "@/components/public-site-footer";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { getCurrentUserContext, isAdminContext } from "@/lib/auth";
 import { buildBillingPath, isSubscriptionPlanIntent, parseBillingPlanIntent } from "@/lib/billing-navigation";
+import { sanitizeInternalPath } from "@/lib/safe-redirect";
 
 export const metadata: Metadata = {
   title: "Sign In",
@@ -36,8 +37,7 @@ export default async function LoginPage({
       redirect(buildBillingPath("screening"));
     }
 
-    const nextPath = params.next?.startsWith("/") ? params.next : "/dashboard";
-    redirect(nextPath);
+    redirect(sanitizeInternalPath(params.next));
   }
 
   return (

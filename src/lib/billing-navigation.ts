@@ -1,4 +1,5 @@
 import type { BillingPlanKey } from "@/lib/billing";
+import { sanitizeInternalPath } from "@/lib/safe-redirect";
 
 export type BillingPlanIntent = BillingPlanKey | "screening";
 
@@ -39,7 +40,7 @@ export function buildLoginHref(plan: BillingPlanIntent) {
 }
 
 export function resolveAuthRedirectPath(nextValue: FormDataEntryValue | null, planValue: FormDataEntryValue | null) {
-  const nextPath = typeof nextValue === "string" && nextValue.trim().startsWith("/") ? nextValue.trim() : "/dashboard";
+  const nextPath = sanitizeInternalPath(typeof nextValue === "string" ? nextValue : null);
   const plan = parseBillingPlanIntent(typeof planValue === "string" ? planValue : null);
 
   if (!plan) {

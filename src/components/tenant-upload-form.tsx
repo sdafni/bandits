@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { uploadDocumentsAction, type ActionState } from "@/app/actions";
@@ -137,7 +138,15 @@ export function TenantUploadForm({
         <input className="mt-1" name="consent_confirmed" required type="checkbox" />
         <span>
           I confirm that the uploaded documents may be reviewed in SafeKey by the landlord, property
-          professional, and authorized reviewer for the purpose of rental verification.
+          professional, and authorized reviewer for rental verification. I have read the{" "}
+          <Link className="font-medium text-[#0f2343] underline-offset-2 hover:underline" href="/privacy">
+            privacy policy
+          </Link>{" "}
+          and{" "}
+          <Link className="font-medium text-[#0f2343] underline-offset-2 hover:underline" href="/terms">
+            terms
+          </Link>
+          , and I consent to GDPR-compliant processing of my documents for this screening case.
         </span>
       </label>
 

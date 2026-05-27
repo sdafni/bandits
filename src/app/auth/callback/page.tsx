@@ -5,14 +5,22 @@ import Link from "next/link";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import { sanitizeInternalPath } from "@/lib/safe-redirect";
 
-function getNextPath(next: string | null) {
-  return next && next.startsWith("/") ? next : "/dashboard";
+function getNextPath(next: string | null, type: string | null) {
+  if (type === "recovery") {
+    return "/login/reset-password";
+  }
+
+  return sanitizeInternalPath(next);
 }
 
 export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
-  const nextPath = useMemo(() => getNextPath(searchParams.get("next")), [searchParams]);
+  const nextPath = useMemo(
+    () => getNextPath(searchParams.get("next"), searchParams.get("type")),
+    [searchParams],
+  );
   const [message, setMessage] = useState("Finishing your SafeKey sign-in...");
 
   useEffect(() => {

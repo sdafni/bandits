@@ -1,5 +1,7 @@
 # SafeKey Production Readiness Report (Stripe + Billing Stabilization)
 
+> **Full operational QA:** see [production-e2e-qa.md](./production-e2e-qa.md) for the soft-launch checklist (auth, upload, Stripe, email, mobile, admin, legal, stability).
+
 ## Scope completed
 This pass focused only on stabilization and production hardening of existing billing and UI flows.
 

@@ -24,7 +24,13 @@ export const env = {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  emailFrom: process.env.SAFEKEY_EMAIL_FROM ?? "SafeKey <onboarding@resend.dev>",
 };
+
+export function hasEmailDeliveryEnv() {
+  return Boolean(env.resendApiKey && env.emailFrom);
+}
 
 export function assertSupabaseBrowserEnv() {
   if (!env.supabaseUrl || !env.supabaseAnonKey) {

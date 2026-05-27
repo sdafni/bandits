@@ -7,7 +7,10 @@ type SubmitButtonProps = {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
+  forcePending?: boolean;
+  onClick?: () => void;
   pendingLabel?: string;
+  type?: "button" | "submit";
   variant?: "primary" | "secondary" | "billing" | "workspace";
 };
 
@@ -15,10 +18,14 @@ export function SubmitButton({
   children,
   className,
   disabled = false,
+  forcePending = false,
+  onClick,
   pendingLabel = "Working...",
+  type = "submit",
   variant = "primary",
 }: SubmitButtonProps) {
-  const { pending } = useFormStatus();
+  const { pending: formPending } = useFormStatus();
+  const pending = forcePending || formPending;
   const isDisabled = pending || disabled;
 
   return (
@@ -35,7 +42,8 @@ export function SubmitButton({
         className,
       )}
       disabled={isDisabled}
-      type="submit"
+      onClick={onClick}
+      type={type}
     >
       {pending ? (
         <>

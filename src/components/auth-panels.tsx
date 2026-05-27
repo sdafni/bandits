@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { sanitizeInternalPath } from "@/lib/safe-redirect";
 import { signInAction, signUpAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -12,9 +14,10 @@ const initialState: ActionState = {};
 export function AuthPanels() {
   const searchParams = useSearchParams();
   const selectedPlan = parseBillingPlanIntent(searchParams.get("plan"));
-  const nextPath =
+  const nextPath = sanitizeInternalPath(
     searchParams.get("next") ??
-    (selectedPlan ? buildBillingPath(selectedPlan, { autoCheckout: selectedPlan !== "screening" }) : "/dashboard");
+      (selectedPlan ? buildBillingPath(selectedPlan, { autoCheckout: selectedPlan !== "screening" }) : null),
+  );
   const hasPlanIntent = Boolean(selectedPlan);
   const [signInState, signInFormAction] = useActionState(signInAction, initialState);
   const [signUpState, signUpFormAction] = useActionState(signUpAction, initialState);
@@ -84,6 +87,12 @@ export function AuthPanels() {
               <input className="input" minLength={8} name="password" required type="password" />
             </label>
           </div>
+
+          <p className="text-sm text-slate-600">
+            <Link className="font-medium text-[#0f2343] underline-offset-2 hover:underline" href="/login/forgot-password">
+              Forgot password?
+            </Link>
+          </p>
 
           <div className="space-y-4 pt-1">
             <FormStatusMessage state={signInState} />

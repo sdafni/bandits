@@ -12,6 +12,9 @@ import {
   isBillingSchemaReady,
 } from "@/lib/billing-queries";
 import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
+import { isDemoUploadToken } from "@/lib/demo-data";
+import { notifyTenantUploadInvitation } from "@/lib/notifications";
+import { sanitizeInternalPath } from "@/lib/safe-redirect";
 import { isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
 import type { InsuranceEligibilityStatus } from "@/lib/database.types";
 import {
@@ -33,7 +36,6 @@ import { createSecureToken, hashToken } from "@/lib/security";
 import {
   createBillingPortalSession,
   createScreeningCheckoutSession,
-  createSubscriptionCheckoutSession,
   getOrCreateStripeCustomer,
 } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -137,7 +139,8 @@ export async function signInAction(_prevState: ActionState, formData: FormData):
     }
 
     revalidatePath("/", "layout");
-    redirect(getSafeRedirectPath(formData.get("next")));
+    const nextValue = formData.get("next");
+    redirect(sanitizeInternalPath(typeof nextValue === "string" ? nextValue : null));
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -179,7 +182,6 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
         data: {
           full_name: parsed.data.fullName,
           company_name: normalizeOptionalString(parsed.data.companyName),
-          role: "landlord",
         },
       },
     });
@@ -222,68 +224,30 @@ export async function startSubscriptionCheckoutAction(
   _prevState: ActionState,
   _formData: FormData,
 ): Promise<ActionState> {
-  try {
-    if (!hasStripeServerEnv()) {
-      return { error: "Billing is not configured yet. Add the Stripe server keys before enabling checkout." };
-    }
+  console.info("[safekey-checkout] action:startSubscriptionCheckoutAction", { planKey });
 
-    if (!(await isBillingSchemaReady({ admin: true }))) {
+  try {
+    const { startSubscriptionCheckoutForUser } = await import("@/lib/billing-checkout");
+    const result = await startSubscriptionCheckoutForUser(planKey, "action");
+
+    if (!result.ok) {
       return {
-        error: "Billing database tables are not deployed yet. Apply the latest Supabase billing migrations.",
+        error: result.detail ? `${result.error} (${result.detail})` : result.error,
       };
     }
 
-    const { profile } = await requireLandlord();
-    const overview = await getBillingOverviewForUser(profile.id, { admin: true });
-    const customer = overview.customer ?? (await getOrCreateStripeCustomer(profile));
-
-    if (overview.activeSubscription && isEntitledSubscriptionStatus(overview.activeSubscription.status)) {
-      const portalSession = await createBillingPortalSession({
-        customerId: customer.stripe_customer_id,
-      });
-      redirect(portalSession.url);
-    }
-
-    const session = await createSubscriptionCheckoutSession({
-      customerId: customer.stripe_customer_id,
-      planKey,
-      userId: profile.id,
-    });
-
-    const admin = createAdminClient();
-    await admin.from("billing_checkout_sessions").upsert(
-      {
-        amount_total: session.amount_total,
-        cancel_url: session.cancel_url,
-        completed_at: null,
-        currency: session.currency,
-        mode: "subscription",
-        payment_status: session.payment_status,
-        plan_key: planKey,
-        status: "open",
-        stripe_checkout_session_id: session.id,
-        stripe_customer_id: customer.stripe_customer_id,
-        stripe_subscription_id:
-          typeof session.subscription === "string" ? session.subscription : session.subscription?.id ?? null,
-        success_url: session.success_url,
-        tenant_check_id: null,
-        user_id: profile.id,
-      },
-      { onConflict: "stripe_checkout_session_id" },
-    );
-
-    if (!session.url) {
-      return { error: "Stripe checkout could not be created for this plan." };
-    }
-
-    redirect(session.url);
+    redirect(result.url);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
     }
 
+    const { formatStripeError } = await import("@/lib/stripe-errors");
+    const formatted = formatStripeError(error);
+    console.error("[safekey-checkout] action:unexpected", formatted);
+
     return {
-      error: error instanceof Error ? error.message : "The subscription checkout could not be started.",
+      error: formatted.detail ? `${formatted.message} (${formatted.detail})` : formatted.message,
     };
   }
 }
@@ -485,6 +449,17 @@ export async function createTenantCheckAction(
     return { error: "The tenant verification request could not be created." };
   }
 
+  const tenantEmail = normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase();
+
+  if (tenantEmail) {
+    await notifyTenantUploadInvitation({
+      tenantEmail,
+      tenantName: parsed.data.tenantFullName,
+      uploadUrl,
+      propertyName: parsed.data.propertyName,
+    });
+  }
+
   revalidatePath("/dashboard");
   redirect(`/dashboard/checks/${checkId}`);
 }
@@ -494,6 +469,10 @@ export async function uploadDocumentsAction(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  if (isDemoUploadToken(token)) {
+    return { error: "Demo upload links are read-only. Create a live case from the landlord dashboard." };
+  }
+
   const parsed = uploadProfileSchema.safeParse({
     fullName: formData.get("full_name"),
     email: formData.get("email"),
@@ -533,6 +512,13 @@ export async function uploadDocumentsAction(
 
   if (!check) {
     return { error: "This upload link is invalid or has expired." };
+  }
+
+  if (check.status === "report_ready") {
+    return {
+      error:
+        "This verification case is already complete. Contact the landlord if you need to submit additional documents.",
+    };
   }
 
   const admin = createAdminClient();
@@ -847,9 +833,100 @@ function normalizeOptionalString(value: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
-function getSafeRedirectPath(value: FormDataEntryValue | null) {
-  const nextPath = typeof value === "string" ? value.trim() : "";
-  return nextPath.startsWith("/") ? nextPath : "/dashboard";
+const requestPasswordResetSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address."),
+});
+
+const updatePasswordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+export async function requestPasswordResetAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const parsed = requestPasswordResetSchema.safeParse({
+      email: formData.get("email"),
+    });
+
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Enter a valid email address." };
+    }
+
+    const envIssue = getSupabaseBrowserEnvIssue();
+
+    if (envIssue) {
+      return { error: envIssue };
+    }
+
+    const supabase = await createClient();
+    const callbackUrl = new URL("/auth/callback", env.appUrl);
+    callbackUrl.searchParams.set("next", "/login/reset-password");
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email.toLowerCase(), {
+      redirectTo: callbackUrl.toString(),
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return {
+      success:
+        "If an account exists for that email, we sent password reset instructions. Check your inbox and spam folder.",
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not send the password reset email.",
+    };
+  }
+}
+
+export async function updatePasswordAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const parsed = updatePasswordSchema.safeParse({
+      password: formData.get("password"),
+    });
+
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Check your new password." };
+    }
+
+    const envIssue = getSupabaseBrowserEnvIssue();
+
+    if (envIssue) {
+      return { error: envIssue };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: "Your reset session expired. Request a new password reset link." };
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/", "layout");
+    redirect("/dashboard");
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: error instanceof Error ? error.message : "Could not update your password.",
+    };
+  }
 }
 
 function formatAuthActionError(error: unknown, action: "sign in" | "sign up") {
