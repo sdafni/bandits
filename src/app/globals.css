@@ -355,6 +355,9 @@ a {
   button.workspace-cta {
     @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
+    opacity: 1;
   }
 
   a.workspace-cta:link,
@@ -362,7 +365,14 @@ a {
   a.workspace-cta:hover,
   a.workspace-cta:focus-visible,
   a.workspace-cta:active {
-    color: #ffffff;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
+  }
+
+  .workspace-cta *,
+  a.workspace-cta *,
+  button.workspace-cta * {
+    color: inherit;
   }
 
   .workspace-cta:hover:not(:disabled) {
@@ -425,7 +435,9 @@ a {
     background: #0f172a;
     border-color: #0f172a;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14);
-    color: #ffffff;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
+    opacity: 1;
   }
 
   a.primary-action:link,
@@ -433,7 +445,14 @@ a {
   a.primary-action:hover,
   a.primary-action:focus-visible,
   a.primary-action:active {
-    color: #ffffff;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
+  }
+
+  .primary-action *,
+  a.primary-action *,
+  button.primary-action * {
+    color: inherit;
   }
 
   .primary-action:hover {
@@ -444,11 +463,13 @@ a {
   }
 
   .primary-action:disabled,
+  a.primary-action[aria-disabled="true"],
   button.primary-action:disabled {
     background: #cbd5e1;
     border-color: #cbd5e1;
     box-shadow: none;
-    color: #ffffff;
+    color: #475569 !important;
+    -webkit-text-fill-color: #475569;
     cursor: not-allowed;
     opacity: 1;
     transform: none;
