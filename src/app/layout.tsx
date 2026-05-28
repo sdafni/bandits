@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
+import { getRequestLocale } from "@/lib/i18n-server";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -72,9 +73,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getRequestLocale();
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className="overflow-x-hidden antialiased" suppressHydrationWarning>
         {children}
       </body>

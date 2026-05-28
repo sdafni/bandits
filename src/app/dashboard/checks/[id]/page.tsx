@@ -10,6 +10,7 @@ import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { CaseOriginBadge } from "@/components/case-origin-badge";
 import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
+import { getRequestLocale } from "@/lib/i18n-server";
 import type { Database } from "@/lib/database.types";
 import {
   buildProtectionAssessment,
@@ -34,6 +35,8 @@ export default async function LandlordCheckDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ payment?: string }>;
 }) {
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   const { profile } = await requireLandlord();
   const { id } = await params;
   const query = await searchParams;
@@ -140,17 +143,18 @@ export default async function LandlordCheckDetailPage({
   return (
     <main className="min-h-screen">
       <AppHeader
+        locale={locale}
         actions={
           <Link
             className="secondary-action min-h-12 rounded-[18px] px-5 py-3"
             href="/dashboard"
           >
-            Back to dashboard
+            {isGreek ? "Επιστροφή στον πίνακα" : "Back to dashboard"}
           </Link>
         }
         homeHref="/dashboard"
         subtitle={`${detail.properties?.name ?? "Property"} • Tenant Passport Greece case created ${formatDate(detail.created_at)}`}
-        title={`SafeKey case: ${detail.tenant_full_name}`}
+        title={isGreek ? `Υπόθεση SafeKey: ${detail.tenant_full_name}` : `SafeKey case: ${detail.tenant_full_name}`}
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">

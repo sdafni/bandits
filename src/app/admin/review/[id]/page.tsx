@@ -10,6 +10,7 @@ import { ProtectionReviewForm } from "@/components/protection-review-form";
 import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
 import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
 import { WORKSPACE_ACCESS_LABEL } from "@/lib/billing";
+import { getRequestLocale } from "@/lib/i18n-server";
 import { requireAdmin } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
 import {
@@ -33,6 +34,8 @@ export default async function AdminReviewDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   await requireAdmin();
   const { id } = await params;
   const detail = await getAdminCheckDetail(id);
@@ -146,17 +149,18 @@ export default async function AdminReviewDetailPage({
   return (
     <main className="min-h-screen">
       <AppHeader
+        locale={locale}
         actions={
           <Link
             className="rounded-full border border-[#d8c490] px-4 py-2 text-sm font-medium text-[#0f2343] transition hover:bg-[#fffaf0]"
             href="/admin/review"
           >
-            Back to queue
+            {isGreek ? "Επιστροφή στην ουρά" : "Back to queue"}
           </Link>
         }
         homeHref="/admin/review"
         subtitle={`${detail.properties?.name ?? "Property"} • SafeKey review requested ${formatDate(detail.review_requested_at ?? detail.created_at)}`}
-        title={`SafeKey review: ${detail.tenant_full_name}`}
+        title={isGreek ? `Αξιολόγηση SafeKey: ${detail.tenant_full_name}` : `SafeKey review: ${detail.tenant_full_name}`}
         variant="admin"
       />
 

@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { detectLocaleFromPath } from "@/lib/i18n";
 
 type SubmitState = "idle" | "success" | "error";
 
 export function PublicSupportForm() {
+  const pathname = usePathname();
+  const isGreek = (detectLocaleFromPath(pathname) ?? "el") === "el";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
 
@@ -54,7 +58,7 @@ export function PublicSupportForm() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1.5">
-          <span className="form-label">Name</span>
+          <span className="form-label">{isGreek ? "Ονοματεπώνυμο" : "Name"}</span>
           <input className="input input--compact" name="name" required />
         </label>
         <label className="space-y-1.5">
@@ -64,24 +68,26 @@ export function PublicSupportForm() {
       </div>
 
       <label className="space-y-1.5">
-        <span className="form-label">Subject</span>
+        <span className="form-label">{isGreek ? "Θέμα" : "Subject"}</span>
         <input className="input input--compact" name="subject" required />
       </label>
 
       <label className="space-y-1.5">
-        <span className="form-label">Message</span>
+        <span className="form-label">{isGreek ? "Μήνυμα" : "Message"}</span>
         <textarea className="input min-h-32 resize-y rounded-xl px-4 py-3" name="message" required />
       </label>
 
       <button className="primary-action min-h-12 w-full rounded-[18px] px-5 py-3 sm:w-auto" disabled={isSubmitting} type="submit">
-        {isSubmitting ? "Sending..." : "Send"}
+        {isSubmitting ? (isGreek ? "Αποστολή..." : "Sending...") : isGreek ? "Αποστολή" : "Send"}
       </button>
 
       {state === "success" ? (
-        <p className="text-sm font-medium text-emerald-700">Message sent successfully</p>
+        <p className="text-sm font-medium text-emerald-700">
+          {isGreek ? "Το μήνυμα στάλθηκε επιτυχώς" : "Message sent successfully"}
+        </p>
       ) : null}
       {state === "error" ? (
-        <p className="text-sm font-medium text-rose-700">Something went wrong</p>
+        <p className="text-sm font-medium text-rose-700">{isGreek ? "Κάτι πήγε λάθος" : "Something went wrong"}</p>
       ) : null}
     </form>
   );

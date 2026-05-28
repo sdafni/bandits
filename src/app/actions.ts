@@ -15,7 +15,7 @@ import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
 import { isDemoUploadToken } from "@/lib/demo-data";
 import { notifyTenantUploadInvitation } from "@/lib/notifications";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
-import { isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
+import { getBillingPlanLimits, isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
 import type { InsuranceEligibilityStatus } from "@/lib/database.types";
 import {
   buildStoragePath,
@@ -396,7 +396,7 @@ export async function createTenantCheckAction(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireLandlord();
+  const { profile } = await requireLandlord();
   const supabase = await createClient();
   const parsed = createCheckSchema.safeParse({
     propertyName: formData.get("property_name"),
@@ -421,6 +421,50 @@ export async function createTenantCheckAction(
         .filter(Boolean),
     ),
   );
+
+  const billingOverview = await getBillingOverviewForUser(profile.id);
+  const planKey = (billingOverview.activeSubscription?.plan_key as BillingPlanKey | null) ?? null;
+  const limits = getBillingPlanLimits(planKey);
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const [{ count: activeChecksCount, error: activeChecksError }, { data: completedRows, error: completedError }] =
+    await Promise.all([
+      supabase
+        .from("tenant_checks")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "report_ready"),
+      supabase
+        .from("tenant_checks")
+        .select("review_completed_at, created_at")
+        .eq("status", "report_ready")
+        .gte("created_at", monthStart.toISOString()),
+    ]);
+
+  if (activeChecksError) {
+    return { error: activeChecksError.message };
+  }
+  if (completedError) {
+    return { error: completedError.message };
+  }
+
+  const completedThisMonth = (completedRows ?? []).filter((row) => {
+    const completedAt = row.review_completed_at ?? row.created_at;
+    return new Date(completedAt).getTime() >= monthStart.getTime();
+  }).length;
+
+  if ((activeChecksCount ?? 0) >= limits.activeChecks) {
+    return {
+      error: `Active case limit reached for your plan (${limits.activeChecks}). Upgrade plan to create more checks.`,
+    };
+  }
+
+  if (completedThisMonth >= limits.completedChecksPerMonth) {
+    return {
+      error: `Monthly completed screening limit reached (${limits.completedChecksPerMonth}). Upgrade plan for higher volume.`,
+    };
+  }
 
   const token = createSecureToken();
   const tokenHash = hashToken(token);

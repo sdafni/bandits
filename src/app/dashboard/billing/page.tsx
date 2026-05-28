@@ -11,8 +11,10 @@ import { BillingPortalForm } from "@/components/billing-portal-form";
 import { SubscriptionCheckoutForm } from "@/components/subscription-checkout-form";
 import { parseBillingPlanIntent } from "@/lib/billing-navigation";
 import { requireLandlord } from "@/lib/auth";
+import { getRequestLocale } from "@/lib/i18n-server";
 import {
   BILLING_PLANS,
+  ENTERPRISE_CONTACT_PRODUCT,
   SCREENING_PAYMENT_PRODUCT,
   formatStripeAmount,
   getBillingPlanName,
@@ -42,6 +44,8 @@ export default async function DashboardBillingPage({
 }: {
   searchParams: Promise<{ checkout?: string; plan?: string }>;
 }) {
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   const { profile } = await requireLandlord();
   const overview = await getBillingOverviewForUser(profile.id);
   const stripeReadiness = getStripeProductionReadiness();
@@ -119,13 +123,18 @@ export default async function DashboardBillingPage({
       <AppHeader
         activeNav="billing"
         homeHref="/dashboard"
+        locale={locale}
         actions={
           <Link className="workspace-cta-secondary" href="/dashboard">
-            Back to dashboard
+            {isGreek ? "Επιστροφή στον πίνακα" : "Back to dashboard"}
           </Link>
         }
-        subtitle="Subscriptions, invoices, and per-case screening — synced with Stripe."
-        title="Billing"
+        subtitle={
+          isGreek
+            ? "Συνδρομές, τιμολόγια και ανά υπόθεση χρέωση — συγχρονισμένα με Stripe."
+            : "Subscriptions, invoices, and per-case screening — synced with Stripe."
+        }
+        title={isGreek ? "Χρέωση" : "Billing"}
       />
 
       <div className="workspace-page !max-w-7xl space-y-4">
@@ -286,6 +295,25 @@ export default async function DashboardBillingPage({
               <div className="billing-plan-card__footer">
                 <Link className="workspace-cta-secondary w-full" href="/dashboard#tenant-cases">
                   Select tenant case
+                </Link>
+              </div>
+            </article>
+
+            <article className={planCardClassName({})}>
+              <div className="billing-plan-card__body">
+                <div className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-base font-semibold text-slate-950">{ENTERPRISE_CONTACT_PRODUCT.name}</h3>
+                    <Badge tone="neutral">Custom</Badge>
+                  </div>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-950">Custom</p>
+                  <p className="text-xs leading-5 text-slate-600">{ENTERPRISE_CONTACT_PRODUCT.description}</p>
+                </div>
+                <BillingPlanFeatures features={ENTERPRISE_CONTACT_PRODUCT.features} />
+              </div>
+              <div className="billing-plan-card__footer">
+                <Link className="workspace-cta-secondary w-full" href="/#support">
+                  Contact us
                 </Link>
               </div>
             </article>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileLock2, LifeBuoy, ShieldCheck } from "lucide-react";
 import { PublicSupportForm } from "@/components/public-support-form";
 import { SafeKeyBrand } from "@/components/safekey-brand";
+import { getRequestLocale } from "@/lib/i18n-server";
 import { siteConfig } from "@/lib/site";
 
 const trustItems = [
@@ -25,7 +26,9 @@ const trustItems = [
   },
 ] as const;
 
-export function PublicSiteFooter({ showTrustLayer = true }: { showTrustLayer?: boolean }) {
+export async function PublicSiteFooter({ showTrustLayer = true }: { showTrustLayer?: boolean }) {
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   return (
     <div className="space-y-6">
       {showTrustLayer ? (
@@ -82,7 +85,9 @@ export function PublicSiteFooter({ showTrustLayer = true }: { showTrustLayer?: b
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Contact</p>
               <p className="text-sm leading-7 text-slate-700">
-                Need help with screening operations or platform access? Send a secure support message.
+                {isGreek
+                  ? "Χρειάζεσαι βοήθεια με ελέγχους ή πρόσβαση; Στείλε ασφαλές μήνυμα υποστήριξης."
+                  : "Need help with screening operations or platform access? Send a secure support message."}
               </p>
               <PublicSupportForm />
             </div>

@@ -64,13 +64,17 @@ function QueuePanel({
 export function DashboardCommandCenter({
   checks,
   isFirstWorkspace = false,
+  isGreek = false,
   planLabel,
+  planUsage,
   subscriptionStatus,
   stats,
 }: {
   isFirstWorkspace?: boolean;
+  isGreek?: boolean;
   checks: CommandCheck[];
   planLabel: string;
+  planUsage: string;
   subscriptionStatus: string | null;
   stats: {
     active: number;
@@ -95,24 +99,30 @@ export function DashboardCommandCenter({
     <section className="command-shell">
       <div className="command-shell__bar">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300 sm:text-[11px]">Live workspace</p>
-          <h2 className="text-lg font-semibold tracking-tight text-white sm:text-lg">Screening operations</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300 sm:text-[11px]">
+            {isGreek ? "Ζωντανός χώρος εργασίας" : "Live workspace"}
+          </p>
+          <h2 className="text-lg font-semibold tracking-tight text-white sm:text-lg">
+            {isGreek ? "Λειτουργίες ελέγχου" : "Screening operations"}
+          </h2>
           <p className="mt-0.5 text-sm text-slate-200 sm:text-xs">
             {isFirstWorkspace
-              ? "Create your first case, share the upload link, and receive a trust report."
-              : `${stats.active} active · ${actionCount} queued action${actionCount === 1 ? "" : "s"}${
-                  stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} elevated risk` : ""
+              ? isGreek
+                ? "Δημιούργησε την πρώτη υπόθεση, μοιράσου σύνδεσμο αποστολής και λάβε αναφορά αξιοπιστίας."
+                : "Create your first case, share the upload link, and receive a trust report."
+              : `${stats.active} ${isGreek ? "ενεργές" : "active"} · ${actionCount} ${isGreek ? "ενέργειες σε αναμονή" : `queued action${actionCount === 1 ? "" : "s"}`}${
+                  stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} ${isGreek ? "υψηλού κινδύνου" : "elevated risk"}` : ""
                 }`}
           </p>
         </div>
         <div className="command-shell__actions shrink-0">
           <a className="workspace-cta workspace-cta--compact" href={isFirstWorkspace ? "#new-screening" : "#tenant-cases"}>
             <Plus className="h-3.5 w-3.5" />
-            New screening
+            {isGreek ? "Νέος έλεγχος" : "New screening"}
           </a>
           <Link className="workspace-cta-secondary workspace-cta-secondary--compact border-slate-600 bg-slate-800 text-white hover:bg-slate-700" href="/dashboard/billing">
             <CreditCard className="h-3.5 w-3.5" />
-            Billing
+            {isGreek ? "Χρέωση" : "Billing"}
           </Link>
         </div>
       </div>
@@ -120,27 +130,27 @@ export function DashboardCommandCenter({
       <div className="command-shell__body">
         <div className="responsive-metrics">
           {[
-            { hint: "Open cases", label: "Active portfolio", value: stats.active },
+            { hint: isGreek ? "Ανοικτές υποθέσεις" : "Open cases", label: isGreek ? "Ενεργό χαρτοφυλάκιο" : "Active portfolio", value: stats.active },
             {
               alert: stats.pendingReview > 0,
-              hint: "Analyst intake",
-              label: "Review queue",
+              hint: isGreek ? "Είσοδος αναλυτή" : "Analyst intake",
+              label: isGreek ? "Ουρά αξιολόγησης" : "Review queue",
               value: stats.pendingReview,
             },
             {
               alert: stats.awaitingUpload > 0,
-              hint: "Tenant action",
-              label: "Upload pending",
+              hint: isGreek ? "Ενέργεια ενοικιαστή" : "Tenant action",
+              label: isGreek ? "Αναμονή αποστολής" : "Upload pending",
               value: stats.awaitingUpload,
             },
-            { hint: "Decision ready", label: "Reports ready", value: stats.readyForDecision },
+            { hint: isGreek ? "Έτοιμο για απόφαση" : "Decision ready", label: isGreek ? "Έτοιμες αναφορές" : "Reports ready", value: stats.readyForDecision },
             {
               alert: stats.elevatedRisk > 0,
-              hint: "Score below 60",
-              label: "Elevated risk",
+              hint: isGreek ? "Βαθμολογία κάτω από 60" : "Score below 60",
+              label: isGreek ? "Υψηλός κίνδυνος" : "Elevated risk",
               value: stats.elevatedRisk,
             },
-            { hint: "Completed portfolio", label: "Avg. risk score", value: stats.averageScore ?? "—" },
+            { hint: isGreek ? "Ολοκληρωμένες υποθέσεις" : "Completed portfolio", label: isGreek ? "Μ.Ο. κινδύνου" : "Avg. risk score", value: stats.averageScore ?? "—" },
           ].map((item) => (
             <div className={item.alert ? "ops-kpi ops-kpi--alert" : "ops-kpi"} key={item.label}>
               <p className="ops-kpi__label">{item.label}</p>
@@ -154,29 +164,42 @@ export function DashboardCommandCenter({
         </div>
 
         <div className="grid gap-1.5 lg:grid-cols-3">
-          <QueuePanel cases={reviewQueue} emptyLabel="No cases awaiting analyst review." title="Review queue" />
-          <QueuePanel cases={uploadQueue} emptyLabel="No cases awaiting tenant upload." title="Upload queue" />
-          <QueuePanel cases={decisionQueue} emptyLabel="No reports ready for landlord decision." title="Decision ready" />
+          <QueuePanel
+            cases={reviewQueue}
+            emptyLabel={isGreek ? "Δεν υπάρχουν υποθέσεις για αξιολόγηση." : "No cases awaiting analyst review."}
+            title={isGreek ? "Ουρά αξιολόγησης" : "Review queue"}
+          />
+          <QueuePanel
+            cases={uploadQueue}
+            emptyLabel={isGreek ? "Δεν υπάρχουν υποθέσεις σε αναμονή αποστολής." : "No cases awaiting tenant upload."}
+            title={isGreek ? "Ουρά αποστολών" : "Upload queue"}
+          />
+          <QueuePanel
+            cases={decisionQueue}
+            emptyLabel={isGreek ? "Δεν υπάρχουν αναφορές έτοιμες για απόφαση." : "No reports ready for landlord decision."}
+            title={isGreek ? "Έτοιμο για απόφαση" : "Decision ready"}
+          />
         </div>
 
         <div className="flex flex-col items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:text-xs">
           <span className="text-secondary">
-            Billing ·{" "}
+            {isGreek ? "Χρέωση" : "Billing"} ·{" "}
             <span className="font-semibold text-primary">
               {planLabel}
               {subscriptionStatus ? ` (${subscriptionStatus.replaceAll("_", " ")})` : ""}
             </span>
           </span>
+          <span className="text-xs text-muted">{planUsage}</span>
           <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href="/dashboard/billing">
-            Manage billing
+            {isGreek ? "Διαχείριση χρέωσης" : "Manage billing"}
           </Link>
         </div>
 
         {shouldIncludeDemoCasesInWorkspace() ? (
           <p className="text-[10px] leading-4 text-slate-500">
-            Sample cases are available for walkthroughs.{" "}
+            {isGreek ? "Δείγματα υποθέσεων διαθέσιμα για παρουσίαση." : "Sample cases are available for walkthroughs."}{" "}
             <Link className="font-medium text-slate-700 hover:underline" href="/demo">
-              Guided tour →
+              {isGreek ? "Οδηγός περιήγησης →" : "Guided tour →"}
             </Link>
           </p>
         ) : null}

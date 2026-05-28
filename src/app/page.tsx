@@ -2,12 +2,15 @@ import Link from "next/link";
 import { ArrowRight, FileSearch, Globe2, Shield, Sparkles, Scale } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { PublicSiteFooter } from "@/components/public-site-footer";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { PricingPlanCta } from "@/components/pricing-plan-cta";
 import { getCurrentUserContext, isAdminContext } from "@/lib/auth";
-import { BILLING_PLANS, SCREENING_PAYMENT_PRODUCT } from "@/lib/billing";
+import { BILLING_PLANS, ENTERPRISE_CONTACT_PRODUCT, SCREENING_PAYMENT_PRODUCT } from "@/lib/billing";
 import { buildBillingPath, isSubscriptionPlanIntent, parseBillingPlanIntent } from "@/lib/billing-navigation";
+import { withLocalePath } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -100,12 +103,14 @@ export default async function HomePage({
   searchParams: Promise<{ plan?: string }>;
 }) {
   const params = await searchParams;
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   const planIntent = parseBillingPlanIntent(params.plan);
   const { user, profile } = await getCurrentUserContext();
 
   if (user && profile) {
     if (isAdminContext(profile.email, profile.role)) {
-      redirect("/admin/review");
+      redirect(withLocalePath(locale, "/admin/review"));
     }
 
     if (planIntent) {
@@ -116,7 +121,7 @@ export default async function HomePage({
       redirect(buildBillingPath("screening"));
     }
 
-    redirect("/dashboard");
+    redirect(withLocalePath(locale, "/dashboard"));
   }
 
   return (
@@ -128,19 +133,20 @@ export default async function HomePage({
             <div className="hidden rounded-full border border-[#cfb06a] bg-white px-4 py-2 text-sm font-semibold text-[#0f2343] shadow-[0_6px_16px_rgba(15,35,67,0.05)] md:inline-flex">
               Tenant Passport Greece
             </div>
+            <LanguageSwitcher locale={locale} />
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <Link
               className="secondary-action min-h-12 rounded-[18px] px-5 py-3 sm:min-h-0"
               href="#pricing"
             >
-              Pricing
+              {isGreek ? "Τιμοκατάλογος" : "Pricing"}
             </Link>
             <Link
               className="primary-action cta-breathe min-h-12 rounded-[18px] px-5 py-3 sm:min-h-0"
-              href="/login"
+              href={withLocalePath(locale, "/login")}
             >
-              Start screening
+              {isGreek ? "Έναρξη ελέγχου" : "Start screening"}
             </Link>
           </div>
         </div>
@@ -148,17 +154,19 @@ export default async function HomePage({
         <section className="brand-hero grid gap-8 p-7 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="relative z-[1] space-y-7">
             <div className="inline-flex w-fit rounded-full border border-[#d8c490] bg-[#fffaf0] px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#8b6b17]">
-              Trusted Tenants. Safer Rentals.
+              {isGreek ? "Αξιόπιστοι ενοικιαστές. Ασφαλέστερες μισθώσεις." : "Trusted Tenants. Safer Rentals."}
             </div>
             <div className="space-y-5">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#8b6b17]">
                 Tenant Passport Greece
               </p>
               <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl xl:text-7xl">
-                Know Who Gets the Key.
+                {isGreek ? "Γνώριζε ποιος παίρνει το κλειδί." : "Know Who Gets the Key."}
               </h1>
               <p className="max-w-2xl text-lg font-medium leading-8 text-[#0f2343] sm:text-2xl">
-                AI-powered tenant screening and rental protection infrastructure for the Greek rental market.
+                {isGreek
+                  ? "Υποδομή ελέγχου ενοικιαστών και προστασίας μίσθωσης με AI, ειδικά για την ελληνική αγορά."
+                  : "AI-powered tenant screening and rental protection infrastructure for the Greek rental market."}
               </p>
               <p className="max-w-2xl text-base leading-8 text-slate-700 sm:text-lg">
                 SafeKey helps landlords and property teams open a case, collect documents through a secure
@@ -189,9 +197,9 @@ export default async function HomePage({
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link
                 className="primary-action cta-breathe min-h-14 w-full gap-2 sm:w-auto"
-                href="/login"
+                href={withLocalePath(locale, "/login")}
               >
-                Create your first tenant check
+                {isGreek ? "Δημιούργησε τον πρώτο έλεγχο ενοικιαστή" : "Create your first tenant check"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
@@ -405,6 +413,28 @@ export default async function HomePage({
                 Choose single screening
               </PricingPlanCta>
             </div>
+
+            <div className="card space-y-6 lg:col-span-1">
+              <div className="space-y-3">
+                <h3 className="text-xl font-semibold text-slate-950">{ENTERPRISE_CONTACT_PRODUCT.name}</h3>
+                <p className="text-4xl font-semibold tracking-[-0.04em] text-[#0f2343]">Custom</p>
+                <p className="text-sm leading-7 text-slate-700">{ENTERPRISE_CONTACT_PRODUCT.description}</p>
+              </div>
+              <div className="space-y-3">
+                {ENTERPRISE_CONTACT_PRODUCT.features.map((feature) => (
+                  <div className="flex items-start gap-3 text-sm font-medium text-slate-800" key={feature}>
+                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-[#0f2343]" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <Link
+                className="secondary-action inline-flex min-h-12 w-full items-center justify-center rounded-[18px] border-slate-300 px-5 py-3 text-sm font-semibold"
+                href="#support"
+              >
+                Contact us
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -423,16 +453,16 @@ export default async function HomePage({
           <div className="relative z-[1] flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link
               className="primary-action cta-breathe min-h-14 gap-2"
-              href="/login"
+                href={withLocalePath(locale, "/login")}
             >
-              Start with SafeKey
+              {isGreek ? "Ξεκίνα με το SafeKey" : "Start with SafeKey"}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               className="secondary-action min-h-14"
-              href="/login"
+              href={withLocalePath(locale, "/login")}
             >
-              Sign in
+              {isGreek ? "Σύνδεση" : "Sign in"}
             </Link>
           </div>
         </section>

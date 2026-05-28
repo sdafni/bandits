@@ -5,6 +5,7 @@ import { Badge } from "@/components/badge";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { StatCard } from "@/components/stat-card";
 import { getDemoCasePresentationCards, mergeAdminChecksWithDemo } from "@/lib/demo-data";
+import { getRequestLocale } from "@/lib/i18n-server";
 import { requireAdmin } from "@/lib/auth";
 import { getOperationalState, getOperationalTimestamp, getVerificationChecklist } from "@/lib/operations";
 import { getAdminChecks } from "@/lib/queries";
@@ -24,6 +25,8 @@ const STATUS_TONE = {
 } as const;
 
 export default async function AdminReviewPage() {
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   const { profile } = await requireAdmin();
   const checks = mergeAdminChecksWithDemo(await getAdminChecks());
   const demoCases = getDemoCasePresentationCards();
@@ -34,8 +37,9 @@ export default async function AdminReviewPage() {
     <main className="min-h-screen">
       <AppHeader
         homeHref="/admin/review"
+        locale={locale}
         subtitle={`Admin workspace for ${profile.full_name ?? profile.email}. Review SafeKey uploads, inspect extracted text, and publish screening plus protection outcomes.`}
-        title="SafeKey review desk"
+        title={isGreek ? "Κέντρο αξιολόγησης SafeKey" : "SafeKey review desk"}
         variant="admin"
       />
 

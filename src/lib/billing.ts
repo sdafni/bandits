@@ -14,12 +14,17 @@ export type BillingInvoiceStatus = "draft" | "open" | "paid" | "uncollectible" |
 export type BillingCheckoutMode = "subscription" | "payment";
 export type BillingCheckoutStatus = "open" | "completed" | "expired" | "canceled";
 export type ScreeningPaymentStatus = "pending" | "paid" | "failed" | "canceled";
+export type BillingPlanLimits = {
+  activeChecks: number;
+  completedChecksPerMonth: number;
+};
 
 export const BILLING_PLANS = [
   {
     description: "For individual landlords running occasional screening checks.",
     features: [
       "1 active tenant check at a time",
+      "Max 3 completed checks per month",
       "Secure document upload link",
       "Document status tracking",
       "Final recommendation view",
@@ -34,6 +39,7 @@ export const BILLING_PLANS = [
     description: "For active landlords and agents who need a steady screening workflow.",
     features: [
       "Up to 10 active tenant checks",
+      "Max 25 completed checks per month",
       "Dashboard risk score overview",
       "Faster case turnaround",
       "Priority product support",
@@ -47,7 +53,8 @@ export const BILLING_PLANS = [
   {
     description: "For property managers and teams running screening as an operational process.",
     features: [
-      "Unlimited active tenant checks",
+      "Up to 40 active tenant checks",
+      "Max 100 completed checks per month",
       "Team-style operational workflow",
       "Priority review queue",
       "Premium support and onboarding",
@@ -79,6 +86,19 @@ export const SCREENING_PAYMENT_PRODUCT = {
   priceLabel: "Pay per screening",
 } as const;
 
+export const ENTERPRISE_CONTACT_PRODUCT = {
+  description: "For agencies and companies that need custom volume, API access, and multi-team operations.",
+  features: [
+    "Custom pricing",
+    "Higher volume limits",
+    "API / multi-agent workspace",
+    "Dedicated support",
+    "Contact us",
+  ],
+  name: "Enterprise / Agency",
+  priceLabel: "Custom",
+} as const;
+
 const PRICE_IDS: Record<BillingPlanKey, string> = {
   basic: env.stripeBasicPriceId,
   premium: env.stripePremiumPriceId,
@@ -86,9 +106,18 @@ const PRICE_IDS: Record<BillingPlanKey, string> = {
 };
 
 const ENTITLED_SUBSCRIPTION_STATUSES = new Set<BillingSubscriptionStatus>(["active", "trialing", "past_due"]);
+const PLAN_LIMITS: Record<BillingPlanKey, BillingPlanLimits> = {
+  basic: { activeChecks: 1, completedChecksPerMonth: 3 },
+  pro: { activeChecks: 10, completedChecksPerMonth: 25 },
+  premium: { activeChecks: 40, completedChecksPerMonth: 100 },
+};
 
 export function getBillingPlan(key: BillingPlanKey) {
   return BILLING_PLANS.find((plan) => plan.key === key) ?? BILLING_PLANS[0];
+}
+
+export function getBillingPlanLimits(key: BillingPlanKey | null | undefined): BillingPlanLimits {
+  return PLAN_LIMITS[key ?? "basic"];
 }
 
 export const WORKSPACE_ACCESS_LABEL = "Trial Workspace";

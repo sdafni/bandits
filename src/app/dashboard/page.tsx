@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
 import { DashboardCommandCenter } from "@/components/dashboard-command-center";
 import { LandlordDashboardBoard } from "@/components/landlord-dashboard-board";
-import { getBillingPlanName } from "@/lib/billing";
+import { getBillingPlanLimits, getBillingPlanName } from "@/lib/billing";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import { mergeLandlordChecksWithDemo } from "@/lib/demo-data";
+import { getRequestLocale } from "@/lib/i18n-server";
 import { requireLandlord } from "@/lib/auth";
 import { getLandlordChecks } from "@/lib/queries";
 
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
+  const locale = await getRequestLocale();
+  const isGreek = locale === "el";
   const { profile } = await requireLandlord();
   const liveChecks = await getLandlordChecks();
   const checks = mergeLandlordChecksWithDemo(liveChecks);
@@ -37,25 +40,41 @@ export default async function DashboardPage() {
   const readyForDecision = completedChecks.length;
 
   const planLabel = getBillingPlanName(billingOverview.activeSubscription?.plan_key ?? null);
+  const limits = getBillingPlanLimits(billingOverview.activeSubscription?.plan_key ?? null);
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const completedThisMonth = checks.filter(
+    (check) =>
+      check.status === "report_ready" &&
+      new Date((check.review_completed_at ?? check.created_at) as string).getTime() >= monthStart.getTime(),
+  ).length;
 
   return (
     <main className="min-h-screen bg-slate-100/80">
       <AppHeader
         activeNav="dashboard"
         homeHref="/dashboard"
+        locale={locale}
         subtitle={
           isFirstWorkspace
-            ? "Set up your first tenant screening"
-            : `${liveChecks.length} active cases · ${pendingReview.length} in review queue`
+            ? isGreek
+              ? "Στήσε τον πρώτο έλεγχο ενοικιαστή"
+              : "Set up your first tenant screening"
+            : isGreek
+              ? `${liveChecks.length} ενεργές υποθέσεις · ${pendingReview.length} σε αναμονή αξιολόγησης`
+              : `${liveChecks.length} active cases · ${pendingReview.length} in review queue`
         }
-        title="Operations"
+        title={isGreek ? "Λειτουργίες" : "Operations"}
       />
 
       <div className="workspace-page">
         <DashboardCommandCenter
           checks={checks}
           isFirstWorkspace={isFirstWorkspace}
+          isGreek={isGreek}
           planLabel={planLabel}
+          planUsage={`${checks.filter((check) => check.status !== "report_ready").length}/${limits.activeChecks} active · ${completedThisMonth}/${limits.completedChecksPerMonth} monthly completed`}
           stats={{
             active: checks.length,
             awaitingUpload: pendingUploads.length,
