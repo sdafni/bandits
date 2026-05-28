@@ -26,24 +26,24 @@ const RECOMMENDATION_META: Record<
     finalRecommendation:
       "Proceed with the tenancy decision. The current file shows strong affordability coverage, a credible document pack, and no material risk signals that require escalation.",
     helper: "Fit to proceed subject to standard tenancy completion steps.",
-    level: "Approved",
-    title: "Low operational risk",
+    level: "Recommended",
+    title: "Recommended profile",
   },
   conditional: {
     badgeTone: "warning",
     finalRecommendation:
       "Proceed only after the outstanding items are resolved. The case is workable, but the file should not move to a final approval until the missing evidence and highlighted review points are closed.",
     helper: "Additional evidence and a short manual review are still required.",
-    level: "Conditional",
-    title: "Moderate risk requiring conditions",
+    level: "Recommended with caution",
+    title: "Caution-led recommendation",
   },
   decline: {
     badgeTone: "danger",
     finalRecommendation:
       "Do not proceed on the current file. The application presents material affordability or consistency concerns that should be escalated before any tenancy commitment is considered.",
     helper: "Escalation recommended before any further progression.",
-    level: "Declined",
-    title: "Material risk exposure",
+    level: "High risk profile",
+    title: "Material risk visibility",
   },
 };
 

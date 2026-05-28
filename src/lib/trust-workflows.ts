@@ -112,27 +112,114 @@ export function buildTrustWorkflowReport(params: {
           ? "LIMITED CONFIDENCE"
           : "HIGH RISK";
 
+  const identityScore = hasIdentityProof ? 25 : 5;
+  const financialScore = Math.min(25, trustIndicatorsUploaded * 8);
+  const completenessRatio =
+    params.requestedDocuments.length > 0
+      ? params.uploadedDocuments.filter((value) => params.requestedDocuments.includes(value)).length /
+        params.requestedDocuments.length
+      : 0;
+  const completenessScore = Math.round(completenessRatio * 20);
+  const consistencyPenalty = highRiskDetected ? -20 : 0;
+  const uploadQualityScore = Math.min(15, Math.max(0, params.uploadedDocuments.length * 2));
+  const analystAdjustment = params.recommendation === "approve" ? 10 : params.recommendation === "decline" ? -10 : 0;
+  const confidenceScore = Math.max(
+    0,
+    Math.min(
+      100,
+      identityScore + financialScore + completenessScore + uploadQualityScore + analystAdjustment + consistencyPenalty,
+    ),
+  );
+
   const recommendation =
-    highRiskDetected
-      ? "HIGH RISK"
-      : params.recommendation === "approve"
-        ? "APPROVE"
-        : params.recommendation === "conditional"
-          ? "CONDITIONAL"
-          : params.recommendation === "decline"
-            ? "DECLINE"
-            : "CONDITIONAL";
+    confidenceScore >= 80
+      ? "Recommended"
+      : confidenceScore >= 65
+        ? "Recommended with caution"
+        : confidenceScore >= 45
+          ? "Additional verification recommended"
+          : confidenceScore >= 30
+            ? "Limited confidence profile"
+            : "High risk profile";
+
+  const identitySection = [
+    hasIdentityProof ? "Government ID received" : "Government ID missing",
+    params.uploadedDocuments.includes("residency_permit")
+      ? "Residency documentation received"
+      : "Residency documentation not provided",
+    highRiskDetected ? "Information consistency requires manual review" : "Name consistency appears stable",
+  ];
+  const financialSection = [
+    trustIndicatorsUploaded >= 2 ? "Stable recurring income indicators detected" : "Partial financial visibility",
+    params.uploadedDocuments.includes("proof_of_savings")
+      ? "Savings evidence provided"
+      : "Savings evidence not provided",
+    params.uploadedDocuments.includes("bank_statement")
+      ? "Bank history available"
+      : "Limited banking history available",
+  ];
+  const documentChecklist = [
+    { label: "ID verified", state: hasIdentityProof ? "complete" : "missing" },
+    {
+      label: "Income evidence received",
+      state: params.uploadedDocuments.some((value) => getDocumentDefinition(value)?.category === "income")
+        ? "complete"
+        : "warning",
+    },
+    {
+      label: "Financial evidence depth",
+      state: params.uploadedDocuments.includes("bank_statement") ? "complete" : "warning",
+    },
+    {
+      label: "Landlord references",
+      state: referencesUploaded > 0 ? "complete" : "warning",
+    },
+    {
+      label: "Tax documentation",
+      state: params.uploadedDocuments.includes("tax_return") ? "complete" : "missing",
+    },
+  ] as const;
+  const rentalRiskIndicators = [
+    params.uploadedDocuments.includes("relocation_contract")
+      ? "International relocation case"
+      : null,
+    params.uploadedDocuments.includes("freelance_income")
+      ? "Freelancer/self-employed profile"
+      : null,
+    referencesUploaded === 0 ? "No previous landlord references" : null,
+    params.uploadedDocuments.includes("guarantor_documents") ? "Guarantor provided" : null,
+  ].filter((item): item is string => Boolean(item));
+  const missingItemsGuidance =
+    byPriority("recommended").filter((value) => !uploadedSet.has(value)).length > 0
+      ? "To improve confidence, additional bank statements, income continuity evidence, or landlord references are recommended."
+      : "Current evidence set is sufficient for a confidence-led landlord decision.";
+  const protectionSuggestions = [
+    confidenceScore < 65 ? "Additional deposit recommended" : null,
+    !params.uploadedDocuments.includes("guarantor_documents") && confidenceScore < 55
+      ? "Guarantor recommended"
+      : null,
+    byPriority("recommended").filter((value) => !uploadedSet.has(value)).length > 0
+      ? "Additional income verification recommended"
+      : null,
+  ].filter((item): item is string => Boolean(item));
 
   return {
+    confidenceScore,
     identityReceived: byCategory("identity").filter((value) => uploadedSet.has(value)),
     incomeReceived: byCategory("income").filter((value) => uploadedSet.has(value)),
     financialReceived: byCategory("financial").filter((value) => uploadedSet.has(value)),
     confidenceLevel,
+    documentChecklist,
+    financialSection,
+    identitySection,
     minimumEvidenceMet: hasIdentityProof && trustIndicatorsUploaded >= 1,
+    missingItemsGuidance,
     optionalReceived: byCategory("optional").filter((value) => uploadedSet.has(value)),
     optionalRequested: byPriority("optional"),
+    protectionSuggestions,
     recommendedMissing: byPriority("recommended").filter((value) => !uploadedSet.has(value)),
     requiredMissing: byPriority("required").filter((value) => !uploadedSet.has(value)),
+    rentalRiskIndicators,
     missingDocuments,
     rentalHistoryReceived: byCategory("rental_history").filter((value) => uploadedSet.has(value)),
     recommendation,
