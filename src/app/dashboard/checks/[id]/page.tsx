@@ -322,9 +322,22 @@ export default async function LandlordCheckDetailPage({
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Trust confidence</p>
+              <p className="mt-2 text-base font-semibold text-slate-950">{trustReport.confidenceLevel}</p>
+              <p className="mt-1 text-sm text-slate-600">
+                {trustReport.minimumEvidenceMet
+                  ? "Minimum trust evidence is present (ID + at least one financial/trust indicator)."
+                  : "Minimum trust evidence is not complete yet. Continue collecting documents to improve confidence."}
+              </p>
               <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Risk flags</p>
               <p className="mt-2 text-sm text-slate-700">
                 {trustReport.riskFlags.length > 0 ? trustReport.riskFlags.join(" · ") : "No risk flags recorded yet."}
+              </p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Recommended missing</p>
+              <p className="mt-2 text-sm text-slate-700">
+                {trustReport.recommendedMissing.length > 0
+                  ? trustReport.recommendedMissing.map(getDocumentLabel).join(", ")
+                  : "No recommended documents missing."}
               </p>
               <p className="mt-3 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Analyst notes</p>
               <p className="mt-2 text-sm text-slate-700">{trustReport.analystNotes}</p>

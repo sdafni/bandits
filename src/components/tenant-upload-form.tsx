@@ -10,15 +10,6 @@ import { TRUST_DOCUMENT_CATEGORIES, TRUST_DOCUMENT_DEFINITIONS } from "@/lib/tru
 
 const initialState: ActionState = {};
 
-const DOCUMENT_TYPES = [
-  { value: "government_id", label: "Government ID" },
-  { value: "proof_of_income", label: "Proof of income" },
-  { value: "employment_letter", label: "Employment letter" },
-  { value: "bank_statement", label: "Bank statement" },
-  { value: "rental_reference", label: "Rental reference" },
-  { value: "supporting_document", label: "Other supporting document" },
-];
-
 export function TenantUploadForm({
   token,
   tenantName,
@@ -102,9 +93,9 @@ export function TenantUploadForm({
           <span className="text-sm font-medium text-slate-700">Document category</span>
           <select className="input" name="document_type" onChange={(event) => setSelectedDocumentType(event.target.value)} required>
             <option value="">Select category...</option>
-            {DOCUMENT_TYPES.map((option) => (
+            {TRUST_DOCUMENT_DEFINITIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {option.label} ({option.priority})
               </option>
             ))}
           </select>
@@ -120,7 +111,7 @@ export function TenantUploadForm({
 
       <p className="text-sm leading-6 text-slate-500">
         Upload one document category per submission. You can send additional batches afterward for the rest of
-        the requested pack.
+        the requested pack. Recommended documents improve trust confidence.
       </p>
 
       <label className="space-y-2">

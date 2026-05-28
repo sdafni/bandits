@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/submit-button";
 import {
   TRUST_DOCUMENT_CATEGORIES,
   TRUST_DOCUMENT_DEFINITIONS,
-  getRequiredDocumentsForExperience,
+  getDocumentDefinition,
   type TrustWorkflowExperience,
 } from "@/lib/trust-workflows";
 
@@ -56,8 +56,11 @@ type NewCheckFormProps = {
 
 export function NewCheckForm({ onCancel, experience = "basic" }: NewCheckFormProps = {}) {
   const draft = readDraft();
-  const requiredDocuments = useMemo<Set<string>>(
-    () => new Set(getRequiredDocumentsForExperience(experience)),
+  const defaultDocuments = useMemo(
+    () =>
+      (experience === "basic"
+        ? ["national_id", "bank_statement", "payslips"]
+        : ["national_id", "passport", "bank_statement", "payslips", "employment_contract", "landlord_reference"]) as string[],
     [experience],
   );
   const [state, action] = useActionState(createTenantCheckAction, initialState);
@@ -73,7 +76,7 @@ export function NewCheckForm({ onCancel, experience = "basic" }: NewCheckFormPro
   const [requestedDocuments, setRequestedDocuments] = useState<string[]>(
     draft?.requestedDocuments && draft.requestedDocuments.length > 0
       ? draft.requestedDocuments
-      : [...requiredDocuments],
+      : defaultDocuments,
   );
 
   const stepTitle = STEPS.find((item) => item.id === step)?.title ?? STEPS[0].title;
@@ -86,7 +89,22 @@ export function NewCheckForm({ onCancel, experience = "basic" }: NewCheckFormPro
     () => TRUST_DOCUMENT_DEFINITIONS.filter((option) => requestedDocuments.includes(option.value)).map((option) => option.label),
     [requestedDocuments],
   );
-  const requiredMissingCount = [...requiredDocuments].filter((value) => !requestedDocuments.includes(value)).length;
+  const hasIdentityMinimum = requestedDocuments.some(
+    (value) => getDocumentDefinition(value)?.category === "identity",
+  );
+  const hasTrustIndicatorMinimum = requestedDocuments.some((value) =>
+    [
+      "bank_statement",
+      "payslips",
+      "proof_of_savings",
+      "guarantor_documents",
+      "freelance_income",
+      "relocation_contract",
+      "employment_contract",
+      "tax_return",
+      "accountant_letter",
+    ].includes(value),
+  );
   const requestedProgress = Math.round((requestedDocuments.length / TRUST_DOCUMENT_DEFINITIONS.length) * 100);
 
   const canContinue = step === 1 ? canContinueStepOne : step === 2 ? canContinueStepTwo : step === 3 ? canContinueStepThree : true;
@@ -251,9 +269,7 @@ export function NewCheckForm({ onCancel, experience = "basic" }: NewCheckFormPro
                       />
                       <span className="inline-flex items-center gap-2">
                         {option.label}
-                        <span className="text-xs text-slate-500">
-                          {requiredDocuments.has(option.value) ? "Required" : "Optional"}
-                        </span>
+                        <span className="text-xs text-slate-500 capitalize">{option.priority}</span>
                       </span>
                     </label>
                   ))}
@@ -263,8 +279,10 @@ export function NewCheckForm({ onCancel, experience = "basic" }: NewCheckFormPro
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
             <p className="text-xs text-secondary">
-              Required missing: {requiredMissingCount} · Requested set coverage: {requestedProgress}%
+              Minimum to proceed: {hasIdentityMinimum && hasTrustIndicatorMinimum ? "Met" : "Add 1 ID + 1 trust indicator"} · Coverage:{" "}
+              {requestedProgress}%
             </p>
+            <p className="mt-1 text-xs text-muted">Recommended documents improve trust confidence and reduce risk uncertainty.</p>
           </div>
         </fieldset>
       ) : null}

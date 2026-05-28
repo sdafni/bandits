@@ -11,6 +11,7 @@ export type TrustDocumentDefinition = {
   value: string;
   label: string;
   category: TrustDocumentCategoryKey;
+  priority: "required" | "recommended" | "optional";
 };
 
 export const TRUST_DOCUMENT_CATEGORIES: Record<TrustDocumentCategoryKey, { label: string }> = {
@@ -22,33 +23,33 @@ export const TRUST_DOCUMENT_CATEGORIES: Record<TrustDocumentCategoryKey, { label
 };
 
 export const TRUST_DOCUMENT_DEFINITIONS: TrustDocumentDefinition[] = [
-  { category: "identity", label: "Passport", value: "passport" },
-  { category: "identity", label: "National ID", value: "national_id" },
-  { category: "identity", label: "Residency permit", value: "residency_permit" },
-  { category: "income", label: "Payslips", value: "payslips" },
-  { category: "income", label: "Employment contract", value: "employment_contract" },
-  { category: "income", label: "Tax return", value: "tax_return" },
-  { category: "income", label: "Accountant letter", value: "accountant_letter" },
-  { category: "financial", label: "Bank statements", value: "bank_statement" },
-  { category: "financial", label: "Proof of savings", value: "proof_of_savings" },
-  { category: "rental_history", label: "Previous landlord reference", value: "landlord_reference" },
-  { category: "rental_history", label: "Previous lease agreement", value: "previous_lease_agreement" },
-  { category: "optional", label: "Guarantor documents", value: "guarantor_documents" },
-  { category: "optional", label: "Visa documents", value: "visa_documents" },
-  { category: "optional", label: "Pet documentation", value: "pet_documentation" },
+  { category: "identity", label: "Passport", priority: "required", value: "passport" },
+  { category: "identity", label: "National ID", priority: "required", value: "national_id" },
+  { category: "identity", label: "Residency permit", priority: "required", value: "residency_permit" },
+  { category: "income", label: "Payslips", priority: "recommended", value: "payslips" },
+  { category: "income", label: "Employment contract", priority: "recommended", value: "employment_contract" },
+  { category: "income", label: "Tax return", priority: "recommended", value: "tax_return" },
+  { category: "income", label: "Accountant letter", priority: "recommended", value: "accountant_letter" },
+  { category: "income", label: "Freelance income proof", priority: "recommended", value: "freelance_income" },
+  { category: "income", label: "Relocation contract", priority: "recommended", value: "relocation_contract" },
+  { category: "financial", label: "Bank statements", priority: "recommended", value: "bank_statement" },
+  { category: "financial", label: "Proof of savings", priority: "recommended", value: "proof_of_savings" },
+  { category: "rental_history", label: "Previous landlord reference", priority: "recommended", value: "landlord_reference" },
+  { category: "rental_history", label: "Previous lease agreement", priority: "recommended", value: "previous_lease_agreement" },
+  { category: "optional", label: "Guarantor documents", priority: "optional", value: "guarantor_documents" },
+  { category: "optional", label: "Visa documents", priority: "optional", value: "visa_documents" },
+  { category: "optional", label: "Pet documentation", priority: "optional", value: "pet_documentation" },
 ];
 
-const BASIC_REQUIRED_DOCUMENTS = ["national_id", "payslips", "bank_statement"] as const;
+const BASIC_REQUIRED_DOCUMENTS = ["national_id", "bank_statement"] as const;
 
 const PRO_REQUIRED_DOCUMENTS = [
   "national_id",
   "passport",
   "payslips",
   "employment_contract",
-  "tax_return",
   "bank_statement",
   "landlord_reference",
-  "guarantor_documents",
 ] as const;
 
 export function getRequiredDocumentsForExperience(experience: TrustWorkflowExperience) {
@@ -75,14 +76,44 @@ export function buildTrustWorkflowReport(params: {
   recommendation?: "approve" | "conditional" | "decline" | null;
   score?: number | null;
 }) {
-  const requestedSet = new Set(params.requestedDocuments);
   const uploadedSet = new Set(params.uploadedDocuments);
   const missingDocuments = params.requestedDocuments.filter((value) => !uploadedSet.has(value));
   const byCategory = (category: TrustDocumentCategoryKey) =>
     params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.category === category);
+  const byPriority = (priority: TrustDocumentDefinition["priority"]) =>
+    params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.priority === priority);
+  const hasIdentityProof = params.uploadedDocuments.some(
+    (value) => getDocumentDefinition(value)?.category === "identity",
+  );
+  const trustIndicatorDocs = new Set([
+    "bank_statement",
+    "payslips",
+    "proof_of_savings",
+    "guarantor_documents",
+    "freelance_income",
+    "relocation_contract",
+    "employment_contract",
+    "tax_return",
+    "accountant_letter",
+  ]);
+  const trustIndicatorsUploaded = params.uploadedDocuments.filter((value) => trustIndicatorDocs.has(value)).length;
+  const referencesUploaded = params.uploadedDocuments.filter((value) => value === "landlord_reference" || value === "previous_lease_agreement").length;
+  const highRiskDetected =
+    (params.score != null && params.score < 45) ||
+    (params.riskFlags ?? []).length > 0 ||
+    params.recommendation === "decline";
+  const confidenceLevel = highRiskDetected
+    ? "HIGH RISK"
+    : hasIdentityProof && trustIndicatorsUploaded >= 2 && referencesUploaded > 0
+      ? "HIGH CONFIDENCE"
+      : hasIdentityProof && trustIndicatorsUploaded >= 1
+        ? "MEDIUM CONFIDENCE"
+        : hasIdentityProof
+          ? "LIMITED CONFIDENCE"
+          : "HIGH RISK";
 
   const recommendation =
-    params.score != null && params.score < 45
+    highRiskDetected
       ? "HIGH RISK"
       : params.recommendation === "approve"
         ? "APPROVE"
@@ -96,8 +127,13 @@ export function buildTrustWorkflowReport(params: {
     identityReceived: byCategory("identity").filter((value) => uploadedSet.has(value)),
     incomeReceived: byCategory("income").filter((value) => uploadedSet.has(value)),
     financialReceived: byCategory("financial").filter((value) => uploadedSet.has(value)),
+    confidenceLevel,
+    minimumEvidenceMet: hasIdentityProof && trustIndicatorsUploaded >= 1,
+    optionalReceived: byCategory("optional").filter((value) => uploadedSet.has(value)),
+    optionalRequested: byPriority("optional"),
+    recommendedMissing: byPriority("recommended").filter((value) => !uploadedSet.has(value)),
+    requiredMissing: byPriority("required").filter((value) => !uploadedSet.has(value)),
     missingDocuments,
-    optionalRequested: byCategory("optional").filter((value) => requestedSet.has(value)),
     rentalHistoryReceived: byCategory("rental_history").filter((value) => uploadedSet.has(value)),
     recommendation,
     riskFlags: params.riskFlags ?? [],

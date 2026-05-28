@@ -158,6 +158,9 @@ export default async function TenantUploadPage({
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 Upload progress {uploadProgressPercent}% · Missing {missingDocumentTypes.length}
               </div>
+              <p className="text-xs text-muted">
+                Recommended documents improve trust confidence. Missing documents do not automatically reject the tenant.
+              </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {(Object.keys(TRUST_DOCUMENT_CATEGORIES) as Array<keyof typeof TRUST_DOCUMENT_CATEGORIES>).map((category) => {
                   const items = detail.requested_documents.filter(
