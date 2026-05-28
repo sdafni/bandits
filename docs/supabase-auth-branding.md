@@ -18,6 +18,8 @@ Apply these settings in Supabase Dashboard to remove generic "Supabase Auth" onb
    - `Welcome to SafeKey — Confirm Your Account`
 3. Replace HTML body with:
    - `supabase/auth-email/confirm-signup.html`
+   - Uses token-hash callback URL format (no PKCE browser verifier dependency):
+   - `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup&next=/dashboard&email={{ .Email }}`
 4. Save and send a test email in:
    - Gmail Android
    - Apple Mail (iPhone)

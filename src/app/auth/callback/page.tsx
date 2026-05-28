@@ -1,129 +1,85 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
+import { resendConfirmationEmailAction } from "@/app/actions";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
+import { createClient } from "@/lib/supabase/server";
+import { SubmitButton } from "@/components/submit-button";
 
 function getNextPath(next: string | null, type: string | null) {
   if (type === "recovery") {
     return "/login/reset-password";
   }
 
-  return sanitizeInternalPath(next);
+  return sanitizeInternalPath(next, "/dashboard");
 }
 
-export default function AuthCallbackPage() {
-  const searchParams = useSearchParams();
-  const nextPath = useMemo(
-    () => getNextPath(searchParams.get("next"), searchParams.get("type")),
-    [searchParams],
-  );
-  const [message, setMessage] = useState("Finishing your SafeKey sign-in...");
+export default async function AuthCallbackPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token_hash?: string; type?: string; next?: string; email?: string }>;
+}) {
+  const params = await searchParams;
+  const tokenHash = params.token_hash ?? null;
+  const type = (params.type ?? null) as EmailOtpType | null;
+  const nextPath = getNextPath(params.next ?? null, type);
+  const email = params.email ?? "";
+  const supabase = await createClient();
 
-  useEffect(() => {
-    let isActive = true;
+  let status: "success" | "error" = "error";
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type,
+    });
+    status = error ? "error" : "success";
+  }
 
-    async function completeAuth() {
-      const supabase = createClient();
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-      const code = searchParams.get("code");
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type") as EmailOtpType | null;
-
-      if (accessToken && refreshToken) {
-        const response = await fetch("/auth/callback/session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            accessToken,
-            refreshToken,
-          }),
-        });
-
-        if (response.ok) {
-          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-          window.location.replace(nextPath);
-          return;
-        }
-
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-
-        if (isActive) {
-          setMessage(payload?.error ?? "We couldn't finish your SafeKey sign-in.");
-        }
-        return;
-      }
-
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (!error) {
-          window.location.replace(nextPath);
-          return;
-        }
-
-        if (isActive) {
-          setMessage(error.message);
-        }
-        return;
-      }
-
-      if (tokenHash && type) {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type,
-        });
-
-        if (!error) {
-          window.location.replace(nextPath);
-          return;
-        }
-
-        if (isActive) {
-          setMessage(error.message);
-        }
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session) {
-        window.location.replace(nextPath);
-        return;
-      }
-
-      if (isActive) {
-        setMessage("The confirmation link is invalid or expired. Please request a new one.");
-      }
-    }
-
-    void completeAuth();
-
-    return () => {
-      isActive = false;
-    };
-  }, [nextPath, searchParams]);
+  async function resendAction(formData: FormData) {
+    "use server";
+    await resendConfirmationEmailAction({} as never, formData);
+  }
 
   return (
     <main className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-xl rounded-[32px] border border-[#e5ebf3] bg-white/98 p-6 text-center shadow-sm sm:p-8">
-        <h1 className="text-2xl font-semibold text-slate-950">Confirming your email</h1>
-        <p className="mt-4 text-sm leading-7 text-slate-600">{message}</p>
-        <Link
-          className="mt-6 inline-flex rounded-full border border-[#dbe2eb] bg-white px-4 py-2 text-sm font-medium text-[#0f2343] transition hover:bg-[#f7f9fc]"
-          href="/login"
-        >
-          Back to sign in
-        </Link>
+        {status === "success" ? (
+          <>
+            <h1 className="text-2xl font-semibold text-slate-950">Your SafeKey account has been confirmed successfully.</h1>
+            <p className="mt-4 text-sm leading-7 text-slate-600">You can continue to your workspace or sign in.</p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link className="workspace-cta min-h-11 rounded-[18px] px-5 py-2.5" href={nextPath}>
+                Continue to dashboard
+              </Link>
+              <Link className="workspace-cta-secondary min-h-11 rounded-[18px] px-5 py-2.5" href="/login">
+                Sign in
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-semibold text-slate-950">We could not verify your confirmation link.</h1>
+            <p className="mt-4 text-sm leading-7 text-slate-600">Please request a new confirmation email.</p>
+            <form action={resendAction} className="mx-auto mt-6 max-w-md space-y-3">
+              <input
+                className="input input--compact w-full"
+                defaultValue={email}
+                name="email"
+                placeholder="Email"
+                required
+                type="email"
+              />
+              <SubmitButton className="w-full" pendingLabel="Sending..." variant="workspace">
+                Resend confirmation email
+              </SubmitButton>
+            </form>
+            <Link
+              className="mt-4 inline-flex rounded-full border border-[#dbe2eb] bg-white px-4 py-2 text-sm font-medium text-[#0f2343] transition hover:bg-[#f7f9fc]"
+              href="/login"
+            >
+              Back to sign in
+            </Link>
+          </>
+        )}
       </div>
     </main>
   );

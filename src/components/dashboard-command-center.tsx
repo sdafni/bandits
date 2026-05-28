@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CreditCard, Plus } from "lucide-react";
+import { AlertTriangle, ArrowRight, Plus } from "lucide-react";
 import { shouldIncludeDemoCasesInWorkspace } from "@/lib/demo-data";
 
 type CommandCheck = {
@@ -120,10 +120,6 @@ export function DashboardCommandCenter({
             <Plus className="h-3.5 w-3.5" />
             {isGreek ? "Νέος έλεγχος" : "New screening"}
           </a>
-          <Link className="workspace-cta-secondary workspace-cta-secondary--compact border-slate-600 bg-slate-800 text-white hover:bg-slate-700" href="/dashboard/billing">
-            <CreditCard className="h-3.5 w-3.5" />
-            {isGreek ? "Χρέωση" : "Billing"}
-          </Link>
         </div>
       </div>
 

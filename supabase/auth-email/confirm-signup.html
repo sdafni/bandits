@@ -94,7 +94,7 @@
           Your workspace has been created successfully and is ready to use after email confirmation.
           SafeKey helps landlords and property teams securely manage tenant screening, document collection, and trust reporting.
         </p>
-        <a class="cta" href="{{ .ConfirmationURL }}">Confirm Your SafeKey Account</a>
+        <a class="cta" href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup&next=/dashboard&email={{ .Email }}">Confirm Your SafeKey Account</a>
         <p class="muted">If you did not create this account, you can safely ignore this email.</p>
         <div class="footer">
           <p class="muted">

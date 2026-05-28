@@ -51,8 +51,7 @@ export function AppHeader({
               </Link>
             </div>
             <div className="flex items-start gap-3 sm:gap-4">
-              <SafeKeyBrand className="mt-1 shrink-0 sm:hidden" href={homeHref} variant="compact" />
-              <SafeKeyBrand className="hidden shrink-0 sm:inline-flex" href={homeHref} priority variant="logo" />
+              <SafeKeyBrand className="mt-1 shrink-0" href={homeHref} priority variant="compact" />
               <div className="min-w-0 pl-0 sm:pl-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary sm:tracking-[0.24em]">
                   {isGreek ? "Tenant Passport Greece" : "Tenant Passport Greece"}
@@ -67,14 +66,6 @@ export function AppHeader({
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end [&>*]:w-full sm:[&>*]:w-auto">
             <LanguageSwitcher locale={locale} />
-            {variant === "landlord" ? (
-              <Link
-                className="secondary-action min-h-12 rounded-[18px] px-5 py-3"
-                href="/dashboard/billing"
-              >
-                {isGreek ? "Χρέωση / Τιμές" : "Billing / Pricing"}
-              </Link>
-            ) : null}
             {actions}
             <SignOutForm />
           </div>

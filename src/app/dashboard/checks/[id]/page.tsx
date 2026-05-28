@@ -240,7 +240,7 @@ export default async function LandlordCheckDetailPage({
                   ? "This tenant case is covered by your active SafeKey plan."
                   : billingEligibility.screeningPayment?.status === "paid"
                     ? "A one-time Stripe payment has been recorded for this screening."
-                    : "Complete a single screening payment for this case or activate a subscription from the billing workspace."}
+                    : "Choose a plan or pay per screening to continue and activate this case."}
               </p>
 
               {!billingEligibility.hasBillingAccess ? (

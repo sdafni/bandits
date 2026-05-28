@@ -176,6 +176,7 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
     const nextPath = resolveAuthRedirectPath(formData.get("next"), formData.get("plan"));
     const callbackUrl = new URL("/auth/callback", env.appUrl);
     callbackUrl.searchParams.set("next", nextPath);
+    callbackUrl.searchParams.set("email", email);
     const { data, error } = await supabase.auth.signUp({
       email,
       password: parsed.data.password,
@@ -234,6 +235,7 @@ export async function resendConfirmationEmailAction(
     const supabase = await createClient();
     const callbackUrl = new URL("/auth/callback", env.appUrl);
     callbackUrl.searchParams.set("next", "/dashboard");
+    callbackUrl.searchParams.set("email", email);
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,

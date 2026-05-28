@@ -35,7 +35,7 @@
           Το SafeKey βοηθά ιδιοκτήτες και ομάδες ακινήτων να διαχειρίζονται με ασφάλεια τον έλεγχο ενοικιαστών,
           τη συλλογή εγγράφων και τις αναφορές αξιοπιστίας.
         </p>
-        <a class="cta" href="{{ .ConfirmationURL }}">Επιβεβαίωση λογαριασμού SafeKey</a>
+        <a class="cta" href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup&next=/dashboard&email={{ .Email }}">Επιβεβαίωση λογαριασμού SafeKey</a>
         <p class="muted">Αν δεν δημιούργησες εσύ αυτόν τον λογαριασμό, μπορείς να αγνοήσεις αυτό το email.</p>
         <div class="footer">
           <p class="muted">
