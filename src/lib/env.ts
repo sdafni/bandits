@@ -28,6 +28,10 @@ export const env = {
   emailFrom: process.env.SAFEKEY_EMAIL_FROM ?? "SafeKey <onboarding@resend.dev>",
   stripeMerchantDisplayName: process.env.STRIPE_MERCHANT_DISPLAY_NAME ?? "ABE Studio",
   stripeStatementDescriptor: process.env.STRIPE_STATEMENT_DESCRIPTOR ?? "ABE STUDIO",
+  supportEmail: process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
+  legalEmail: process.env.LEGAL_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
+  billingEmail: process.env.BILLING_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
+  helloEmail: process.env.HELLO_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
 };
 
 export function hasEmailDeliveryEnv() {
