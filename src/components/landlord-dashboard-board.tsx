@@ -73,6 +73,51 @@ function getUploadProgress(uploadedCount: number, requestedCount: number) {
   return Math.min(100, Math.round((uploadedCount / requestedCount) * 100));
 }
 
+function CaseRowContent({
+  check,
+  uploadProgress,
+  recommendation,
+  riskScore,
+}: {
+  check: DashboardCheck;
+  uploadProgress: number;
+  recommendation: "approve" | "conditional" | "decline" | null;
+  riskScore: number | null;
+}) {
+  return (
+    <>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-base font-semibold text-primary sm:text-sm sm:font-medium">{check.tenant_full_name}</span>
+          <CaseOriginBadge checkId={check.id} />
+        </div>
+        <p className="ops-case-card__meta mt-1 lg:hidden">
+          {formatDate(check.created_at)} · {formatCurrency(check.properties?.monthly_rent)}
+        </p>
+      </div>
+      <div className="min-w-0 text-sm text-secondary">
+        <p className="truncate font-semibold text-primary">{check.properties?.name ?? "—"}</p>
+        <p className="ops-case-card__meta truncate">
+          {check.properties?.city ?? "Greece"} · {formatCurrency(check.properties?.monthly_rent)}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
+        {recommendation ? (
+          <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
+        ) : null}
+      </div>
+      <div className="flex justify-start lg:justify-end">
+        <RiskChip score={riskScore} />
+      </div>
+      <div className="flex items-center justify-between gap-2 lg:justify-end">
+        <span className="text-base font-semibold tabular-nums text-primary sm:text-sm">{uploadProgress}%</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Open</span>
+      </div>
+    </>
+  );
+}
+
 export function LandlordDashboardBoard({
   checks,
   isFirstWorkspace = false,
@@ -138,15 +183,15 @@ export function LandlordDashboardBoard({
   }, [activeFilter, checks, searchQuery, sortBy]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 sm:space-y-2">
       <details className="workspace-disclosure group" id="new-screening" open={isFirstWorkspace || checks.length === 0}>
         <summary className="workspace-disclosure__summary">
-          <div>
-            <p className="text-xs font-semibold text-slate-950">New screening</p>
-            <p className="text-[10px] text-slate-500">Create case · issue upload link</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-primary">New screening</p>
+            <p className="text-xs text-muted">Create case · issue upload link</p>
           </div>
           <span className="workspace-disclosure__chevron">
-            <ChevronDown className="h-3.5 w-3.5" />
+            <ChevronDown className="h-4 w-4" />
           </span>
         </summary>
         <div className="workspace-disclosure__content">
@@ -154,14 +199,14 @@ export function LandlordDashboardBoard({
         </div>
       </details>
 
-      <section className="workspace-card space-y-2" id="tenant-cases">
-        <div className="flex flex-col gap-2 border-b border-slate-100 pb-2 sm:flex-row sm:items-center sm:justify-between">
+      <section className="workspace-card space-y-3 sm:space-y-2" id="tenant-cases">
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:pb-2">
           <div>
             <p className="section-label">Case registry</p>
-            <h2 className="text-sm font-semibold text-slate-950">Tenant screening file</h2>
+            <h2 className="text-base font-semibold text-primary sm:text-sm">Tenant screening file</h2>
           </div>
           {!isFirstWorkspace ? (
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {FILTERS.map((filter) => (
                 <button
                   className={cn("filter-chip", activeFilter === filter.id && "filter-chip--active")}
@@ -178,21 +223,21 @@ export function LandlordDashboardBoard({
 
         {!isFirstWorkspace ? (
           <>
-            <div className="flex flex-col gap-1.5 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <label className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
-                  className="input input--compact w-full pl-8"
+                  className="input input--compact w-full pl-10"
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search tenant or property"
                   type="search"
                   value={searchQuery}
                 />
               </label>
-              <label className="relative min-w-0 sm:w-40">
-                <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <label className="relative min-w-0 sm:w-44">
+                <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <select
-                  className="input input--compact w-full appearance-none pl-8"
+                  className="input input--compact w-full appearance-none pl-10"
                   onChange={(event) => setSortBy(event.target.value as SortId)}
                   value={sortBy}
                 >
@@ -205,7 +250,7 @@ export function LandlordDashboardBoard({
               </label>
             </div>
 
-            <p className="text-[10px] text-slate-500">
+            <p className="text-xs text-muted sm:text-[11px]">
               {filteredChecks.length} of {checks.length} cases
             </p>
           </>
@@ -228,7 +273,8 @@ export function LandlordDashboardBoard({
               <span className="text-right">Risk</span>
               <span className="text-right">Upload</span>
             </div>
-            <div>
+
+            <div className="space-y-2 lg:space-y-0">
               {filteredChecks.map((check) => {
                 const uploadedCount = check.tenant_documents.length;
                 const requestedCount = Math.max(check.requested_documents.length, 1);
@@ -238,40 +284,16 @@ export function LandlordDashboardBoard({
 
                 return (
                   <Link
-                    className="ops-table-row group block lg:grid"
+                    className="ops-case-card ops-table-row group"
                     href={`/dashboard/checks/${check.id}`}
                     key={check.id}
                   >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-1">
-                        <span className="truncate text-sm font-medium text-slate-950">{check.tenant_full_name}</span>
-                        <CaseOriginBadge checkId={check.id} />
-                      </div>
-                      <p className="text-[10px] text-slate-500 lg:hidden">
-                        {formatDate(check.created_at)} · {formatCurrency(check.properties?.monthly_rent)}
-                      </p>
-                    </div>
-                    <div className="min-w-0 text-xs text-slate-600">
-                      <p className="truncate font-medium text-slate-800">{check.properties?.name ?? "—"}</p>
-                      <p className="truncate text-[10px] text-slate-500">
-                        {check.properties?.city ?? "Greece"} · {formatCurrency(check.properties?.monthly_rent)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1">
-                      <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
-                      {recommendation ? (
-                        <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
-                      ) : null}
-                    </div>
-                    <div className="flex justify-start lg:justify-end">
-                      <RiskChip score={riskScore} />
-                    </div>
-                    <div className="flex items-center justify-between gap-2 lg:justify-end">
-                      <span className="text-sm font-semibold tabular-nums text-slate-900">{uploadProgress}%</span>
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400 group-hover:text-slate-700">
-                        Open
-                      </span>
-                    </div>
+                    <CaseRowContent
+                      check={check}
+                      recommendation={recommendation}
+                      riskScore={riskScore}
+                      uploadProgress={uploadProgress}
+                    />
                   </Link>
                 );
               })}

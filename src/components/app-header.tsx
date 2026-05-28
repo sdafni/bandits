@@ -28,7 +28,7 @@ export function AppHeader({
 
   return (
     <header className="border-b border-[#e2e8f0] bg-white/98 backdrop-blur">
-      <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:px-6">
+      <div className="page-shell space-y-4 py-4 sm:space-y-5 sm:py-5">
         <WorkspaceRibbon items={ribbonItems} statusLabel="Institutional trust layer" />
 
         <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -45,13 +45,13 @@ export function AppHeader({
               <SafeKeyBrand className="mt-1 shrink-0 sm:hidden" href={homeHref} variant="compact" />
               <SafeKeyBrand className="hidden shrink-0 sm:inline-flex" href={homeHref} priority variant="logo" />
               <div className="min-w-0 pl-0 sm:pl-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#5a6980]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary sm:tracking-[0.24em]">
                   Tenant Passport Greece
                 </p>
-                <h1 className="text-balance text-[1.7rem] font-semibold leading-tight text-slate-950 sm:text-2xl">
+                <h1 className="text-balance text-[1.45rem] font-semibold leading-tight text-primary sm:text-2xl">
                   {title}
                 </h1>
-                <p className="max-w-3xl text-sm leading-6 text-slate-600">{subtitle}</p>
+                <p className="max-w-3xl text-sm leading-6 text-secondary sm:text-base">{subtitle}</p>
               </div>
             </div>
           </div>

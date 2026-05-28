@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
 import { DashboardCommandCenter } from "@/components/dashboard-command-center";
 import { LandlordDashboardBoard } from "@/components/landlord-dashboard-board";
-import { getBillingPlanName, isEntitledSubscriptionStatus } from "@/lib/billing";
+import { getBillingPlanName } from "@/lib/billing";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import { mergeLandlordChecksWithDemo } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
@@ -36,10 +36,6 @@ export default async function DashboardPage() {
   const elevatedRisk = checks.filter((check) => check.ai_reports != null && check.ai_reports.score < 60).length;
   const readyForDecision = completedChecks.length;
 
-  const hasManagedSubscription = Boolean(
-    billingOverview.activeSubscription &&
-      isEntitledSubscriptionStatus(billingOverview.activeSubscription.status),
-  );
   const planLabel = getBillingPlanName(billingOverview.activeSubscription?.plan_key ?? null);
 
   return (
@@ -55,11 +51,10 @@ export default async function DashboardPage() {
         title="Operations"
       />
 
-      <div className="mx-auto max-w-[1400px] space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+      <div className="workspace-page">
         <DashboardCommandCenter
           checks={checks}
           isFirstWorkspace={isFirstWorkspace}
-          hasBillingPlan={hasManagedSubscription}
           planLabel={planLabel}
           stats={{
             active: checks.length,

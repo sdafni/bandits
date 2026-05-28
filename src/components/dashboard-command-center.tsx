@@ -65,13 +65,11 @@ export function DashboardCommandCenter({
   checks,
   isFirstWorkspace = false,
   planLabel,
-  hasBillingPlan,
   subscriptionStatus,
   stats,
 }: {
   isFirstWorkspace?: boolean;
   checks: CommandCheck[];
-  hasBillingPlan: boolean;
   planLabel: string;
   subscriptionStatus: string | null;
   stats: {
@@ -97,9 +95,9 @@ export function DashboardCommandCenter({
     <section className="command-shell">
       <div className="command-shell__bar">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Live workspace</p>
-          <h2 className="text-base font-semibold tracking-tight text-white sm:text-lg">Screening operations</h2>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300 sm:text-[11px]">Live workspace</p>
+          <h2 className="text-lg font-semibold tracking-tight text-white sm:text-lg">Screening operations</h2>
+          <p className="mt-0.5 text-sm text-slate-200 sm:text-xs">
             {isFirstWorkspace
               ? "Create your first case, share the upload link, and receive a trust report."
               : `${stats.active} active · ${actionCount} queued action${actionCount === 1 ? "" : "s"}${
@@ -107,7 +105,7 @@ export function DashboardCommandCenter({
                 }`}
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-1.5">
+        <div className="command-shell__actions shrink-0">
           <a className="workspace-cta workspace-cta--compact" href={isFirstWorkspace ? "#new-screening" : "#tenant-cases"}>
             <Plus className="h-3.5 w-3.5" />
             New screening
@@ -120,7 +118,7 @@ export function DashboardCommandCenter({
       </div>
 
       <div className="command-shell__body">
-        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="responsive-metrics">
           {[
             { hint: "Open cases", label: "Active portfolio", value: stats.active },
             {
@@ -161,10 +159,10 @@ export function DashboardCommandCenter({
           <QueuePanel cases={decisionQueue} emptyLabel="No reports ready for landlord decision." title="Decision ready" />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs">
-          <span className="text-slate-600">
+        <div className="flex flex-col items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:text-xs">
+          <span className="text-secondary">
             Billing ·{" "}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-primary">
               {planLabel}
               {subscriptionStatus ? ` (${subscriptionStatus.replaceAll("_", " ")})` : ""}
             </span>

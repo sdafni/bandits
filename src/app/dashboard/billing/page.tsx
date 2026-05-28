@@ -128,7 +128,7 @@ export default async function DashboardBillingPage({
         title="Billing"
       />
 
-      <div className="mx-auto max-w-7xl space-y-4 px-4 py-4 sm:px-6 sm:py-6">
+      <div className="workspace-page !max-w-7xl space-y-4">
         {statusMessages.length > 0 ? (
           <div className="space-y-2">
             {statusMessages.map((item) => (
@@ -165,7 +165,7 @@ export default async function DashboardBillingPage({
                   ? "Synced from Stripe. Manage payment methods and invoices in the billing portal."
                   : "Select a monthly plan below, or pay per screening from a tenant case."}
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="billing-metrics">
                 {[
                   {
                     label: "Status",
@@ -214,7 +214,7 @@ export default async function DashboardBillingPage({
             </p>
           </div>
 
-          <div className="grid items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="responsive-plan-grid items-stretch">
             {BILLING_PLANS.map((plan) => {
               const isCurrentPlan = currentPlanKey === plan.key;
               const isSelectedIntent = selectedPlanIntent === plan.key;

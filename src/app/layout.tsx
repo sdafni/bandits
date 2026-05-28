@@ -3,6 +3,12 @@ import { env } from "@/lib/env";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   applicationName: "SafeKey",
   authors: [{ name: "SafeKey" }],
@@ -69,7 +75,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning>{children}</body>
+      <body className="overflow-x-hidden antialiased" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

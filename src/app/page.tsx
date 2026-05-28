@@ -121,7 +121,7 @@ export default async function HomePage({
 
   return (
     <main className="min-h-screen">
-      <section className="mx-auto flex max-w-7xl flex-col gap-12 px-6 py-8 lg:gap-16 lg:py-12">
+      <section className="page-shell flex flex-col gap-10 py-7 sm:gap-12 sm:py-8 lg:gap-16 lg:py-12">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-4">
             <SafeKeyBrand priority variant="logo" />
@@ -154,10 +154,10 @@ export default async function HomePage({
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#8b6b17]">
                 Tenant Passport Greece
               </p>
-              <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl xl:text-7xl">
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl xl:text-7xl">
                 Know Who Gets the Key.
               </h1>
-              <p className="max-w-2xl text-xl font-medium leading-8 text-[#0f2343] sm:text-2xl">
+              <p className="max-w-2xl text-lg font-medium leading-8 text-[#0f2343] sm:text-2xl">
                 AI-powered tenant screening and rental protection infrastructure for the Greek rental market.
               </p>
               <p className="max-w-2xl text-base leading-8 text-slate-700 sm:text-lg">
