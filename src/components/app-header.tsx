@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { SignOutForm } from "@/components/sign-out-form";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { WorkspaceRibbon } from "@/components/workspace-ribbon";
 import type { AppLocale } from "@/lib/i18n";
@@ -67,7 +66,6 @@ export function AppHeader({
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end [&>*]:w-full sm:[&>*]:w-auto">
             <LanguageSwitcher locale={locale} />
             {actions}
-            <SignOutForm />
           </div>
         </div>
       </div>

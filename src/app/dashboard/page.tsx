@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
 import { DashboardCommandCenter } from "@/components/dashboard-command-center";
 import { LandlordDashboardBoard } from "@/components/landlord-dashboard-board";
+import { SignOutForm } from "@/components/sign-out-form";
 import { getBillingPlanLimits, getBillingPlanName } from "@/lib/billing";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import { mergeLandlordChecksWithDemo } from "@/lib/demo-data";
@@ -88,6 +89,20 @@ export default async function DashboardPage() {
         />
 
         <LandlordDashboardBoard checks={checks} isFirstWorkspace={isFirstWorkspace} />
+
+        <section className="workspace-card border-dashed">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                {isGreek ? "Ρυθμίσεις λογαριασμού" : "Account settings"}
+              </p>
+              <p className="text-sm text-slate-600">
+                {isGreek ? "Η αποσύνδεση βρίσκεται στο τέλος της ροής εργασίας." : "Sign out is available as a secondary action."}
+              </p>
+            </div>
+            <SignOutForm />
+          </div>
+        </section>
       </div>
     </main>
   );

@@ -22,6 +22,7 @@ import {
   isEntitledSubscriptionStatus,
 } from "@/lib/billing";
 import { BillingCheckoutSuccess } from "@/components/billing-checkout-success";
+import { SignOutForm } from "@/components/sign-out-form";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import { getStripeProductionReadiness } from "@/lib/env";
 import { cn, formatDate } from "@/lib/utils";
@@ -400,6 +401,20 @@ export default async function DashboardBillingPage({
                 title="No screening payments yet"
               />
             )}
+          </div>
+        </section>
+
+        <section className="workspace-card border-dashed">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                {isGreek ? "Ρυθμίσεις λογαριασμού" : "Account settings"}
+              </p>
+              <p className="text-sm text-slate-600">
+                {isGreek ? "Η αποσύνδεση παραμένει διαθέσιμη ως δευτερεύουσα ενέργεια." : "Sign out remains available as a secondary action."}
+              </p>
+            </div>
+            <SignOutForm />
           </div>
         </section>
       </div>
