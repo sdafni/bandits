@@ -121,14 +121,19 @@ function CaseRowContent({
 export function LandlordDashboardBoard({
   checks,
   isFirstWorkspace = false,
+  isGreek = false,
+  experience = "premium",
 }: {
   checks: DashboardCheck[];
   isFirstWorkspace?: boolean;
+  isGreek?: boolean;
+  experience?: "basic" | "pro" | "premium";
 }) {
   const [activeFilter, setActiveFilter] = useState<FilterId>("all");
   const [sortBy, setSortBy] = useState<SortId>("recent");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateFlowOpen, setIsCreateFlowOpen] = useState(false);
+  const isBasic = experience === "basic";
 
   const filteredChecks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -188,13 +193,17 @@ export function LandlordDashboardBoard({
       <section className="workspace-card" id="new-screening">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="section-label">Quick actions</p>
-            <h2 className="text-base font-semibold text-primary sm:text-sm">Open new case</h2>
-            <p className="text-xs text-muted">Launch guided screening wizard</p>
+            <p className="section-label">{isGreek ? "Γρήγορες ενέργειες" : "Quick actions"}</p>
+            <h2 className="text-base font-semibold text-primary sm:text-sm">
+              {isGreek ? "Άνοιγμα νέας υπόθεσης" : "Open new case"}
+            </h2>
+            <p className="text-xs text-muted">
+              {isGreek ? "Οδηγούμενη ροή ελέγχου ενοικιαστή" : "Launch guided screening wizard"}
+            </p>
           </div>
           <button className="workspace-cta w-full sm:w-auto" onClick={() => setIsCreateFlowOpen(true)} type="button">
             <Plus className="h-4 w-4" />
-            New screening
+            {isGreek ? "Νέος έλεγχος" : "New screening"}
           </button>
         </div>
       </section>
@@ -202,10 +211,12 @@ export function LandlordDashboardBoard({
       <section className="workspace-card space-y-3 sm:space-y-2" id="tenant-cases">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:pb-2">
           <div>
-            <p className="section-label">Case registry</p>
-            <h2 className="text-base font-semibold text-primary sm:text-sm">Tenant screening file</h2>
+            <p className="section-label">{isGreek ? "Υποθέσεις" : "Case registry"}</p>
+            <h2 className="text-base font-semibold text-primary sm:text-sm">
+              {isBasic ? (isGreek ? "Οι έλεγχοι σου" : "Your screenings") : isGreek ? "Αρχείο ελέγχων ενοικιαστή" : "Tenant screening file"}
+            </h2>
           </div>
-          {!isFirstWorkspace ? (
+          {!isFirstWorkspace && !isBasic ? (
             <div className="flex flex-wrap gap-2">
               {FILTERS.map((filter) => (
                 <button
@@ -221,7 +232,7 @@ export function LandlordDashboardBoard({
           ) : null}
         </div>
 
-        {!isFirstWorkspace ? (
+        {!isFirstWorkspace && !isBasic ? (
           <>
             <div className="flex flex-col gap-2 sm:flex-row">
               <label className="relative min-w-0 flex-1">
@@ -229,7 +240,7 @@ export function LandlordDashboardBoard({
                 <input
                   className="input input--compact w-full pl-10"
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search tenant or property"
+                  placeholder={isGreek ? "Αναζήτηση ενοικιαστή ή ακινήτου" : "Search tenant or property"}
                   type="search"
                   value={searchQuery}
                 />
@@ -260,8 +271,8 @@ export function LandlordDashboardBoard({
           <FirstScreeningOnboarding />
         ) : filteredChecks.length === 0 ? (
           <WorkspaceState
-            description="Adjust filters or search."
-            title="No matching cases"
+            description={isGreek ? "Προσάρμοσε φίλτρα ή αναζήτηση." : "Adjust filters or search."}
+            title={isGreek ? "Δεν βρέθηκαν υποθέσεις" : "No matching cases"}
             variant="filter"
           />
         ) : (
@@ -311,8 +322,10 @@ export function LandlordDashboardBoard({
           <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 shadow-xl sm:max-w-3xl sm:rounded-2xl sm:p-5">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
-                <p className="section-label">New screening</p>
-                <h3 className="text-base font-semibold text-primary">Guided tenant screening workflow</h3>
+                <p className="section-label">{isGreek ? "Νέος έλεγχος" : "New screening"}</p>
+                <h3 className="text-base font-semibold text-primary">
+                  {isGreek ? "Οδηγούμενη ροή ελέγχου ενοικιαστή" : "Guided tenant screening workflow"}
+                </h3>
               </div>
               <button
                 aria-label="Close new screening flow"

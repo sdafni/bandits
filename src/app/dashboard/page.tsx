@@ -16,10 +16,40 @@ export const metadata: Metadata = {
   description: "Manage SafeKey screening cases and launch Tenant Passport Greece checks.",
 };
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getWorkspaceExperience(
+  planKey: "basic" | "pro" | "premium" | null,
+  workspaceType: string | null,
+): "basic" | "pro" | "premium" {
+  if (workspaceType === "individual") {
+    return "basic";
+  }
+  if (workspaceType === "agency") {
+    return "pro";
+  }
+  if (workspaceType === "team") {
+    return "premium";
+  }
+
+  if (planKey === "premium") {
+    return "premium";
+  }
+  if (planKey === "pro") {
+    return "pro";
+  }
+  return "basic";
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const locale = await getRequestLocale();
   const isGreek = locale === "el";
   const { profile } = await requireLandlord();
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const workspaceTypeValue = resolvedSearchParams.workspace_type;
+  const workspaceType = typeof workspaceTypeValue === "string" ? workspaceTypeValue : null;
   const liveChecks = await getLandlordChecks();
   const checks = mergeLandlordChecksWithDemo(liveChecks);
   const isFirstWorkspace = liveChecks.length === 0;
@@ -40,8 +70,10 @@ export default async function DashboardPage() {
   const elevatedRisk = checks.filter((check) => check.ai_reports != null && check.ai_reports.score < 60).length;
   const readyForDecision = completedChecks.length;
 
-  const planLabel = getBillingPlanName(billingOverview.activeSubscription?.plan_key ?? null);
-  const limits = getBillingPlanLimits(billingOverview.activeSubscription?.plan_key ?? null);
+  const planKey = (billingOverview.activeSubscription?.plan_key as "basic" | "pro" | "premium" | null) ?? null;
+  const experience = getWorkspaceExperience(planKey, workspaceType);
+  const planLabel = getBillingPlanName(planKey);
+  const limits = getBillingPlanLimits(planKey);
   const monthStart = new Date();
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
@@ -58,7 +90,11 @@ export default async function DashboardPage() {
         homeHref="/dashboard"
         locale={locale}
         subtitle={
-          isFirstWorkspace
+          experience === "basic"
+            ? isGreek
+              ? "Απλή, ασφαλής διαχείριση ελέγχων για ιδιοκτήτες"
+              : "Simple, secure screening workflow for independent landlords"
+            : isFirstWorkspace
             ? isGreek
               ? "Στήσε τον πρώτο έλεγχο ενοικιαστή"
               : "Set up your first tenant screening"
@@ -66,12 +102,13 @@ export default async function DashboardPage() {
               ? `${liveChecks.length} ενεργές υποθέσεις · ${pendingReview.length} σε αναμονή αξιολόγησης`
               : `${liveChecks.length} active cases · ${pendingReview.length} in review queue`
         }
-        title={isGreek ? "Λειτουργίες" : "Operations"}
+        title={experience === "basic" ? (isGreek ? "Ο χώρος μου" : "My workspace") : isGreek ? "Λειτουργίες" : "Operations"}
       />
 
       <div className="workspace-page">
         <DashboardCommandCenter
           checks={checks}
+          experience={experience}
           isFirstWorkspace={isFirstWorkspace}
           isGreek={isGreek}
           planLabel={planLabel}
@@ -88,7 +125,7 @@ export default async function DashboardPage() {
           subscriptionStatus={billingOverview.activeSubscription?.status ?? null}
         />
 
-        <LandlordDashboardBoard checks={checks} isFirstWorkspace={isFirstWorkspace} />
+        <LandlordDashboardBoard checks={checks} experience={experience} isFirstWorkspace={isFirstWorkspace} isGreek={isGreek} />
 
         <section className="workspace-card border-dashed">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
