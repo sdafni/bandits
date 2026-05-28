@@ -75,6 +75,11 @@ export function buildTrustWorkflowReport(params: {
   riskFlags?: string[] | null;
   recommendation?: "approve" | "conditional" | "decline" | null;
   score?: number | null;
+  caseId?: string;
+  caseCreatedAt?: string | null;
+  consent?: { granted: boolean; recordedAt?: string | null } | null;
+  documentHistory?: Array<{ documentType: string; uploadedAt: string; fileName?: string | null }>;
+  reviewCompletedAt?: string | null;
 }) {
   const uploadedSet = new Set(params.uploadedDocuments);
   const missingDocuments = params.requestedDocuments.filter((value) => !uploadedSet.has(value));
@@ -202,8 +207,57 @@ export function buildTrustWorkflowReport(params: {
       ? "Additional income verification recommended"
       : null,
   ].filter((item): item is string => Boolean(item));
+  const generatedAt = new Date().toISOString();
+  const auditTrail = [
+    {
+      event: "case_created",
+      timestamp: params.caseCreatedAt ?? generatedAt,
+    },
+    ...(params.consent
+      ? [
+          {
+            event: params.consent.granted ? "consent_recorded" : "consent_missing",
+            timestamp: params.consent.recordedAt ?? generatedAt,
+          },
+        ]
+      : []),
+    ...(params.documentHistory ?? []).map((item) => ({
+      event: "document_uploaded",
+      timestamp: item.uploadedAt,
+      documentType: item.documentType,
+      fileName: item.fileName ?? null,
+    })),
+    ...(params.reviewCompletedAt
+      ? [
+          {
+            event: "trust_report_completed",
+            timestamp: params.reviewCompletedAt,
+          },
+        ]
+      : []),
+  ];
+  const underwritingReadiness = {
+    caseId: params.caseId ?? "unknown",
+    generatedAt,
+    reportVersion: "v1.0",
+    consentRecord: {
+      granted: params.consent?.granted ?? false,
+      recordedAt: params.consent?.recordedAt ?? null,
+    },
+    confidence: {
+      level: confidenceLevel,
+      score: confidenceScore,
+      recommendation,
+    },
+    documentHistory: params.documentHistory ?? [],
+    riskIndicators: rentalRiskIndicators,
+    missingItems: missingDocuments.map(getDocumentLabel),
+    protectionSuggestions,
+    auditTrail,
+  };
 
   return {
+    auditTrail,
     confidenceScore,
     identityReceived: byCategory("identity").filter((value) => uploadedSet.has(value)),
     incomeReceived: byCategory("income").filter((value) => uploadedSet.has(value)),
@@ -224,6 +278,7 @@ export function buildTrustWorkflowReport(params: {
     rentalHistoryReceived: byCategory("rental_history").filter((value) => uploadedSet.has(value)),
     recommendation,
     riskFlags: params.riskFlags ?? [],
+    underwritingReadiness,
     analystNotes:
       params.analystNotes?.trim() ||
       "No analyst note was added yet. Continue collecting missing documents for a final decision.",

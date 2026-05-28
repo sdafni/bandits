@@ -29,8 +29,22 @@ export default async function TrustReportExportPage({
         : detail.ai_reports?.reasoning
           ? JSON.stringify(detail.ai_reports.reasoning)
           : null,
+    caseCreatedAt: detail.created_at,
+    caseId: detail.id,
+    consent: detail.tenant_public_profiles
+      ? {
+          granted: Boolean(detail.tenant_public_profiles.consent_confirmed),
+          recordedAt: detail.tenant_public_profiles.updated_at,
+        }
+      : null,
+    documentHistory: detail.tenant_documents.map((item) => ({
+      documentType: item.document_type,
+      fileName: item.file_name,
+      uploadedAt: item.created_at,
+    })),
     recommendation: detail.ai_reports?.recommendation ?? null,
     requestedDocuments: detail.requested_documents,
+    reviewCompletedAt: detail.review_completed_at,
     riskFlags: detail.ai_reports?.red_flags ?? [],
     score: detail.ai_reports?.score ?? null,
     uploadedDocuments: detail.tenant_documents.map((item) => item.document_type),

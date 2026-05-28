@@ -72,6 +72,15 @@ export function SafeKeyTrustReport({
         values={report.protectionSuggestions.length > 0 ? report.protectionSuggestions : ["No additional protection suggestion required."]}
       />
 
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Trust compliance snapshot</p>
+        <p className="mt-2 text-sm text-slate-700">
+          Consent: {report.underwritingReadiness.consentRecord.granted ? "Recorded" : "Pending"} ·
+          Audit events: {report.auditTrail.length} ·
+          Document history entries: {report.underwritingReadiness.documentHistory.length}
+        </p>
+      </div>
+
       <p className="text-xs text-slate-500">Generated at {generatedAt}</p>
     </section>
   );
