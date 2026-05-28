@@ -44,6 +44,8 @@ import { createClient } from "@/lib/supabase/server";
 export type ActionState = {
   error?: string;
   success?: string;
+  email?: string;
+  kind?: "signup_success";
 };
 
 type AdminCheckDetail = TenantCheckDetail;
@@ -202,6 +204,8 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
 
     return {
       success: getPostSignupMessage(signInResult.error.message),
+      email,
+      kind: "signup_success",
     };
   } catch (error) {
     if (isRedirectError(error)) {
@@ -209,6 +213,48 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
     }
     const normalizedError = formatAuthActionError(error, "sign up");
     return { error: normalizedError.userMessage };
+  }
+}
+
+export async function resendConfirmationEmailAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    if (!email) {
+      return { error: "Please provide an email address." };
+    }
+
+    const envIssue = getSupabaseBrowserEnvIssue();
+    if (envIssue) {
+      return { error: envIssue };
+    }
+
+    const supabase = await createClient();
+    const callbackUrl = new URL("/auth/callback", env.appUrl);
+    callbackUrl.searchParams.set("next", "/dashboard");
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: callbackUrl.toString(),
+      },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return {
+      success: "Confirmation email sent. Please check your inbox.",
+      email,
+      kind: "signup_success",
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not resend confirmation email.",
+    };
   }
 }
 
@@ -986,10 +1032,10 @@ function getPostSignupMessage(signInMessage: string) {
   const normalized = signInMessage.toLowerCase();
 
   if (normalized.includes("email not confirmed")) {
-    return "Account created. Check your email to confirm your account, then sign in.";
+    return "Account created successfully. Please check your email to confirm your account, then sign in.";
   }
 
-  return "Account created successfully. Sign in to continue.";
+  return "Account created successfully. Please check your email to confirm your account, then sign in.";
 }
 
 async function syncProtectionArtifacts(

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Καλώς ήρθες στο SafeKey</title>
+    <style>
+      body { margin: 0; padding: 0; background: #f8fafc; color: #0f172a; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+      .container { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
+      .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px 24px; }
+      .logo { font-size: 20px; font-weight: 700; color: #0f2343; letter-spacing: 0.02em; }
+      h1 { margin: 20px 0 12px; font-size: 26px; line-height: 1.2; color: #0f172a; }
+      p { margin: 0 0 14px; line-height: 1.65; font-size: 15px; color: #334155; }
+      .cta { display: inline-block; margin: 14px 0 8px; background: #0f172a; color: #ffffff !important; text-decoration: none; font-weight: 700; border-radius: 12px; padding: 12px 18px; }
+      .muted { font-size: 13px; color: #475569; }
+      .footer { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #0b1220; color: #e2e8f0; }
+        .card { background: #111827; border-color: #334155; }
+        h1 { color: #f8fafc; }
+        p { color: #cbd5e1; }
+        .muted { color: #94a3b8; }
+        .footer { border-top-color: #334155; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <div class="logo">SafeKey</div>
+        <h1>Καλώς ήρθες στο SafeKey</h1>
+        <p>Σε ευχαριστούμε που δημιούργησες λογαριασμό στο SafeKey.</p>
+        <p>
+          Ο χώρος εργασίας σου δημιουργήθηκε επιτυχώς και θα είναι έτοιμος για χρήση μόλις επιβεβαιώσεις το email σου.
+          Το SafeKey βοηθά ιδιοκτήτες και ομάδες ακινήτων να διαχειρίζονται με ασφάλεια τον έλεγχο ενοικιαστών,
+          τη συλλογή εγγράφων και τις αναφορές αξιοπιστίας.
+        </p>
+        <a class="cta" href="{{ .ConfirmationURL }}">Επιβεβαίωση λογαριασμού SafeKey</a>
+        <p class="muted">Αν δεν δημιούργησες εσύ αυτόν τον λογαριασμό, μπορείς να αγνοήσεις αυτό το email.</p>
+        <div class="footer">
+          <p class="muted">
+            SafeKey<br />
+            Know Who Gets the Key.<br />
+            support@getsafekey.app
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

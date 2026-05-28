@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
-import { signInAction, signUpAction, type ActionState } from "@/app/actions";
+import { resendConfirmationEmailAction, signInAction, signUpAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
 import { buildBillingPath, parseBillingPlanIntent } from "@/lib/billing-navigation";
@@ -25,7 +25,18 @@ export function AuthPanels() {
   const hasPlanIntent = Boolean(selectedPlan);
   const [signInState, signInFormAction] = useActionState(signInAction, initialState);
   const [signUpState, signUpFormAction] = useActionState(signUpAction, initialState);
+  const [resendState, resendFormAction] = useActionState(resendConfirmationEmailAction, initialState);
   const [activeTab, setActiveTab] = useState<"sign_in" | "sign_up">(hasPlanIntent ? "sign_up" : "sign_in");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+
+  const signUpCompleted = signUpState.kind === "signup_success";
+  const confirmationEmail = signUpState.email ?? signUpEmail;
+  const passwordsMatch = password === confirmPassword;
+  const passwordMismatchError = confirmPassword && !passwordsMatch ? "Passwords do not match." : null;
+
+  const signUpDisabled = useMemo(() => !password || !confirmPassword || !passwordsMatch, [password, confirmPassword, passwordsMatch]);
 
   return (
     <section className="card auth-card w-full max-w-[760px] space-y-6 border border-[#e5ebf3] bg-white/98 p-5 sm:space-y-7 sm:p-10">
@@ -121,6 +132,32 @@ export function AuthPanels() {
             </SubmitButton>
           </div>
         </form>
+      ) : signUpCompleted ? (
+        <div className="space-y-4 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm leading-7 text-emerald-900">
+          <p className="text-base font-semibold text-emerald-900">
+            Account created successfully.
+            <br />
+            Please check your email to confirm your account, then sign in.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              className="workspace-cta min-h-12 rounded-[18px] px-5 py-3"
+              onClick={() => setActiveTab("sign_in")}
+              type="button"
+            >
+              Go to sign in
+            </button>
+            {confirmationEmail ? (
+              <form action={resendFormAction} className="w-full sm:w-auto">
+                <input name="email" type="hidden" value={confirmationEmail} />
+                <SubmitButton className="w-full sm:w-auto" pendingLabel="Sending..." type="submit" variant="secondary">
+                  Resend confirmation email
+                </SubmitButton>
+              </form>
+            ) : null}
+          </div>
+          <FormStatusMessage state={resendState} />
+        </div>
       ) : (
         <form action={signUpFormAction} className="space-y-6">
           <input name="next" type="hidden" value={nextPath} />
@@ -139,18 +176,53 @@ export function AuthPanels() {
           <div className="space-y-4">
             <label className="space-y-2.5">
               <span className="text-sm font-medium text-[#42526b]">Email</span>
-              <input className="input" name="email" required type="email" />
+              <input
+                className="input"
+                name="email"
+                onChange={(event) => setSignUpEmail(event.target.value)}
+                required
+                type="email"
+              />
             </label>
 
             <label className="space-y-2.5">
               <span className="text-sm font-medium text-[#42526b]">{isGreek ? "Κωδικός" : "Password"}</span>
-              <input className="input" minLength={8} name="password" required type="password" />
+              <input
+                className="input"
+                minLength={8}
+                name="password"
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type="password"
+                value={password}
+              />
+            </label>
+            <label className="space-y-2.5">
+              <span className="text-sm font-medium text-[#42526b]">Confirm password</span>
+              <input
+                className="input"
+                minLength={8}
+                name="confirm_password"
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+                type="password"
+                value={confirmPassword}
+              />
             </label>
           </div>
 
           <div className="space-y-4 pt-1">
+            {passwordMismatchError ? (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+                {passwordMismatchError}
+              </p>
+            ) : null}
             <FormStatusMessage state={signUpState} />
-            <SubmitButton className="w-full" pendingLabel={isGreek ? "Δημιουργία λογαριασμού..." : "Creating account..."}>
+            <SubmitButton
+              className="w-full"
+              disabled={signUpDisabled}
+              pendingLabel={isGreek ? "Δημιουργία λογαριασμού..." : "Creating account..."}
+            >
               {isGreek ? "Δημιουργία λογαριασμού" : "Create account"}
             </SubmitButton>
           </div>
