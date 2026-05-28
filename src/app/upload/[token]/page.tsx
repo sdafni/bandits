@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { Badge } from "@/components/badge";
 import { TenantUploadForm } from "@/components/tenant-upload-form";
+import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
 import { isDemoUploadToken } from "@/lib/demo-data";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { WorkspaceRibbon } from "@/components/workspace-ribbon";
@@ -76,10 +77,8 @@ export default async function TenantUploadPage({
             <Link className="workspace-cta-secondary" href="/#support">
               Contact landlord
             </Link>
-            <Link className="workspace-cta-secondary" href="/">
-              Return home
-            </Link>
           </div>
+          <RecoveryNavigationActions />
         </section>
       </main>
     );

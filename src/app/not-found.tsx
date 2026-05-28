@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
 
 export default function NotFound() {
   return (
@@ -9,14 +9,7 @@ export default function NotFound() {
         <p className="text-sm leading-7 text-slate-600">
           The link may be outdated or moved. Your data remains safe and you can continue from a known page.
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Link className="workspace-cta" href="/login?reason=session_expired">
-            Continue to sign in
-          </Link>
-          <Link className="workspace-cta-secondary" href="/dashboard">
-            Return to dashboard
-          </Link>
-        </div>
+        <RecoveryNavigationActions />
       </div>
     </main>
   );

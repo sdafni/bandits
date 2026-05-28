@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { AiScreeningReport } from "@/components/ai-screening-report";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
+import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
 import { ScreeningCheckoutForm } from "@/components/screening-checkout-form";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { CaseOriginBadge } from "@/components/case-origin-badge";
@@ -51,17 +52,7 @@ export default async function LandlordCheckDetailPage({
             <p className="text-sm leading-7 text-slate-600">
               For security reasons, your SafeKey session expired after inactivity. Your data is safe. Please continue below.
             </p>
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <Link className="workspace-cta" href="/login?reason=session_expired">
-                Continue to sign in
-              </Link>
-              <Link className="workspace-cta-secondary" href="/dashboard">
-                Return to dashboard
-              </Link>
-              <Link className="workspace-cta-secondary" href="/dashboard#new-screening">
-                Resume screening
-              </Link>
-            </div>
+            <RecoveryNavigationActions showResume />
           </section>
         </div>
       </main>
