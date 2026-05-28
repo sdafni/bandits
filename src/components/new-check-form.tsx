@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { createTenantCheckAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -16,78 +16,240 @@ const REQUESTED_DOCUMENT_OPTIONS = [
   { value: "tax_return", label: "Tax return" },
 ];
 
-export function NewCheckForm() {
+const STEPS = [
+  { id: 1, title: "Property details" },
+  { id: 2, title: "Tenant details" },
+  { id: 3, title: "Documents requested" },
+  { id: 4, title: "Review and create" },
+] as const;
+
+type NewCheckFormProps = {
+  onCancel?: () => void;
+};
+
+export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
   const [state, action] = useActionState(createTenantCheckAction, initialState);
+  const [step, setStep] = useState(1);
+  const [propertyName, setPropertyName] = useState("");
+  const [monthlyRent, setMonthlyRent] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [city, setCity] = useState("Athens");
+  const [postalCode, setPostalCode] = useState("");
+  const [tenantFullName, setTenantFullName] = useState("");
+  const [tenantEmail, setTenantEmail] = useState("");
+  const [tenantPhone, setTenantPhone] = useState("");
+  const [requestedDocuments, setRequestedDocuments] = useState<string[]>(
+    REQUESTED_DOCUMENT_OPTIONS.slice(0, 4).map((option) => option.value),
+  );
+
+  const stepTitle = STEPS.find((item) => item.id === step)?.title ?? STEPS[0].title;
+  const progressWidth = `${Math.round((step / STEPS.length) * 100)}%`;
+  const canContinueStepOne = propertyName.trim().length >= 2 && addressLine1.trim().length >= 6 && city.trim().length >= 2 && Number(monthlyRent) > 0;
+  const canContinueStepTwo = tenantFullName.trim().length >= 2;
+  const canContinueStepThree = requestedDocuments.length > 0;
+
+  const selectedDocumentLabels = useMemo(
+    () =>
+      REQUESTED_DOCUMENT_OPTIONS.filter((option) => requestedDocuments.includes(option.value)).map((option) => option.label),
+    [requestedDocuments],
+  );
+
+  const canContinue = step === 1 ? canContinueStepOne : step === 2 ? canContinueStepTwo : step === 3 ? canContinueStepThree : true;
+
+  function toggleRequestedDocument(value: string) {
+    setRequestedDocuments((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+    );
+  }
 
   return (
-    <form action={action} className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-2">
-          <span className="form-label">Property name</span>
-          <input className="input" name="property_name" placeholder="Kolonaki Apartment 3B" required />
-        </label>
-        <label className="space-y-2">
-          <span className="form-label">Monthly rent (EUR)</span>
-          <input className="input" min="1" name="monthly_rent" required type="number" />
-        </label>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
-        <label className="space-y-2">
-          <span className="form-label">Property address</span>
-          <input className="input" name="address_line1" placeholder="12 Leof. Kifisias" required />
-        </label>
-        <label className="space-y-2">
-          <span className="form-label">City</span>
-          <input className="input" defaultValue="Athens" name="city" required />
-        </label>
-        <label className="space-y-2">
-          <span className="form-label">Postal code</span>
-          <input className="input" name="postal_code" placeholder="11526" />
-        </label>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-2">
-          <span className="form-label">Applicant full name</span>
-          <input className="input" name="tenant_full_name" placeholder="Maria Papadopoulou" required />
-        </label>
-        <label className="space-y-2">
-          <span className="form-label">Applicant email</span>
-          <input className="input" name="tenant_email" placeholder="maria@example.com" type="email" />
-        </label>
-      </div>
-
-      <label className="space-y-2">
-        <span className="form-label">Applicant phone</span>
-        <input className="input" name="tenant_phone" placeholder="+30 69..." />
-      </label>
-
-      <fieldset className="space-y-3">
-        <legend className="form-label">Requested screening documents</legend>
-        <div className="grid gap-3 md:grid-cols-2">
-          {REQUESTED_DOCUMENT_OPTIONS.map((option, index) => (
-            <label
-              className="selection-chip"
-              key={option.value}
-            >
-              <input
-                defaultChecked={index < 4}
-                name="requested_documents"
-                type="checkbox"
-                value={option.value}
-              />
-              {option.label}
-            </label>
-          ))}
+    <form action={action} className="space-y-5">
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Step {step} of 4</p>
+        <p className="text-sm font-semibold text-primary">{stepTitle}</p>
+        <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+          <div className="h-full rounded-full bg-slate-900 transition-all duration-300" style={{ width: progressWidth }} />
         </div>
-      </fieldset>
+      </div>
+
+      {step === 1 ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="form-label">Property name</span>
+              <input
+                className="input"
+                name="property_name"
+                onChange={(event) => setPropertyName(event.target.value)}
+                placeholder="Kolonaki Apartment 3B"
+                required
+                value={propertyName}
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="form-label">Monthly rent (EUR)</span>
+              <input
+                className="input"
+                min="1"
+                name="monthly_rent"
+                onChange={(event) => setMonthlyRent(event.target.value)}
+                required
+                type="number"
+                value={monthlyRent}
+              />
+            </label>
+          </div>
+          <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
+            <label className="space-y-2">
+              <span className="form-label">Property address</span>
+              <input
+                className="input"
+                name="address_line1"
+                onChange={(event) => setAddressLine1(event.target.value)}
+                placeholder="12 Leof. Kifisias"
+                required
+                value={addressLine1}
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="form-label">City</span>
+              <input className="input" name="city" onChange={(event) => setCity(event.target.value)} required value={city} />
+            </label>
+            <label className="space-y-2">
+              <span className="form-label">Postal code</span>
+              <input
+                className="input"
+                name="postal_code"
+                onChange={(event) => setPostalCode(event.target.value)}
+                placeholder="11526"
+                value={postalCode}
+              />
+            </label>
+          </div>
+        </div>
+      ) : null}
+
+      {step === 2 ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="form-label">Applicant full name</span>
+              <input
+                className="input"
+                name="tenant_full_name"
+                onChange={(event) => setTenantFullName(event.target.value)}
+                placeholder="Maria Papadopoulou"
+                required
+                value={tenantFullName}
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="form-label">Applicant email</span>
+              <input
+                className="input"
+                name="tenant_email"
+                onChange={(event) => setTenantEmail(event.target.value)}
+                placeholder="maria@example.com"
+                type="email"
+                value={tenantEmail}
+              />
+            </label>
+          </div>
+          <label className="space-y-2">
+            <span className="form-label">Applicant phone</span>
+            <input
+              className="input"
+              name="tenant_phone"
+              onChange={(event) => setTenantPhone(event.target.value)}
+              placeholder="+30 69..."
+              value={tenantPhone}
+            />
+          </label>
+        </div>
+      ) : null}
+
+      {step === 3 ? (
+        <fieldset className="space-y-3">
+          <legend className="form-label">Requested screening documents</legend>
+          <div className="grid gap-3 md:grid-cols-2">
+            {REQUESTED_DOCUMENT_OPTIONS.map((option) => (
+              <label className="selection-chip" key={option.value}>
+                <input
+                  checked={requestedDocuments.includes(option.value)}
+                  name="requested_documents"
+                  onChange={() => toggleRequestedDocument(option.value)}
+                  type="checkbox"
+                  value={option.value}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+
+      {step === 4 ? (
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm font-semibold text-primary">Review and create secure upload link</p>
+          <ul className="space-y-1.5 text-sm text-secondary">
+            <li>
+              <span className="font-semibold text-primary">Property:</span> {propertyName || "—"} · {city || "—"}
+            </li>
+            <li>
+              <span className="font-semibold text-primary">Address:</span> {addressLine1 || "—"} {postalCode ? `(${postalCode})` : ""}
+            </li>
+            <li>
+              <span className="font-semibold text-primary">Monthly rent:</span> {monthlyRent ? `€${monthlyRent}` : "—"}
+            </li>
+            <li>
+              <span className="font-semibold text-primary">Tenant:</span> {tenantFullName || "—"}
+              {tenantEmail ? ` · ${tenantEmail}` : ""}
+              {tenantPhone ? ` · ${tenantPhone}` : ""}
+            </li>
+            <li>
+              <span className="font-semibold text-primary">Documents:</span>{" "}
+              {selectedDocumentLabels.length > 0 ? selectedDocumentLabels.join(", ") : "—"}
+            </li>
+          </ul>
+          <p className="text-xs text-muted">A secure upload link is generated and can be shared with the tenant immediately.</p>
+        </div>
+      ) : null}
 
       <FormStatusMessage state={state} />
 
-      <SubmitButton pendingLabel="Creating check..." variant="workspace">
-        Create SafeKey check
-      </SubmitButton>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+        <div className="flex gap-2">
+          {onCancel ? (
+            <button className="workspace-cta-secondary workspace-cta-secondary--compact" onClick={onCancel} type="button">
+              Cancel
+            </button>
+          ) : null}
+          {step > 1 ? (
+            <button
+              className="workspace-cta-secondary workspace-cta-secondary--compact"
+              onClick={() => setStep((current) => Math.max(1, current - 1))}
+              type="button"
+            >
+              Back
+            </button>
+          ) : null}
+        </div>
+
+        {step < 4 ? (
+          <button
+            className="workspace-cta workspace-cta--compact"
+            disabled={!canContinue}
+            onClick={() => setStep((current) => Math.min(4, current + 1))}
+            type="button"
+          >
+            Continue
+          </button>
+        ) : (
+          <SubmitButton pendingLabel="Creating check..." variant="workspace">
+            Create SafeKey check
+          </SubmitButton>
+        )}
+      </div>
     </form>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowUpDown, ChevronDown, Search } from "lucide-react";
+import { ArrowUpDown, Plus, Search, X } from "lucide-react";
 import { Badge } from "@/components/badge";
 import { NewCheckForm } from "@/components/new-check-form";
 import { RiskChip } from "@/components/risk-chip";
@@ -128,6 +128,7 @@ export function LandlordDashboardBoard({
   const [activeFilter, setActiveFilter] = useState<FilterId>("all");
   const [sortBy, setSortBy] = useState<SortId>("recent");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateFlowOpen, setIsCreateFlowOpen] = useState(false);
 
   const filteredChecks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -184,20 +185,19 @@ export function LandlordDashboardBoard({
 
   return (
     <div className="space-y-3 sm:space-y-2">
-      <details className="workspace-disclosure group" id="new-screening" open={isFirstWorkspace || checks.length === 0}>
-        <summary className="workspace-disclosure__summary">
+      <section className="workspace-card" id="new-screening">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-primary">New screening</p>
-            <p className="text-xs text-muted">Create case · issue upload link</p>
+            <p className="section-label">Quick actions</p>
+            <h2 className="text-base font-semibold text-primary sm:text-sm">Open new case</h2>
+            <p className="text-xs text-muted">Launch guided screening wizard</p>
           </div>
-          <span className="workspace-disclosure__chevron">
-            <ChevronDown className="h-4 w-4" />
-          </span>
-        </summary>
-        <div className="workspace-disclosure__content">
-          <NewCheckForm />
+          <button className="workspace-cta w-full sm:w-auto" onClick={() => setIsCreateFlowOpen(true)} type="button">
+            <Plus className="h-4 w-4" />
+            New screening
+          </button>
         </div>
-      </details>
+      </section>
 
       <section className="workspace-card space-y-3 sm:space-y-2" id="tenant-cases">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:pb-2">
@@ -301,6 +301,32 @@ export function LandlordDashboardBoard({
           </div>
         )}
       </section>
+
+      {isCreateFlowOpen ? (
+        <div
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end bg-slate-950/50 p-0 sm:items-center sm:justify-center sm:p-6"
+          role="dialog"
+        >
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 shadow-xl sm:max-w-3xl sm:rounded-2xl sm:p-5">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="section-label">New screening</p>
+                <h3 className="text-base font-semibold text-primary">Guided tenant screening workflow</h3>
+              </div>
+              <button
+                aria-label="Close new screening flow"
+                className="workspace-cta-secondary workspace-cta-secondary--compact"
+                onClick={() => setIsCreateFlowOpen(false)}
+                type="button"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <NewCheckForm onCancel={() => setIsCreateFlowOpen(false)} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
