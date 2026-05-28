@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Badge } from "@/components/badge";
 import { TenantUploadForm } from "@/components/tenant-upload-form";
 import { isDemoUploadToken } from "@/lib/demo-data";
@@ -13,6 +12,7 @@ import { hasSupabaseServiceEnv } from "@/lib/env";
 import { getComplianceIndicators, getOperationalState, getVerificationChecklist } from "@/lib/operations";
 import { getPublicCheckByToken } from "@/lib/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hashToken } from "@/lib/security";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,33 @@ export default async function TenantUploadPage({
   const detail = await getPublicCheckByToken(token);
 
   if (!detail) {
-    notFound();
+    const linkStatus = await getUploadLinkStatus(token);
+    return (
+      <main className="flex min-h-screen items-center justify-center px-6 py-10">
+        <section className="card w-full max-w-xl space-y-4 text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Secure upload access</p>
+          <h1 className="text-3xl font-semibold text-slate-950">
+            {linkStatus === "expired" ? "This secure upload link has expired." : "This secure upload link is unavailable."}
+          </h1>
+          <p className="text-sm leading-7 text-slate-600">
+            {linkStatus === "expired"
+              ? "For security reasons, upload links expire automatically. Your data remains safe and your landlord can issue a new link."
+              : "The link is invalid, already used, or no longer available. Your data is safe."}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Link className="workspace-cta" href="/#support">
+              Request new link
+            </Link>
+            <Link className="workspace-cta-secondary" href="/#support">
+              Contact landlord
+            </Link>
+            <Link className="workspace-cta-secondary" href="/">
+              Return home
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const documents = isDemoToken
@@ -246,6 +272,26 @@ export default async function TenantUploadPage({
       </div>
     </main>
   );
+}
+
+async function getUploadLinkStatus(token: string): Promise<"expired" | "invalid"> {
+  if (!hasSupabaseServiceEnv() || isDemoUploadToken(token)) {
+    return "invalid";
+  }
+
+  const admin = createAdminClient();
+  const tokenHash = hashToken(token);
+  const { data } = await admin
+    .from("tenant_checks")
+    .select("upload_token_expires_at")
+    .eq("upload_token_hash", tokenHash)
+    .maybeSingle();
+
+  if (!data?.upload_token_expires_at) {
+    return "invalid";
+  }
+
+  return new Date(data.upload_token_expires_at).getTime() < Date.now() ? "expired" : "invalid";
 }
 
 async function createLiveSignedDocuments(

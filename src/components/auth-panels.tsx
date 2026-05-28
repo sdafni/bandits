@@ -18,6 +18,7 @@ export function AuthPanels() {
   const isGreek = locale === "el";
   const searchParams = useSearchParams();
   const selectedPlan = parseBillingPlanIntent(searchParams.get("plan"));
+  const authReason = searchParams.get("reason");
   const nextPath = sanitizeInternalPath(
     searchParams.get("next") ??
       (selectedPlan ? buildBillingPath(selectedPlan, { autoCheckout: selectedPlan !== "screening" }) : null),
@@ -100,6 +101,28 @@ export function AuthPanels() {
             {isGreek
               ? ". Μετά τη σύνδεση, το SafeKey θα σε μεταφέρει στη χρέωση και θα ξεκινήσει checkout όπου απαιτείται."
               : ". After authentication, SafeKey will take you to billing and start checkout when applicable."}
+          </div>
+        ) : null}
+
+        {authReason === "session_expired" ? (
+          <div className="rounded-[22px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-7 text-amber-900">
+            <p className="font-semibold">{isGreek ? "Η συνεδρία σου έληξε" : "Your session has expired"}</p>
+            <p>
+              {isGreek
+                ? "Για λόγους ασφαλείας, η συνεδρία SafeKey έληξε μετά από αδράνεια. Τα δεδομένα σου είναι ασφαλή."
+                : "For security reasons, your SafeKey session expired after inactivity. Your data is safe."}
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <button className="workspace-cta workspace-cta--compact" onClick={() => setActiveTab("sign_in")} type="button">
+                {isGreek ? "Συνέχεια με σύνδεση" : "Continue to sign in"}
+              </button>
+              <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href="/dashboard">
+                {isGreek ? "Επιστροφή στον πίνακα" : "Return to dashboard"}
+              </Link>
+              <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href="/dashboard#new-screening">
+                {isGreek ? "Συνέχιση ελέγχου" : "Resume screening"}
+              </Link>
+            </div>
           </div>
         ) : null}
       </div>

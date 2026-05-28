@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; plan?: string }>;
+  searchParams: Promise<{ next?: string; plan?: string; reason?: string }>;
 }) {
   const locale = await getRequestLocale();
   const isGreek = locale === "el";

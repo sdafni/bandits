@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { createTenantCheckAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -22,24 +22,56 @@ const STEPS = [
   { id: 3, title: "Documents requested" },
   { id: 4, title: "Review and create" },
 ] as const;
+const NEW_SCREENING_DRAFT_KEY = "safekey.new-screening.draft.v1";
+type ScreeningDraft = {
+  propertyName?: string;
+  monthlyRent?: string;
+  addressLine1?: string;
+  city?: string;
+  postalCode?: string;
+  tenantFullName?: string;
+  tenantEmail?: string;
+  tenantPhone?: string;
+  requestedDocuments?: string[];
+  step?: number;
+};
+
+function readDraft(): ScreeningDraft | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(NEW_SCREENING_DRAFT_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw) as ScreeningDraft;
+  } catch {
+    window.localStorage.removeItem(NEW_SCREENING_DRAFT_KEY);
+    return null;
+  }
+}
 
 type NewCheckFormProps = {
   onCancel?: () => void;
 };
 
 export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
+  const draft = readDraft();
   const [state, action] = useActionState(createTenantCheckAction, initialState);
-  const [step, setStep] = useState(1);
-  const [propertyName, setPropertyName] = useState("");
-  const [monthlyRent, setMonthlyRent] = useState("");
-  const [addressLine1, setAddressLine1] = useState("");
-  const [city, setCity] = useState("Athens");
-  const [postalCode, setPostalCode] = useState("");
-  const [tenantFullName, setTenantFullName] = useState("");
-  const [tenantEmail, setTenantEmail] = useState("");
-  const [tenantPhone, setTenantPhone] = useState("");
+  const [step, setStep] = useState(Math.max(1, Math.min(4, draft?.step ?? 1)));
+  const [propertyName, setPropertyName] = useState(draft?.propertyName ?? "");
+  const [monthlyRent, setMonthlyRent] = useState(draft?.monthlyRent ?? "");
+  const [addressLine1, setAddressLine1] = useState(draft?.addressLine1 ?? "");
+  const [city, setCity] = useState(draft?.city ?? "Athens");
+  const [postalCode, setPostalCode] = useState(draft?.postalCode ?? "");
+  const [tenantFullName, setTenantFullName] = useState(draft?.tenantFullName ?? "");
+  const [tenantEmail, setTenantEmail] = useState(draft?.tenantEmail ?? "");
+  const [tenantPhone, setTenantPhone] = useState(draft?.tenantPhone ?? "");
   const [requestedDocuments, setRequestedDocuments] = useState<string[]>(
-    REQUESTED_DOCUMENT_OPTIONS.slice(0, 4).map((option) => option.value),
+    draft?.requestedDocuments && draft.requestedDocuments.length > 0
+      ? draft.requestedDocuments
+      : REQUESTED_DOCUMENT_OPTIONS.slice(0, 4).map((option) => option.value),
   );
 
   const stepTitle = STEPS.find((item) => item.id === step)?.title ?? STEPS[0].title;
@@ -55,6 +87,33 @@ export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
   );
 
   const canContinue = step === 1 ? canContinueStepOne : step === 2 ? canContinueStepTwo : step === 3 ? canContinueStepThree : true;
+
+  useEffect(() => {
+    const draft = {
+      addressLine1,
+      city,
+      monthlyRent,
+      postalCode,
+      propertyName,
+      requestedDocuments,
+      step,
+      tenantEmail,
+      tenantFullName,
+      tenantPhone,
+    };
+    window.localStorage.setItem(NEW_SCREENING_DRAFT_KEY, JSON.stringify(draft));
+  }, [
+    addressLine1,
+    city,
+    monthlyRent,
+    postalCode,
+    propertyName,
+    requestedDocuments,
+    step,
+    tenantEmail,
+    tenantFullName,
+    tenantPhone,
+  ]);
 
   function toggleRequestedDocument(value: string) {
     setRequestedDocuments((current) =>

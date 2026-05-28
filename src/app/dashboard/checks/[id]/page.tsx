@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { AiScreeningReport } from "@/components/ai-screening-report";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
@@ -43,7 +42,30 @@ export default async function LandlordCheckDetailPage({
   const detail = await getLandlordCheckDetail(id);
 
   if (!detail) {
-    notFound();
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto max-w-2xl">
+          <section className="card space-y-4 text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Case access</p>
+            <h1 className="text-3xl font-semibold text-slate-950">Your session has expired</h1>
+            <p className="text-sm leading-7 text-slate-600">
+              For security reasons, your SafeKey session expired after inactivity. Your data is safe. Please continue below.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Link className="workspace-cta" href="/login?reason=session_expired">
+                Continue to sign in
+              </Link>
+              <Link className="workspace-cta-secondary" href="/dashboard">
+                Return to dashboard
+              </Link>
+              <Link className="workspace-cta-secondary" href="/dashboard#new-screening">
+                Resume screening
+              </Link>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   const supabase = await createClient();

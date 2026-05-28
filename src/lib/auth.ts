@@ -25,7 +25,7 @@ export async function requireAuthenticatedUser() {
   const context = await getCurrentUserContext();
 
   if (!context.user || !context.profile) {
-    redirect("/login");
+    redirect("/login?reason=session_expired");
   }
 
   return context;
