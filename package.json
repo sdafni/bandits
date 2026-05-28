@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "qa:verify": "node scripts/verify-production-ready.cjs",
     "qa:routes": "node scripts/production-qa-review.cjs",
-    "qa:auth": "node scripts/test-auth-flow.cjs"
+    "qa:auth": "node scripts/test-auth-flow.cjs",
+    "stripe:branding": "node scripts/sync-stripe-branding.cjs"
   },
   "keywords": [],
   "author": "",

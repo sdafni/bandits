@@ -16,8 +16,10 @@ import {
   SCREENING_PAYMENT_PRODUCT,
   formatStripeAmount,
   getBillingPlanName,
+  getSubscriptionStatusBadge,
   isEntitledSubscriptionStatus,
 } from "@/lib/billing";
+import { BillingCheckoutSuccess } from "@/components/billing-checkout-success";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import { getStripeProductionReadiness } from "@/lib/env";
 import { cn, formatDate } from "@/lib/utils";
@@ -78,8 +80,7 @@ export default async function DashboardBillingPage({
     statusMessages.push({
       key: "checkout-success",
       className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-      message:
-        "Billing updated successfully. Stripe is processing the latest checkout and SafeKey will reflect the final subscription state automatically.",
+      message: "Subscription activated successfully.",
     });
   } else if (checkoutState === "cancelled") {
     statusMessages.push({
@@ -139,6 +140,7 @@ export default async function DashboardBillingPage({
         ) : null}
 
         <Suspense fallback={null}>
+          <BillingCheckoutSuccess />
           {selectedPlanIntent && selectedPlanIntent !== "screening" ? (
             <BillingPlanAutoCheckout checkoutFormId={`checkout-form-${selectedPlanIntent}`} />
           ) : null}
@@ -155,7 +157,7 @@ export default async function DashboardBillingPage({
                   </h2>
                 </div>
                 <Badge tone={overview.activeSubscription ? "success" : "neutral"}>
-                  {overview.activeSubscription ? "Active" : "No plan"}
+                  {getSubscriptionStatusBadge(hasManagedSubscription)}
                 </Badge>
               </div>
               <p className="text-sm leading-6 text-slate-600">

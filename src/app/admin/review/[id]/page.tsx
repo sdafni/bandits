@@ -8,7 +8,8 @@ import { Badge } from "@/components/badge";
 import { GenerateReportForm } from "@/components/generate-report-form";
 import { ProtectionReviewForm } from "@/components/protection-review-form";
 import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
-import { isDemoCheckId } from "@/lib/demo-data";
+import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
+import { WORKSPACE_ACCESS_LABEL } from "@/lib/billing";
 import { requireAdmin } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
 import {
@@ -256,9 +257,9 @@ export default async function AdminReviewDetailPage({
               </div>
             </div>
 
-            {isDemoCase ? (
+            {getCaseOriginBadgeLabel(id) ? (
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-                Presentation case: this review record already includes a preloaded report and protection outcome.
+                Sample case: this review record includes a preloaded report and protection outcome for walkthroughs.
               </div>
             ) : !billingEligibility.hasBillingAccess ? (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
@@ -530,8 +531,8 @@ export default async function AdminReviewDetailPage({
                         Open file
                         <ExternalLink className="h-4 w-4" />
                       </Link>
-                    ) : isDemoCase ? (
-                      <Badge tone="info">Demo file state</Badge>
+                    ) : getCaseOriginBadgeLabel(id) ? (
+                      <Badge tone="info">Sample file state</Badge>
                     ) : null}
                   </div>
                   <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-7 text-slate-600">

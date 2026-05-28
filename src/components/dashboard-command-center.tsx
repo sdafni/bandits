@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CreditCard, Plus } from "lucide-react";
-import { isDemoCheckId } from "@/lib/demo-data";
+import { shouldIncludeDemoCasesInWorkspace } from "@/lib/demo-data";
 
 type CommandCheck = {
   id: string;
@@ -63,11 +63,13 @@ function QueuePanel({
 
 export function DashboardCommandCenter({
   checks,
+  isFirstWorkspace = false,
   planLabel,
   hasBillingPlan,
   subscriptionStatus,
   stats,
 }: {
+  isFirstWorkspace?: boolean;
   checks: CommandCheck[];
   hasBillingPlan: boolean;
   planLabel: string;
@@ -91,8 +93,6 @@ export function DashboardCommandCenter({
     .slice(0, 4);
 
   const actionCount = stats.pendingReview + stats.awaitingUpload;
-  const hasDemoCases = checks.some((check) => isDemoCheckId(check.id));
-
   return (
     <section className="command-shell">
       <div className="command-shell__bar">
@@ -100,12 +100,15 @@ export function DashboardCommandCenter({
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Live workspace</p>
           <h2 className="text-base font-semibold tracking-tight text-white sm:text-lg">Screening operations</h2>
           <p className="mt-0.5 text-xs text-slate-400">
-            {stats.active} active · {actionCount} queued action{actionCount === 1 ? "" : "s"}
-            {stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} elevated risk` : ""}
+            {isFirstWorkspace
+              ? "Create your first case, share the upload link, and receive a trust report."
+              : `${stats.active} active · ${actionCount} queued action${actionCount === 1 ? "" : "s"}${
+                  stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} elevated risk` : ""
+                }`}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
-          <a className="workspace-cta workspace-cta--compact" href="#tenant-cases">
+          <a className="workspace-cta workspace-cta--compact" href={isFirstWorkspace ? "#new-screening" : "#tenant-cases"}>
             <Plus className="h-3.5 w-3.5" />
             New screening
           </a>
@@ -162,7 +165,7 @@ export function DashboardCommandCenter({
           <span className="text-slate-600">
             Billing ·{" "}
             <span className="font-semibold text-slate-900">
-              {hasBillingPlan ? planLabel : "No subscription"}
+              {planLabel}
               {subscriptionStatus ? ` (${subscriptionStatus.replaceAll("_", " ")})` : ""}
             </span>
           </span>
@@ -171,11 +174,11 @@ export function DashboardCommandCenter({
           </Link>
         </div>
 
-        {hasDemoCases ? (
+        {shouldIncludeDemoCasesInWorkspace() ? (
           <p className="text-[10px] leading-4 text-slate-500">
-            Demo cases are mixed in for walkthroughs.{" "}
+            Sample cases are available for walkthroughs.{" "}
             <Link className="font-medium text-slate-700 hover:underline" href="/demo">
-              Investor mode →
+              Guided tour →
             </Link>
           </p>
         ) : null}

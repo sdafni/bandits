@@ -7,7 +7,8 @@ import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
 import { ScreeningCheckoutForm } from "@/components/screening-checkout-form";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
-import { isDemoCheckId } from "@/lib/demo-data";
+import { CaseOriginBadge } from "@/components/case-origin-badge";
+import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
 import {
@@ -179,10 +180,9 @@ export default async function LandlordCheckDetailPage({
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
               <p className="break-all text-sm text-slate-700">{detail.secure_upload_url ?? "No link generated"}</p>
             </div>
-                {isDemoCase ? (
+                {getCaseOriginBadgeLabel(id) ? (
                   <p className="text-xs leading-6 text-slate-500">
-                    Presentation case: this landlord report is preloaded with a stable upload route and screening
-                    outcome for walkthroughs.
+                    Sample case: preloaded upload route and screening outcome for walkthroughs only.
                   </p>
                 ) : null}
 
@@ -474,8 +474,8 @@ export default async function LandlordCheckDetailPage({
                           Open file
                           <ExternalLink className="h-4 w-4" />
                         </Link>
-                      ) : isDemoCase ? (
-                        <Badge tone="info">Demo file state</Badge>
+                      ) : getCaseOriginBadgeLabel(id) ? (
+                        <Badge tone="info">Sample file state</Badge>
                       ) : null}
                     </div>
                     <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-7 text-slate-600">

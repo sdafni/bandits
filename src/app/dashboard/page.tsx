@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
 import { DashboardCommandCenter } from "@/components/dashboard-command-center";
 import { LandlordDashboardBoard } from "@/components/landlord-dashboard-board";
-import { getBillingPlanName } from "@/lib/billing";
+import { getBillingPlanName, isEntitledSubscriptionStatus } from "@/lib/billing";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
 import { mergeLandlordChecksWithDemo } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
@@ -18,6 +18,7 @@ export default async function DashboardPage() {
   const { profile } = await requireLandlord();
   const liveChecks = await getLandlordChecks();
   const checks = mergeLandlordChecksWithDemo(liveChecks);
+  const isFirstWorkspace = liveChecks.length === 0;
   const billingOverview = await getBillingOverviewForUser(profile.id);
 
   const completedChecks = checks.filter((check) => check.status === "report_ready");
@@ -35,6 +36,10 @@ export default async function DashboardPage() {
   const elevatedRisk = checks.filter((check) => check.ai_reports != null && check.ai_reports.score < 60).length;
   const readyForDecision = completedChecks.length;
 
+  const hasManagedSubscription = Boolean(
+    billingOverview.activeSubscription &&
+      isEntitledSubscriptionStatus(billingOverview.activeSubscription.status),
+  );
   const planLabel = getBillingPlanName(billingOverview.activeSubscription?.plan_key ?? null);
 
   return (
@@ -42,14 +47,19 @@ export default async function DashboardPage() {
       <AppHeader
         activeNav="dashboard"
         homeHref="/dashboard"
-        subtitle={`${checks.length} active cases · ${pendingReview.length} in review queue`}
+        subtitle={
+          isFirstWorkspace
+            ? "Set up your first tenant screening"
+            : `${liveChecks.length} active cases · ${pendingReview.length} in review queue`
+        }
         title="Operations"
       />
 
       <div className="mx-auto max-w-[1400px] space-y-2 px-3 py-3 sm:px-4 sm:py-4">
         <DashboardCommandCenter
           checks={checks}
-          hasBillingPlan={Boolean(billingOverview.activeSubscription)}
+          isFirstWorkspace={isFirstWorkspace}
+          hasBillingPlan={hasManagedSubscription}
           planLabel={planLabel}
           stats={{
             active: checks.length,
@@ -63,7 +73,7 @@ export default async function DashboardPage() {
           subscriptionStatus={billingOverview.activeSubscription?.status ?? null}
         />
 
-        <LandlordDashboardBoard checks={checks} />
+        <LandlordDashboardBoard checks={checks} isFirstWorkspace={isFirstWorkspace} />
       </div>
     </main>
   );

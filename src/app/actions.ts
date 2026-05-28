@@ -470,7 +470,7 @@ export async function uploadDocumentsAction(
   formData: FormData,
 ): Promise<ActionState> {
   if (isDemoUploadToken(token)) {
-    return { error: "Demo upload links are read-only. Create a live case from the landlord dashboard." };
+    return { error: "Sample upload links are read-only. Create a live screening from your dashboard." };
   }
 
   const parsed = uploadProfileSchema.safeParse({

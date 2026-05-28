@@ -1,5 +1,6 @@
 import type { Database, InsuranceEligibilityStatus, TenantCheckStatus } from "@/lib/database.types";
 import { env } from "@/lib/env";
+import { isProductionDeployment } from "@/lib/production-mode";
 
 type TenantCheckListItem = Database["public"]["Tables"]["tenant_checks"]["Row"] & {
   properties: Database["public"]["Tables"]["properties"]["Row"] | null;
@@ -470,7 +471,30 @@ export function getDemoDashboardAnalytics(): DemoAnalytics {
   };
 }
 
+export function shouldIncludeDemoCasesInWorkspace() {
+  return !isProductionDeployment();
+}
+
+/** Badge label for curated sample rows (never "Demo" in the product UI). */
+export function getCaseOriginBadgeLabel(checkId: string) {
+  if (!isDemoCheckId(checkId)) {
+    return null;
+  }
+
+  if (isProductionDeployment()) {
+    return null;
+  }
+
+  return "Sample Case";
+}
+
 export function mergeLandlordChecksWithDemo(liveChecks: TenantCheckListItem[]) {
+  if (!shouldIncludeDemoCasesInWorkspace()) {
+    return [...liveChecks].sort(
+      (left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
+    );
+  }
+
   const liveIds = new Set(liveChecks.map((check) => check.id));
   const merged = [...liveChecks, ...getDemoLandlordChecks().filter((check) => !liveIds.has(check.id))];
 

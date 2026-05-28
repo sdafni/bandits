@@ -26,6 +26,8 @@ export const env = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   emailFrom: process.env.SAFEKEY_EMAIL_FROM ?? "SafeKey <onboarding@resend.dev>",
+  stripeMerchantDisplayName: process.env.STRIPE_MERCHANT_DISPLAY_NAME ?? "ABE Studio",
+  stripeStatementDescriptor: process.env.STRIPE_STATEMENT_DESCRIPTOR ?? "ABE STUDIO",
 };
 
 export function hasEmailDeliveryEnv() {

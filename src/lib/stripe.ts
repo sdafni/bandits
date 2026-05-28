@@ -2,6 +2,12 @@ import "server-only";
 
 import Stripe from "stripe";
 import { getBillingPlanPriceId, getScreeningPriceId, type BillingPlanKey } from "@/lib/billing";
+import {
+  getCheckoutBrandingSettings,
+  getCheckoutSessionMetadata,
+  STRIPE_MERCHANT_DISPLAY_NAME,
+  STRIPE_STATEMENT_DESCRIPTOR,
+} from "@/lib/stripe-branding";
 import type { Database } from "@/lib/database.types";
 import { assertStripeServerEnv, env } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -45,6 +51,8 @@ export async function getOrCreateStripeCustomer(user: Pick<UserRow, "company_nam
   const customer = await stripe.customers.create({
     email: user.email,
     metadata: {
+      merchant_display_name: STRIPE_MERCHANT_DISPLAY_NAME,
+      platform: "SafeKey",
       user_id: user.id,
     },
     name: user.company_name ?? user.full_name ?? user.email,
@@ -85,6 +93,7 @@ export async function createSubscriptionCheckoutSession({
   return stripe.checkout.sessions.create({
     allow_promotion_codes: true,
     billing_address_collection: "auto",
+    branding_settings: getCheckoutBrandingSettings(),
     cancel_url: buildAppUrl(`/dashboard/billing?checkout=cancelled&plan=${planKey}`),
     client_reference_id: userId,
     customer: customerId,
@@ -98,17 +107,18 @@ export async function createSubscriptionCheckoutSession({
         quantity: 1,
       },
     ],
-    metadata: {
+    metadata: getCheckoutSessionMetadata({
       billing_type: "subscription",
       plan_key: planKey,
       user_id: userId,
-    },
+    }),
     mode: "subscription",
     subscription_data: {
-      metadata: {
+      description: `${STRIPE_MERCHANT_DISPLAY_NAME} — SafeKey subscription`,
+      metadata: getCheckoutSessionMetadata({
         plan_key: planKey,
         user_id: userId,
-      },
+      }),
     },
     success_url: buildAppUrl("/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}"),
     tax_id_collection: {
@@ -131,11 +141,19 @@ export async function createScreeningCheckoutSession({
   return stripe.checkout.sessions.create({
     allow_promotion_codes: true,
     billing_address_collection: "auto",
+    branding_settings: getCheckoutBrandingSettings(),
     cancel_url: buildAppUrl(`/dashboard/checks/${checkId}?payment=cancelled`),
     client_reference_id: userId,
     customer: customerId,
+    customer_update: {
+      address: "auto",
+      name: "auto",
+    },
     invoice_creation: {
       enabled: true,
+      invoice_data: {
+        description: `${STRIPE_MERCHANT_DISPLAY_NAME} — SafeKey tenant screening`,
+      },
     },
     line_items: [
       {
@@ -143,12 +161,16 @@ export async function createScreeningCheckoutSession({
         quantity: 1,
       },
     ],
-    metadata: {
+    metadata: getCheckoutSessionMetadata({
       billing_type: "screening",
       tenant_check_id: checkId,
       user_id: userId,
-    },
+    }),
     mode: "payment",
+    payment_intent_data: {
+      description: `${STRIPE_MERCHANT_DISPLAY_NAME} — SafeKey screening`,
+      statement_descriptor: STRIPE_STATEMENT_DESCRIPTOR,
+    },
     success_url: buildAppUrl(`/dashboard/checks/${checkId}?payment=success&session_id={CHECKOUT_SESSION_ID}`),
   });
 }

@@ -73,7 +73,7 @@ export const SCREENING_PAYMENT_PRODUCT = {
   features: [
     "Purchase from any active tenant case",
     "Unlock report generation for that case",
-    "No subscription required",
+    "No monthly plan required",
   ],
   name: "Single screening",
   priceLabel: "Pay per screening",
@@ -91,12 +91,29 @@ export function getBillingPlan(key: BillingPlanKey) {
   return BILLING_PLANS.find((plan) => plan.key === key) ?? BILLING_PLANS[0];
 }
 
+export const WORKSPACE_ACCESS_LABEL = "Trial Workspace";
+
 export function getBillingPlanName(key: BillingPlanKey | null | undefined) {
   if (!key) {
-    return "No active plan";
+    return WORKSPACE_ACCESS_LABEL;
   }
 
   return getBillingPlan(key).name;
+}
+
+export function getWorkspaceBillingLabel(options: {
+  hasActiveSubscription: boolean;
+  planKey?: BillingPlanKey | null;
+}) {
+  if (options.hasActiveSubscription && options.planKey) {
+    return getBillingPlan(options.planKey).name;
+  }
+
+  return WORKSPACE_ACCESS_LABEL;
+}
+
+export function getSubscriptionStatusBadge(hasActiveSubscription: boolean) {
+  return hasActiveSubscription ? "Active" : "Starter access";
 }
 
 export function getBillingPlanPriceId(key: BillingPlanKey) {

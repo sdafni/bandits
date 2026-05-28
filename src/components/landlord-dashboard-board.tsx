@@ -7,7 +7,8 @@ import { Badge } from "@/components/badge";
 import { NewCheckForm } from "@/components/new-check-form";
 import { RiskChip } from "@/components/risk-chip";
 import { WorkspaceState } from "@/components/workspace-state";
-import { isDemoCheckId } from "@/lib/demo-data";
+import { CaseOriginBadge } from "@/components/case-origin-badge";
+import { FirstScreeningOnboarding } from "@/components/first-screening-onboarding";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 type DashboardCheck = {
@@ -72,7 +73,13 @@ function getUploadProgress(uploadedCount: number, requestedCount: number) {
   return Math.min(100, Math.round((uploadedCount / requestedCount) * 100));
 }
 
-export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] }) {
+export function LandlordDashboardBoard({
+  checks,
+  isFirstWorkspace = false,
+}: {
+  checks: DashboardCheck[];
+  isFirstWorkspace?: boolean;
+}) {
   const [activeFilter, setActiveFilter] = useState<FilterId>("all");
   const [sortBy, setSortBy] = useState<SortId>("recent");
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,7 +139,7 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
 
   return (
     <div className="space-y-2">
-      <details className="workspace-disclosure group" open={checks.length === 0}>
+      <details className="workspace-disclosure group" id="new-screening" open={isFirstWorkspace || checks.length === 0}>
         <summary className="workspace-disclosure__summary">
           <div>
             <p className="text-xs font-semibold text-slate-950">New screening</p>
@@ -153,59 +160,59 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
             <p className="section-label">Case registry</p>
             <h2 className="text-sm font-semibold text-slate-950">Tenant screening file</h2>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {FILTERS.map((filter) => (
-              <button
-                className={cn("filter-chip", activeFilter === filter.id && "filter-chip--active")}
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                type="button"
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5 sm:flex-row">
-          <label className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            <input
-              className="input input--compact w-full pl-8"
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search tenant or property"
-              type="search"
-              value={searchQuery}
-            />
-          </label>
-          <label className="relative min-w-0 sm:w-40">
-            <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            <select
-              className="input input--compact w-full appearance-none pl-8"
-              onChange={(event) => setSortBy(event.target.value as SortId)}
-              value={sortBy}
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
+          {!isFirstWorkspace ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {FILTERS.map((filter) => (
+                <button
+                  className={cn("filter-chip", activeFilter === filter.id && "filter-chip--active")}
+                  key={filter.id}
+                  onClick={() => setActiveFilter(filter.id)}
+                  type="button"
+                >
+                  {filter.label}
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          ) : null}
         </div>
 
-        <p className="text-[10px] text-slate-500">
-          {filteredChecks.length} of {checks.length} cases
-        </p>
+        {!isFirstWorkspace ? (
+          <>
+            <div className="flex flex-col gap-1.5 sm:flex-row">
+              <label className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  className="input input--compact w-full pl-8"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search tenant or property"
+                  type="search"
+                  value={searchQuery}
+                />
+              </label>
+              <label className="relative min-w-0 sm:w-40">
+                <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <select
+                  className="input input--compact w-full appearance-none pl-8"
+                  onChange={(event) => setSortBy(event.target.value as SortId)}
+                  value={sortBy}
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-        {checks.length === 0 ? (
-          <WorkspaceState
-            actionHref="#tenant-cases"
-            actionLabel="Create screening"
-            description="Open a tenant case to begin the screening workflow."
-            title="No cases in registry"
-            variant="empty"
-          />
+            <p className="text-[10px] text-slate-500">
+              {filteredChecks.length} of {checks.length} cases
+            </p>
+          </>
+        ) : null}
+
+        {isFirstWorkspace ? (
+          <FirstScreeningOnboarding />
         ) : filteredChecks.length === 0 ? (
           <WorkspaceState
             description="Adjust filters or search."
@@ -238,7 +245,7 @@ export function LandlordDashboardBoard({ checks }: { checks: DashboardCheck[] })
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1">
                         <span className="truncate text-sm font-medium text-slate-950">{check.tenant_full_name}</span>
-                        {isDemoCheckId(check.id) ? <Badge tone="neutral">Demo</Badge> : null}
+                        <CaseOriginBadge checkId={check.id} />
                       </div>
                       <p className="text-[10px] text-slate-500 lg:hidden">
                         {formatDate(check.created_at)} · {formatCurrency(check.properties?.monthly_rent)}
