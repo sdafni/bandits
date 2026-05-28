@@ -14,6 +14,11 @@ import { getComplianceIndicators, getOperationalState, getVerificationChecklist 
 import { getPublicCheckByToken } from "@/lib/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken } from "@/lib/security";
+import {
+  TRUST_DOCUMENT_CATEGORIES,
+  getDocumentDefinition,
+  getDocumentLabel,
+} from "@/lib/trust-workflows";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +96,12 @@ export default async function TenantUploadPage({
       }))
     : await createLiveSignedDocuments(detail.tenant_documents);
   const operationalState = getOperationalState(detail.status);
+  const uploadedDocumentTypes = new Set(documents.map((item) => item.document_type));
+  const missingDocumentTypes = detail.requested_documents.filter((item) => !uploadedDocumentTypes.has(item));
+  const uploadProgressPercent =
+    detail.requested_documents.length === 0
+      ? 0
+      : Math.round(((detail.requested_documents.length - missingDocumentTypes.length) / detail.requested_documents.length) * 100);
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10 lg:py-16">
@@ -144,10 +155,33 @@ export default async function TenantUploadPage({
 
             <div className="space-y-3">
               <p className="text-sm font-medium text-slate-700">Requested documents</p>
-              <div className="flex flex-wrap gap-2">
-                {detail.requested_documents.map((item) => (
-                  <Badge key={item}>{item.replaceAll("_", " ")}</Badge>
-                ))}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Upload progress {uploadProgressPercent}% · Missing {missingDocumentTypes.length}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(Object.keys(TRUST_DOCUMENT_CATEGORIES) as Array<keyof typeof TRUST_DOCUMENT_CATEGORIES>).map((category) => {
+                  const items = detail.requested_documents.filter(
+                    (value) => getDocumentDefinition(value)?.category === category,
+                  );
+                  if (items.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3" key={category}>
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        {TRUST_DOCUMENT_CATEGORIES[category].label}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {items.map((item) => (
+                          <Badge key={item} tone={uploadedDocumentTypes.has(item) ? "success" : "warning"}>
+                            {getDocumentLabel(item)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

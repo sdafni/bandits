@@ -18,6 +18,7 @@ import {
   formatEligibilityStatus,
   getEligibilityTone,
 } from "@/lib/protection";
+import { buildTrustWorkflowReport, getDocumentLabel, getWorkflowStatusLabel } from "@/lib/trust-workflows";
 import { getLandlordCheckDetail, getProtectionSnapshot } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -152,6 +153,23 @@ export default async function LandlordCheckDetailPage({
           "pending_more_documents",
       }
     : null;
+  const trustReport = buildTrustWorkflowReport({
+    analystNotes:
+      typeof detail.ai_reports?.reasoning === "string"
+        ? detail.ai_reports.reasoning
+        : detail.ai_reports?.reasoning
+          ? JSON.stringify(detail.ai_reports.reasoning)
+          : null,
+    recommendation: detail.ai_reports?.recommendation ?? null,
+    requestedDocuments: detail.requested_documents,
+    riskFlags: detail.ai_reports?.red_flags ?? [],
+    score: detail.ai_reports?.score ?? null,
+    uploadedDocuments: detail.tenant_documents.map((item) => item.document_type),
+  });
+  const workflowStatus = getWorkflowStatusLabel({
+    status: detail.status,
+    uploadTokenExpiresAt: detail.upload_token_expires_at,
+  });
 
   return (
     <main className="min-h-screen">
@@ -190,7 +208,7 @@ export default async function LandlordCheckDetailPage({
                 <h2 className="mt-2 text-2xl font-semibold text-slate-950">Applicant invitation</h2>
               </div>
               <Badge tone={detail.status === "report_ready" ? "success" : "info"}>
-                {detail.status.replaceAll("_", " ")}
+                {workflowStatus}
               </Badge>
             </div>
 
@@ -265,6 +283,53 @@ export default async function LandlordCheckDetailPage({
           </div>
 
           <div className="card space-y-5">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Trust workflow report</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Version 1 screening summary</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Identity documents received</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {trustReport.identityReceived.length > 0
+                    ? trustReport.identityReceived.map(getDocumentLabel).join(", ")
+                    : "No identity documents uploaded yet."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Income documents received</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {trustReport.incomeReceived.length > 0
+                    ? trustReport.incomeReceived.map(getDocumentLabel).join(", ")
+                    : "No income documents uploaded yet."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Financial documents received</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {trustReport.financialReceived.length > 0
+                    ? trustReport.financialReceived.map(getDocumentLabel).join(", ")
+                    : "No financial documents uploaded yet."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Missing documents</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {trustReport.missingDocuments.length > 0
+                    ? trustReport.missingDocuments.map(getDocumentLabel).join(", ")
+                    : "No missing requested documents."}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Risk flags</p>
+              <p className="mt-2 text-sm text-slate-700">
+                {trustReport.riskFlags.length > 0 ? trustReport.riskFlags.join(" · ") : "No risk flags recorded yet."}
+              </p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Analyst notes</p>
+              <p className="mt-2 text-sm text-slate-700">{trustReport.analystNotes}</p>
+              <p className="mt-3 text-sm font-semibold text-slate-950">Recommendation: {trustReport.recommendation}</p>
+            </div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Screening report</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">SafeKey screening decision</h2>

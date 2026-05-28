@@ -4,17 +4,14 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { createTenantCheckAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
+import {
+  TRUST_DOCUMENT_CATEGORIES,
+  TRUST_DOCUMENT_DEFINITIONS,
+  getRequiredDocumentsForExperience,
+  type TrustWorkflowExperience,
+} from "@/lib/trust-workflows";
 
 const initialState: ActionState = {};
-
-const REQUESTED_DOCUMENT_OPTIONS = [
-  { value: "government_id", label: "Government ID" },
-  { value: "proof_of_income", label: "Proof of income" },
-  { value: "employment_letter", label: "Employment letter" },
-  { value: "bank_statement", label: "Recent bank statement" },
-  { value: "rental_reference", label: "Rental reference" },
-  { value: "tax_return", label: "Tax return" },
-];
 
 const STEPS = [
   { id: 1, title: "Property details" },
@@ -54,10 +51,15 @@ function readDraft(): ScreeningDraft | null {
 
 type NewCheckFormProps = {
   onCancel?: () => void;
+  experience?: TrustWorkflowExperience;
 };
 
-export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
+export function NewCheckForm({ onCancel, experience = "basic" }: NewCheckFormProps = {}) {
   const draft = readDraft();
+  const requiredDocuments = useMemo<Set<string>>(
+    () => new Set(getRequiredDocumentsForExperience(experience)),
+    [experience],
+  );
   const [state, action] = useActionState(createTenantCheckAction, initialState);
   const [step, setStep] = useState(Math.max(1, Math.min(4, draft?.step ?? 1)));
   const [propertyName, setPropertyName] = useState(draft?.propertyName ?? "");
@@ -71,7 +73,7 @@ export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
   const [requestedDocuments, setRequestedDocuments] = useState<string[]>(
     draft?.requestedDocuments && draft.requestedDocuments.length > 0
       ? draft.requestedDocuments
-      : REQUESTED_DOCUMENT_OPTIONS.slice(0, 4).map((option) => option.value),
+      : [...requiredDocuments],
   );
 
   const stepTitle = STEPS.find((item) => item.id === step)?.title ?? STEPS[0].title;
@@ -81,10 +83,11 @@ export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
   const canContinueStepThree = requestedDocuments.length > 0;
 
   const selectedDocumentLabels = useMemo(
-    () =>
-      REQUESTED_DOCUMENT_OPTIONS.filter((option) => requestedDocuments.includes(option.value)).map((option) => option.label),
+    () => TRUST_DOCUMENT_DEFINITIONS.filter((option) => requestedDocuments.includes(option.value)).map((option) => option.label),
     [requestedDocuments],
   );
+  const requiredMissingCount = [...requiredDocuments].filter((value) => !requestedDocuments.includes(value)).length;
+  const requestedProgress = Math.round((requestedDocuments.length / TRUST_DOCUMENT_DEFINITIONS.length) * 100);
 
   const canContinue = step === 1 ? canContinueStepOne : step === 2 ? canContinueStepTwo : step === 3 ? canContinueStepThree : true;
 
@@ -231,18 +234,37 @@ export function NewCheckForm({ onCancel }: NewCheckFormProps = {}) {
         <fieldset className="space-y-3">
           <legend className="form-label">Requested screening documents</legend>
           <div className="grid gap-3 md:grid-cols-2">
-            {REQUESTED_DOCUMENT_OPTIONS.map((option) => (
-              <label className="selection-chip" key={option.value}>
-                <input
-                  checked={requestedDocuments.includes(option.value)}
-                  name="requested_documents"
-                  onChange={() => toggleRequestedDocument(option.value)}
-                  type="checkbox"
-                  value={option.value}
-                />
-                {option.label}
-              </label>
+            {(Object.keys(TRUST_DOCUMENT_CATEGORIES) as Array<keyof typeof TRUST_DOCUMENT_CATEGORIES>).map((category) => (
+              <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3" key={category}>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">
+                  {TRUST_DOCUMENT_CATEGORIES[category].label}
+                </p>
+                <div className="space-y-2">
+                  {TRUST_DOCUMENT_DEFINITIONS.filter((option) => option.category === category).map((option) => (
+                    <label className="selection-chip" key={option.value}>
+                      <input
+                        checked={requestedDocuments.includes(option.value)}
+                        name="requested_documents"
+                        onChange={() => toggleRequestedDocument(option.value)}
+                        type="checkbox"
+                        value={option.value}
+                      />
+                      <span className="inline-flex items-center gap-2">
+                        {option.label}
+                        <span className="text-xs text-slate-500">
+                          {requiredDocuments.has(option.value) ? "Required" : "Optional"}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             ))}
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+            <p className="text-xs text-secondary">
+              Required missing: {requiredMissingCount} · Requested set coverage: {requestedProgress}%
+            </p>
           </div>
         </fieldset>
       ) : null}

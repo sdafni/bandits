@@ -9,6 +9,7 @@ import { RiskChip } from "@/components/risk-chip";
 import { WorkspaceState } from "@/components/workspace-state";
 import { CaseOriginBadge } from "@/components/case-origin-badge";
 import { FirstScreeningOnboarding } from "@/components/first-screening-onboarding";
+import { getWorkflowStatusLabel } from "@/lib/trust-workflows";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 type DashboardCheck = {
@@ -28,6 +29,7 @@ type DashboardCheck = {
     score: number;
   } | null;
   tenant_documents: Array<{ id: string }>;
+  upload_token_expires_at?: string | null;
 };
 
 const STATUS_TONE = {
@@ -102,7 +104,12 @@ function CaseRowContent({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge tone={STATUS_TONE[check.status]}>{humanize(check.status)}</Badge>
+        <Badge tone={STATUS_TONE[check.status]}>
+          {getWorkflowStatusLabel({
+            status: check.status,
+            uploadTokenExpiresAt: check.upload_token_expires_at,
+          })}
+        </Badge>
         {recommendation ? (
           <Badge tone={RECOMMENDATION_TONE[recommendation]}>{humanize(recommendation)}</Badge>
         ) : null}
@@ -336,7 +343,7 @@ export function LandlordDashboardBoard({
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            <NewCheckForm onCancel={() => setIsCreateFlowOpen(false)} />
+            <NewCheckForm experience={experience} onCancel={() => setIsCreateFlowOpen(false)} />
           </div>
         </div>
       ) : null}

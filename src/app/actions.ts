@@ -33,6 +33,7 @@ import type { TenantCheckDetail } from "@/lib/queries";
 import { getAdminCheckDetail, getLandlordCheckDetail, getPublicCheckByToken } from "@/lib/queries";
 import { buildProtectionAssessment, getFallbackProtectionPackages } from "@/lib/protection";
 import { createSecureToken, hashToken } from "@/lib/security";
+import { getDefaultRequestedDocumentsForPlan } from "@/lib/trust-workflows";
 import {
   createBillingPortalSession,
   createScreeningCheckoutSession,
@@ -49,13 +50,6 @@ export type ActionState = {
 };
 
 type AdminCheckDetail = TenantCheckDetail;
-
-const DEFAULT_REQUESTED_DOCUMENTS = [
-  "government_id",
-  "proof_of_income",
-  "employment_letter",
-  "bank_statement",
-];
 
 const signInSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
@@ -524,7 +518,7 @@ export async function createTenantCheckAction(
     p_postal_code: normalizeOptionalString(parsed.data.postalCode),
     p_property_name: parsed.data.propertyName,
     p_requested_documents:
-      requestedDocuments.length > 0 ? requestedDocuments : DEFAULT_REQUESTED_DOCUMENTS,
+      requestedDocuments.length > 0 ? requestedDocuments : getDefaultRequestedDocumentsForPlan(planKey),
     p_secure_upload_url: uploadUrl,
     p_tenant_email: normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase() ?? null,
     p_tenant_full_name: parsed.data.tenantFullName,
