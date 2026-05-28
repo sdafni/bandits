@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PublicSiteFooter } from "@/components/public-site-footer";
 import { SafeKeyBrand } from "@/components/safekey-brand";
-import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -32,7 +32,7 @@ const sections = [
   },
   {
     title: "Contact",
-    body: `For service or legal questions, contact ${siteConfig.supportEmail}.`,
+    body: "For service or legal questions, use the secure support form.",
   },
 ] as const;
 
@@ -61,6 +61,11 @@ export default function TermsPage() {
             <article className="card space-y-3" key={section.title}>
               <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950">{section.title}</h2>
               <p className="text-base leading-8 text-slate-700">{section.body}</p>
+              {section.title === "Contact" ? (
+                <Link className="workspace-cta-secondary inline-flex" href="/#support">
+                  Open support form
+                </Link>
+              ) : null}
             </article>
           ))}
         </section>

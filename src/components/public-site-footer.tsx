@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileLock2, LifeBuoy, ShieldCheck } from "lucide-react";
+import { PublicSupportForm } from "@/components/public-support-form";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { siteConfig } from "@/lib/site";
 
@@ -59,7 +60,7 @@ export function PublicSiteFooter({ showTrustLayer = true }: { showTrustLayer?: b
           </div>
 
           <div className="grid gap-8 sm:grid-cols-3">
-            <div className="space-y-3">
+            <div className="space-y-3" id="support">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Legal</p>
               <div className="space-y-2 text-sm text-slate-700">
                 <Link className="block transition hover:text-[#0f2343]" href="/privacy">
@@ -80,15 +81,10 @@ export function PublicSiteFooter({ showTrustLayer = true }: { showTrustLayer?: b
 
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Contact</p>
-              <div className="space-y-2 text-sm text-slate-700">
-                <p>Support</p>
-                <a
-                  className="inline-flex items-center transition hover:text-[#0f2343]"
-                  href={`mailto:${siteConfig.supportEmail}`}
-                >
-                  {siteConfig.supportEmail}
-                </a>
-              </div>
+              <p className="text-sm leading-7 text-slate-700">
+                Need help with screening operations or platform access? Send a secure support message.
+              </p>
+              <PublicSupportForm />
             </div>
           </div>
         </div>

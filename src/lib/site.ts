@@ -8,10 +8,6 @@ export const siteConfig = {
   marketLine: "Built for the Greek rental market",
   ogDescription:
     "Launch tenant checks, collect documents through secure upload links, and review trusted screening and protection outcomes in one calm workflow.",
-  supportEmail: env.supportEmail,
-  legalEmail: env.legalEmail,
-  billingEmail: env.billingEmail,
-  helloEmail: env.helloEmail,
   tagline: "Trusted Tenants. Safer Rentals.",
   trustHighlights: [
     "GDPR-aware document handling",
