@@ -35,7 +35,7 @@ export function RecoveryNavigationActions({
       </button>
       {showResume ? (
         <button className="workspace-cta-secondary" onClick={() => router.push("/dashboard#new-screening")} type="button">
-          Resume screening
+          Resume tenant check
         </button>
       ) : null}
     </div>

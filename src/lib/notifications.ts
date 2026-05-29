@@ -74,7 +74,7 @@ export async function notifyWelcomeEmail(input: WelcomeEmailInput) {
     `Hello ${firstName},`,
     "",
     "Welcome to SafeKey.",
-    "Your account is now ready. You can continue to your dashboard and start your first screening case.",
+    "Your account is now ready. You can continue to your dashboard and start your first tenant check.",
     "",
     `${env.appUrl}/dashboard`,
     "",
@@ -86,7 +86,7 @@ export async function notifyWelcomeEmail(input: WelcomeEmailInput) {
       <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#0f2343;">SafeKey</p>
       <h1 style="margin:0 0 12px;font-size:22px;color:#0f172a;">Welcome to SafeKey</h1>
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(firstName)}, your account is ready.</p>
-      <p style="margin:0 0 12px;color:#334155;line-height:1.6;">SafeKey helps you run secure tenant screening and trust reporting with a calm, institutional workflow.</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;">SafeKey helps you run secure tenant checks and receive your SafeKey Report with a calm, clear workflow.</p>
       <a href="${env.appUrl}/dashboard" style="display:inline-block;background:#0f2343;color:#fff;text-decoration:none;border-radius:12px;padding:12px 18px;font-weight:700;">Open dashboard</a>
     </div>
   </div>`;

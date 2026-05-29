@@ -77,7 +77,7 @@ const PACKAGE_CATALOG: Array<
       "Eligibility tied to affordability signals",
     ],
     description:
-      "Package for rent default protection where income and affordability signals are strong enough.",
+      "Protection option for rent default where income and affordability signals are strong enough.",
     estimated_price: "€39/month",
     name: "Unpaid Rent Protection",
     type: "rent-protection",
@@ -88,7 +88,7 @@ const PACKAGE_CATALOG: Array<
       "Property restoration workflow",
       "Claims handoff structure",
     ],
-    description: "Package for accidental or malicious property damage scenarios.",
+    description: "Protection option for accidental or malicious property damage scenarios.",
     estimated_price: "€24/month",
     name: "Property Damage Protection",
     type: "damage-protection",
@@ -112,7 +112,7 @@ const PACKAGE_CATALOG: Array<
       "Legal recovery support",
     ],
     description:
-      "Combined flagship package linking screening, rent protection, deposit protection, and damage/legal layers.",
+      "Combined flagship protection option linking tenant checks, rent protection, deposit protection, and damage/legal layers.",
     estimated_price: "€69/month",
     name: "Full SafeKey Protection",
     type: "full-protection",
@@ -448,7 +448,7 @@ function getRecommendedPackage(
 function getNextProtectionAction(status: InsuranceEligibilityStatus) {
   switch (status) {
     case "eligible":
-      return "Proceed to package review.";
+      return "Proceed to protection review.";
     case "conditionally_eligible":
       return "Request a manual insurance review before presenting final protection terms.";
     case "pending_more_documents":

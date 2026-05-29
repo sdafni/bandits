@@ -54,7 +54,7 @@ function getScoreBand(score: number) {
       label: "Low risk",
       ringTrack: "rgba(15, 118, 110, 0.12)",
       surface: "bg-[linear-gradient(180deg,rgba(240,253,250,0.94),rgba(255,255,255,1))]",
-      text: "Signals are within the present screening tolerance.",
+      text: "Signals are within the present check tolerance.",
     };
   }
 
@@ -138,7 +138,7 @@ function buildConsistencyChecks(report: AiReport) {
       reasoning.documentCompleteness,
       "The requested document set is substantially complete.",
       "The file is usable, but further evidence is still outstanding.",
-      "Material document gaps remain in the current screening pack.",
+      "Material document gaps remain in the current check file.",
       missingCount > 0 ? `${missingCount} item(s) still outstanding.` : "No outstanding document gaps are recorded.",
     ),
     extractedSignals.length === 0
@@ -298,7 +298,7 @@ export function AiScreeningReport({
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-3">
-              <Badge tone="info">AI-assisted screening report</Badge>
+              <Badge tone="info">SafeKey Report summary</Badge>
               <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
                 Underwriting summary
               </span>
@@ -395,7 +395,7 @@ export function AiScreeningReport({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Risk factor analysis</p>
-              <h4 className="mt-2 text-lg font-semibold text-slate-950">Core screening metrics</h4>
+              <h4 className="mt-2 text-lg font-semibold text-slate-950">Core check metrics</h4>
             </div>
             <p className="text-xs font-medium text-slate-500">Normalized underwriting signals</p>
           </div>
@@ -481,7 +481,7 @@ export function AiScreeningReport({
               ))
             ) : (
               <li className="rounded-[20px] border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-emerald-800">
-                No material red flags are highlighted in the current screening file.
+                No material red flags are highlighted in the current check file.
               </li>
             )}
           </ul>

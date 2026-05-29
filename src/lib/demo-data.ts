@@ -89,14 +89,14 @@ const demoProtectionCards: DemoProtectionCard[] = [
   },
   {
     description:
-      "Placeholder rental protection package linked to tenant screening, affordability, and income stability signals.",
+      "Placeholder rental protection option linked to tenant checks, affordability, and income stability signals.",
     estimatedPrice: "€39/month",
     name: "Rent Protection",
     summary: "Focused on unpaid rent scenarios where screening results support a lower protection risk profile.",
   },
   {
     description:
-      "Flagship package combining screening, rent protection, deposit protection, and recovery support into one trust layer.",
+      "Flagship protection option combining tenant checks, rent protection, deposit protection, and recovery support.",
     estimatedPrice: "€69/month",
     name: "Full Rental Shield",
     summary: "Best presented for the strongest tenant profiles with clean documentation and high confidence signals.",
@@ -445,7 +445,7 @@ export function getDemoCasePresentationCards() {
     eligibilityStatus: item.protection.insuranceEligibility?.status ?? "pending_more_documents",
     id: item.id,
     label: item.label,
-    protectionPackage: item.protection.insuranceEligibility?.recommended_package ?? "Pending package review",
+    protectionPackage: item.protection.insuranceEligibility?.recommended_package ?? "Protection review pending",
     recommendation: item.detail.ai_reports?.recommendation ?? "conditional",
     riskScore: item.detail.ai_reports?.score ?? 0,
     status: item.detail.status,
@@ -873,7 +873,7 @@ function buildDemoProtectionPackages(caseId: string) {
     full: buildProtectionPackage({
       caseId,
       description:
-        "Flagship SafeKey package combining screening, deposit protection, rent protection, and recovery support.",
+        "Flagship SafeKey protection option combining tenant checks, deposit protection, rent protection, and recovery support.",
       estimatedPrice: "€69/month",
       name: "Full Rental Shield",
       type: "full-protection",
@@ -881,7 +881,7 @@ function buildDemoProtectionPackages(caseId: string) {
     rent: buildProtectionPackage({
       caseId,
       description:
-        "Protection package focused on unpaid rent exposure for applicants whose affordability profile remains within the target range.",
+        "Protection option focused on unpaid rent exposure for applicants whose affordability profile remains within the target range.",
       estimatedPrice: "€39/month",
       name: "Rent Protection",
       type: "rent-protection",

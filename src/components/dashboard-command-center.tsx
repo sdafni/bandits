@@ -112,17 +112,17 @@ export function DashboardCommandCenter({
             {isBasic ? (isGreek ? "Ο χώρος σου" : "Your workspace") : isGreek ? "Ζωντανός χώρος εργασίας" : "Live workspace"}
           </p>
           <h2 className="text-lg font-semibold tracking-tight text-white sm:text-lg">
-            {isBasic ? (isGreek ? "Απλή διαχείριση ενοικιαστή" : "Simple tenant screening") : isGreek ? "Λειτουργίες ελέγχου" : "Screening operations"}
+            {isBasic ? (isGreek ? "Απλή διαχείριση ενοικιαστή" : "Simple tenant checks") : isGreek ? "Λειτουργίες ελέγχου" : "Tenant check operations"}
           </h2>
           <p className="mt-0.5 text-sm text-slate-200 sm:text-xs">
             {workspaceMode === "preview"
               ? isGreek
                 ? "Προεπισκόπηση χώρου εργασίας. Οι ενεργοποιήσεις γίνονται στο σημείο αποστολής συνδέσμου ή αναφοράς."
-                : "Workspace preview. Activation happens when you send the upload link or export the trust report."
+                : "Workspace preview. Activation happens when you send the upload link or open your SafeKey Report."
               : isFirstWorkspace
                 ? isGreek
                   ? "Οργάνωσε την πρώτη σου υπόθεση ελέγχου ενοικιαστή."
-                  : "Organize your first tenant screening case."
+                  : "Organize your first tenant check."
                 : `${stats.active} ${isGreek ? "ενεργές" : "active"} · ${actionCount} ${isGreek ? "ενέργειες σε αναμονή" : `queued action${actionCount === 1 ? "" : "s"}`}${
                     stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} ${isGreek ? "υψηλού κινδύνου" : "elevated risk"}` : ""
                   }`}
@@ -134,7 +134,7 @@ export function DashboardCommandCenter({
         <div className={isBasic ? "grid gap-2 sm:grid-cols-2 lg:grid-cols-4" : "responsive-metrics"}>
           {(isBasic
             ? [
-                { hint: isGreek ? "Τρέχουσες υποθέσεις" : "Current screenings", label: isGreek ? "Ενεργές υποθέσεις" : "Active screenings", value: stats.active },
+                { hint: isGreek ? "Τρέχουσες υποθέσεις" : "Current checks", label: isGreek ? "Ενεργές υποθέσεις" : "Active checks", value: stats.active },
                 { hint: isGreek ? "Αναμονή εγγράφων" : "Waiting on documents", label: isGreek ? "Αποστολές σε εκκρεμότητα" : "Upload status", value: stats.awaitingUpload },
                 { hint: isGreek ? "Ολοκληρωμένες αναφορές" : "Completed decisions", label: isGreek ? "Έτοιμες συστάσεις" : "Recommendations ready", value: stats.readyForDecision },
                 { hint: isGreek ? "Μέσο σκορ εμπιστοσύνης" : "Average trust score", label: isGreek ? "Μέσος δείκτης" : "Trust average", value: stats.averageScore ?? "—" },
