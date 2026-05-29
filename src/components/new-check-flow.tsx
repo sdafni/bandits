@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { NewCheckDraftGate } from "@/components/new-check-draft-gate";
 import { NewCheckForm } from "@/components/new-check-form";
 import { LandlordWorkflowStrip } from "@/components/landlord-workflow-strip";
+import { useT } from "@/lib/i18n/context";
 import type { TrustWorkflowExperience } from "@/lib/trust-workflows";
 import {
   clearNewCheckDraft,
@@ -18,6 +19,7 @@ export function NewCheckFlow({
   billingNavEnabled = false,
   experience,
   flowKey,
+  needsPlan = false,
   onCancel,
   onCheckCreated,
   onDraftDeleted,
@@ -25,10 +27,12 @@ export function NewCheckFlow({
   billingNavEnabled?: boolean;
   experience: TrustWorkflowExperience;
   flowKey: number;
+  needsPlan?: boolean;
   onCancel: () => void;
   onCheckCreated: () => void;
   onDraftDeleted?: () => void;
 }) {
+  const t = useT();
   const [phase, setPhase] = useState<FlowPhase>("form");
   const [resumeDraft, setResumeDraft] = useState<NewCheckDraft | null>(null);
   const [formInstanceKey, setFormInstanceKey] = useState(0);
@@ -64,11 +68,18 @@ export function NewCheckFlow({
     beginFreshForm();
   }
 
+  const planNotice = needsPlan ? (
+    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm leading-6 text-amber-950">
+      {t("dashboard.welcome.lockedUntilPlan")}
+    </p>
+  ) : null;
+
   if (phase === "gate") {
     const draft = readNewCheckDraft();
     if (draft && hasUnfinishedNewCheckDraft(draft)) {
       return (
         <div className="space-y-4">
+          {planNotice}
           <LandlordWorkflowStrip compact highlightStep={1} />
           <NewCheckDraftGate
           draft={draft}
@@ -83,7 +94,8 @@ export function NewCheckFlow({
 
   return (
     <div className="space-y-4">
-      <LandlordWorkflowStrip compact highlightStep={1} />
+      {planNotice}
+      <LandlordWorkflowStrip compact highlightStep={needsPlan ? 1 : 2} />
       <NewCheckForm
         billingNavEnabled={billingNavEnabled}
         key={`${flowKey}-${formInstanceKey}`}

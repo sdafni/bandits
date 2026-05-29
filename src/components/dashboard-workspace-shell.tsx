@@ -34,7 +34,7 @@ export function DashboardWorkspaceShell({
   const [createFlowKey, setCreateFlowKey] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const experience = resolveDashboardExperience(access.planKey);
-  const needsPlanOnboarding =
+  const needsPlan =
     billingNavEnabled && !access.hasActiveSubscription && access.screeningCredits === 0;
 
   const dismissToast = useCallback(() => setToastMessage(null), []);
@@ -70,19 +70,19 @@ export function DashboardWorkspaceShell({
 
   return (
     <>
-      <DashboardLandlordHeader billingNavEnabled={billingNavEnabled} welcomeMode={!hasLiveChecks} />
+      <DashboardLandlordHeader activeNav="checks" welcomeMode={!hasLiveChecks} />
 
       <div className="dashboard-landlord-page space-y-5">
         {!hasLiveChecks ? (
           <DashboardWelcomeEmpty
             billingNavEnabled={billingNavEnabled}
+            needsPlan={needsPlan}
             onStartCheck={openCreateFlow}
-            showPlanNote={needsPlanOnboarding}
           />
         ) : (
           <>
             <TrustSignalsStrip compact />
-            {needsPlanOnboarding ? <DashboardPlanBanner billingNavEnabled={billingNavEnabled} /> : null}
+            {needsPlan ? <DashboardPlanBanner billingNavEnabled={billingNavEnabled} /> : null}
             <LandlordWorkflowStrip compact />
             <WorkspacePrimaryCta labelKey="dashboard.newCheckCta" onClick={openCreateFlow} />
             {children}
@@ -112,6 +112,7 @@ export function DashboardWorkspaceShell({
               billingNavEnabled={billingNavEnabled}
               experience={experience}
               flowKey={createFlowKey}
+              needsPlan={needsPlan}
               onCancel={closeCreateFlow}
               onCheckCreated={handleCheckCreated}
               onDraftDeleted={() => setToastMessage(t("newCheckFlow.draftDeletedToast"))}

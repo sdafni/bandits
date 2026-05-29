@@ -22,7 +22,7 @@ import {
 import { withLocalePath } from "@/lib/i18n";
 import { BillingCheckoutSuccess } from "@/components/billing-checkout-success";
 import { SignOutForm } from "@/components/sign-out-form";
-import { getBillingOverviewForUser } from "@/lib/billing-queries";
+import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { getStripeProductionReadiness } from "@/lib/env";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -51,7 +51,7 @@ export default async function DashboardBillingPage({
   const t = (key: string) => translate(locale, key);
   const localePath = (path: string) => withLocalePath(locale, path);
   const { profile } = await requireLandlord();
-  const overview = await getBillingOverviewForUser(profile.id);
+  const overview = await getSafeBillingOverviewForUser(profile.id);
   const stripeReadiness = getStripeProductionReadiness();
   const checkoutEnabled = stripeReadiness.isCheckoutReady && overview.schemaReady;
   const currentPlanKey = overview.activeSubscription?.plan_key ?? null;
@@ -113,7 +113,7 @@ export default async function DashboardBillingPage({
   return (
     <main className="min-h-screen bg-slate-50/50">
       <AppHeader
-        activeNav="billing"
+        activeNav="plans"
         homeHref="/dashboard"
         actions={
           <Link className="workspace-cta-secondary" href={localePath("/dashboard")}>

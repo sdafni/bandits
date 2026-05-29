@@ -7,7 +7,8 @@ import { Badge } from "@/components/badge";
 import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
 import { CaseTrustReportSection } from "@/components/case-trust-report-section";
 import { CaseWorkflowPanel } from "@/components/case-workflow-panel";
-import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
+import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
+import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { translate } from "@/lib/i18n/messages";
 import { getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
 import { resolveCaseAccess, resolveWorkspaceAccess } from "@/lib/workspace-access";
@@ -68,7 +69,7 @@ export default async function LandlordCheckDetailPage({
   const supabase = await createClient();
   const protectionSnapshot = await getProtectionSnapshot(id);
   const isDemoCase = isDemoCheckId(id);
-  const billingOverview = await getBillingOverviewForUser(profile.id, { admin: true });
+  const billingOverview = await getSafeBillingOverviewForUser(profile.id, { admin: true });
   const workspaceAccess = resolveWorkspaceAccess(billingOverview);
   const billingEligibility = isDemoCase
     ? { activeSubscription: null, customer: null, hasBillingAccess: true, screeningPayment: null }
@@ -208,14 +209,7 @@ export default async function LandlordCheckDetailPage({
   return (
     <main className="min-h-screen">
       <AppHeader
-        actions={
-          <Link
-            className="secondary-action min-h-12 rounded-[18px] px-5 py-3"
-            href="/dashboard"
-          >
-            {t("caseDetail.backToDashboard")}
-          </Link>
-        }
+        activeNav="checks"
         homeHref="/dashboard"
         subtitle={`${detail.properties?.name ?? t("caseDetail.propertyFallback")} · ${t("caseDetail.caseSubtitle")} ${formatDate(detail.created_at)}`}
         title={`${t("caseDetail.caseTitle")}: ${detail.tenant_full_name}`}

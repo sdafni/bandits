@@ -8,7 +8,7 @@ import { getRequestLocale } from "@/lib/i18n-server";
 import { translate } from "@/lib/i18n/messages";
 import { requireLandlord } from "@/lib/auth";
 import { getLandlordChecks } from "@/lib/queries";
-import { getBillingOverviewForUser } from "@/lib/billing-queries";
+import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { resolveWorkspaceAccess } from "@/lib/workspace-access";
 import { getStripeProductionReadiness } from "@/lib/env";
 
@@ -39,7 +39,7 @@ export default async function DashboardPage({
   }
 
   const checks = mergeLandlordChecksWithDemo(liveChecks);
-  const billingOverview = await getBillingOverviewForUser(profile.id);
+  const billingOverview = await getSafeBillingOverviewForUser(profile.id);
   const stripeReadiness = getStripeProductionReadiness();
   const billingNavEnabled = stripeReadiness.isCheckoutReady && billingOverview.schemaReady;
   const workspaceAccess = resolveWorkspaceAccess(billingOverview);

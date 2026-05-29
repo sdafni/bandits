@@ -4,7 +4,8 @@ import { SafeKeyTrustReport } from "@/components/safekey-trust-report";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { TrustReportPrintButton } from "@/components/trust-report-print-button";
 import { requireLandlord } from "@/lib/auth";
-import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
+import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
+import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { isDemoCheckId } from "@/lib/demo-data";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { translate } from "@/lib/i18n/messages";
@@ -30,7 +31,7 @@ export default async function TrustReportExportPage({
   }
 
   const isDemoCase = isDemoCheckId(id);
-  const billingOverview = await getBillingOverviewForUser(profile.id, { admin: true });
+  const billingOverview = await getSafeBillingOverviewForUser(profile.id, { admin: true });
   const workspaceAccess = resolveWorkspaceAccess(billingOverview);
   const billingEligibility = isDemoCase
     ? { hasBillingAccess: true }

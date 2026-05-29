@@ -14,8 +14,8 @@ export function DashboardPlanBanner({ billingNavEnabled = false }: { billingNavE
 
   return (
     <section className="rounded-2xl border border-amber-200/90 bg-amber-50 px-4 py-4 sm:px-5">
-      <p className="text-sm font-semibold text-amber-950">{t("dashboard.planOnboarding.title")}</p>
-      <p className="mt-1 text-sm leading-6 text-amber-900">{t("dashboard.planOnboarding.body")}</p>
+      <p className="text-sm font-semibold text-amber-950">{t("dashboard.planBanner.title")}</p>
+      <p className="mt-1 text-sm leading-6 text-amber-900">{t("dashboard.planBanner.body")}</p>
       <Link
         className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-[#0f2343] px-4 py-2 text-sm font-semibold text-white"
         data-testid="dashboard-choose-plan"

@@ -25,7 +25,10 @@ export function SessionIdleGuard() {
       const elapsed = currentTime - lastActivityAt;
       setNow(currentTime);
       if (elapsed >= EXPIRE_AFTER_MS) {
-        window.location.href = "/login?reason=session_expired";
+        const path = window.location.pathname;
+        const localeMatch = path.match(/^\/(el|en)(\/|$)/);
+        const localePrefix = localeMatch ? `/${localeMatch[1]}` : "";
+        window.location.href = `${localePrefix}/login?reason=session_expired`;
         return;
       }
       setShowWarning(elapsed >= WARNING_AFTER_MS);
