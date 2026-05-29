@@ -10,7 +10,7 @@ const initialState: ActionState = {};
 export function ScreeningCheckoutForm({
   checkId,
   className,
-  label = "Pay for this screening",
+  label = "Pay for this Check",
   pendingLabel = "Opening checkout...",
   variant = "primary",
 }: {

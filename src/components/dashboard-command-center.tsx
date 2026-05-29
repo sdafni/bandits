@@ -223,7 +223,7 @@ export function DashboardCommandCenter({
           </span>
           {!isBasic ? <span className="text-xs text-muted">{planUsage}</span> : null}
           <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href="/dashboard/billing">
-            {isPro ? (isGreek ? "Διαχείριση πλάνου" : "Manage plan") : isGreek ? "Διαχείριση χρέωσης" : "Manage billing"}
+            {isPro ? (isGreek ? "Διαχείριση πλάνου" : "Plan Selection") : isGreek ? "Διαχείριση πληρωμών" : "Payment Management"}
           </Link>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, CreditCard, HelpCircle, Mail } from "lucide-react";
+import { ChevronRight, CreditCard, HelpCircle, Mail, Receipt } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
 
@@ -27,8 +27,15 @@ export function AccountPageSections({
     {
       href: withLocalePath(locale, "/dashboard/billing"),
       icon: CreditCard,
-      label: t("account.billingTitle"),
-      body: t("account.billingBody"),
+      label: t("account.planSelectionTitle"),
+      body: t("account.planSelectionBody"),
+      show: billingNavEnabled,
+    },
+    {
+      href: withLocalePath(locale, "/dashboard/billing"),
+      icon: Receipt,
+      label: t("account.paymentManagementTitle"),
+      body: t("account.paymentManagementBody"),
       show: billingNavEnabled,
     },
     {

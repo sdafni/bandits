@@ -87,7 +87,7 @@ export async function PublicSiteFooter({ showTrustLayer = true }: { showTrustLay
               <p className="text-sm leading-7 text-slate-700">
                 {isGreek
                   ? "Χρειάζεσαι βοήθεια με ελέγχους ή πρόσβαση; Στείλε ασφαλές μήνυμα υποστήριξης."
-                  : "Need help with screening operations or platform access? Send a secure support message."}
+                  : "Need help with Tenant Checks or your account? Send a secure support message."}
               </p>
               <PublicSupportForm />
             </div>

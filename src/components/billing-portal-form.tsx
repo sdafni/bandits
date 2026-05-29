@@ -9,8 +9,8 @@ const initialState: ActionState = {};
 
 export function BillingPortalForm({
   className,
-  label = "Manage billing",
-  pendingLabel = "Opening billing...",
+  label = "Payment Management",
+  pendingLabel = "Opening payments...",
   variant = "workspace",
   disabled = false,
 }: {

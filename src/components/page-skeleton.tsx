@@ -1,6 +1,6 @@
 export function PageSkeleton({
   title = "Loading workspace",
-  subtitle = "Preparing the latest verification data.",
+  subtitle = "Preparing your Tenant Checks.",
 }: {
   title?: string;
   subtitle?: string;
