@@ -627,6 +627,107 @@ a {
     @apply mx-auto w-full max-w-lg space-y-5 px-4 py-5 sm:max-w-2xl sm:px-6 sm:py-6;
   }
 
+  /* Mobile landlord bottom nav — active pill must not clip labels (incl. iOS Safari). */
+  .landlord-bottom-nav {
+    overflow: visible;
+    border-top: 1px solid rgba(226, 232, 240, 0.9);
+    background-color: #ffffff;
+    padding-top: 0.5rem;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .landlord-bottom-nav__tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+    padding-inline: 0.5rem;
+    overflow: visible;
+  }
+
+  .landlord-bottom-nav__tab {
+    display: flex;
+    min-width: 0;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0.125rem;
+    overflow: visible;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .landlord-bottom-nav__pill {
+    display: flex;
+    width: 100%;
+    min-height: 4rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    overflow: visible;
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.375rem;
+    text-align: center;
+    transform: translateZ(0);
+  }
+
+  .landlord-bottom-nav__pill--active {
+    background-color: var(--sk-navy);
+    color: #ffffff;
+  }
+
+  .landlord-bottom-nav__label {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    padding-block: 0.125rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  @media (min-width: 640px) {
+    .landlord-bottom-nav {
+      border-top: 0;
+      background-color: transparent;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .landlord-bottom-nav__tabs {
+      display: flex;
+      padding-inline: 0;
+    }
+
+    .landlord-bottom-nav__tab {
+      padding: 0;
+    }
+
+    .landlord-bottom-nav__pill {
+      min-height: 0;
+      flex-direction: row;
+      gap: 0.5rem;
+      padding: 0;
+      transform: none;
+    }
+
+    .landlord-bottom-nav__pill--active {
+      background-color: transparent;
+      color: inherit;
+    }
+
+    .landlord-bottom-nav__label {
+      width: auto;
+      padding-block: 0;
+      font-size: inherit;
+      line-height: inherit;
+      letter-spacing: inherit;
+    }
+  }
+
   .workspace-page {
     @apply mx-auto w-full max-w-[87.5rem] space-y-3 py-3 sm:space-y-4 sm:py-4;
     padding-inline: var(--sk-page-gutter);
