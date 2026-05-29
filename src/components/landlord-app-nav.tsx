@@ -76,11 +76,11 @@ export function LandlordAppNav({
         className,
       )}
     >
-      <div className="mx-auto flex max-w-lg items-stretch justify-around gap-1 px-2 sm:max-w-none sm:justify-start sm:gap-2 sm:px-0">
+      <div className="mx-auto grid max-w-lg grid-cols-3 gap-1 px-2 sm:flex sm:max-w-none sm:justify-start sm:gap-2 sm:px-0">
         {items.map(({ key, href, label, icon: Icon }) => (
           <Link
             className={cn(
-              "flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] font-semibold transition sm:min-h-10 sm:flex-row sm:flex-none sm:gap-2 sm:px-4 sm:py-2 sm:text-sm",
+              "flex min-h-[3.5rem] min-w-0 flex-col items-center justify-center gap-1 overflow-visible rounded-xl px-1.5 py-2 text-center text-[11px] font-semibold leading-snug transition sm:min-h-10 sm:min-w-0 sm:flex-row sm:flex-none sm:gap-2 sm:px-4 sm:py-2 sm:text-left sm:text-sm",
               active === key
                 ? "bg-[#0f2343] text-white"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
@@ -89,7 +89,7 @@ export function LandlordAppNav({
             key={key}
           >
             <Icon className="h-[1.125rem] w-[1.125rem] shrink-0 sm:h-4 sm:w-4" aria-hidden />
-            <span className="leading-tight">{label}</span>
+            <span className="block w-full max-w-full px-0.5">{label}</span>
           </Link>
         ))}
       </div>

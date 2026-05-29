@@ -53,12 +53,7 @@ export function DashboardWelcomeEmpty({
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
                 {index + 1}
               </span>
-              <p className="pt-0.5 text-sm font-medium leading-6 text-slate-800 sm:text-[0.9375rem]">
-                <span className="text-slate-500">
-                  {t("dashboard.welcome.stepLabel").replace("{step}", String(index + 1))}
-                </span>{" "}
-                {step}
-              </p>
+              <p className="pt-0.5 text-sm font-medium leading-6 text-slate-800 sm:text-[0.9375rem]">{step}</p>
             </li>
           ))}
         </ol>

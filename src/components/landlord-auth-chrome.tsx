@@ -12,7 +12,7 @@ export function LandlordAuthChrome({
 }) {
   return (
     <div className="landlord-auth-chrome flex min-h-screen flex-col">
-      <div className="flex-1 pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-0">{children}</div>
+      <div className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">{children}</div>
       <LandlordAppNav active={activeNav} />
     </div>
   );
