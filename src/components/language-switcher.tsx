@@ -1,44 +1,44 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { type AppLocale, detectLocaleFromPath, withLocalePath } from "@/lib/i18n";
+import { type AppLocale } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/context";
 
 type LanguageSwitcherProps = {
-  locale: AppLocale;
+  locale?: AppLocale;
 };
 
-export function LanguageSwitcher({ locale }: LanguageSwitcherProps) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const query = searchParams.toString();
-  const path = pathname || "/";
-  const currentLocale = detectLocaleFromPath(path) ?? locale;
-
-  function buildHref(nextLocale: AppLocale) {
-    const localizedPath = withLocalePath(nextLocale, path);
-    return query ? `${localizedPath}?${query}` : localizedPath;
-  }
+export function LanguageSwitcher({ locale: localeProp }: LanguageSwitcherProps) {
+  const { locale, setLocale, t, isSwitching } = useLocale();
+  const activeLocale = localeProp ?? locale;
 
   return (
-    <div className="inline-flex items-center rounded-full border border-slate-200 bg-white px-1 py-1 text-xs font-semibold text-secondary">
-      <Link
+    <div
+      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-1 py-1 text-xs font-semibold text-secondary"
+      data-testid="language-switcher"
+    >
+      <button
+        aria-pressed={activeLocale === "el"}
         className={`rounded-full px-2.5 py-1 transition ${
-          currentLocale === "el" ? "bg-slate-900 text-white" : "hover:bg-slate-100"
-        }`}
-        href={buildHref("el")}
+          activeLocale === "el" ? "bg-slate-900 text-white" : "hover:bg-slate-100"
+        } ${isSwitching ? "opacity-80" : ""}`}
+        data-testid="language-switch-el"
+        onClick={() => setLocale("el")}
+        type="button"
       >
-        Ελληνικά
-      </Link>
+        {t("common.languageEl")}
+      </button>
       <span className="px-1 text-muted">|</span>
-      <Link
+      <button
+        aria-pressed={activeLocale === "en"}
         className={`rounded-full px-2.5 py-1 transition ${
-          currentLocale === "en" ? "bg-slate-900 text-white" : "hover:bg-slate-100"
-        }`}
-        href={buildHref("en")}
+          activeLocale === "en" ? "bg-slate-900 text-white" : "hover:bg-slate-100"
+        } ${isSwitching ? "opacity-80" : ""}`}
+        data-testid="language-switch-en"
+        onClick={() => setLocale("en")}
+        type="button"
       >
-        English
-      </Link>
+        {t("common.languageEn")}
+      </button>
     </div>
   );
 }

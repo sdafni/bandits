@@ -149,7 +149,6 @@ export default async function AdminReviewDetailPage({
   return (
     <main className="min-h-screen">
       <AppHeader
-        locale={locale}
         actions={
           <Link
             className="rounded-full border border-[#d8c490] px-4 py-2 text-sm font-medium text-[#0f2343] transition hover:bg-[#fffaf0]"

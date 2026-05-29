@@ -3,11 +3,11 @@ import { env } from "@/lib/env";
 export const siteConfig = {
   companyName: "SafeKey",
   defaultDescription:
-    "SafeKey is AI-powered tenant screening and rental protection infrastructure built for the Greek rental market.",
+    "Simple tenant checks for landlords in Greece — start a check, collect documents, get a recommendation.",
   domain: "https://getsafekey.app",
   marketLine: "Built for the Greek rental market",
   ogDescription:
-    "Launch tenant checks, collect documents through secure upload links, and review trusted screening and protection outcomes in one calm workflow.",
+    "Start a tenant check, send a secure upload link, and get a clear rental recommendation.",
   tagline: "Trusted Tenants. Safer Rentals.",
   trustHighlights: [
     "GDPR-aware document handling",

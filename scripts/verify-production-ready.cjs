@@ -41,6 +41,7 @@ function checkLocalEnv(env) {
     "STRIPE_BASIC_PRICE_ID",
     "STRIPE_PRO_PRICE_ID",
     "STRIPE_PREMIUM_PRICE_ID",
+    "STRIPE_WEBHOOK_SECRET",
   ];
 
   const screening =
@@ -52,7 +53,6 @@ function checkLocalEnv(env) {
     ok: missing.length === 0,
     missing,
     warnings: [
-      !env.STRIPE_WEBHOOK_SECRET ? "STRIPE_WEBHOOK_SECRET missing (checkout works; sync incomplete)" : null,
       !env.RESEND_API_KEY ? "RESEND_API_KEY missing (tenant invite emails manual)" : null,
       !env.ADMIN_EMAILS ? "ADMIN_EMAILS missing (no configured analyst access)" : null,
     ].filter(Boolean),
@@ -104,7 +104,10 @@ async function main() {
       console.log("✓ Production Stripe checkout health");
     }
     if (!stripe.hasWebhookSecret) {
-      warnings.push("Production STRIPE_WEBHOOK_SECRET not configured");
+      failures.push("Production STRIPE_WEBHOOK_SECRET not configured");
+    }
+    if (stripe.webhookSyncHealthy === false) {
+      failures.push("Stripe webhook sync unhealthy: failed events detected in the last 24h");
     }
   } catch (error) {
     failures.push(`Stripe health check failed: ${error.message}`);

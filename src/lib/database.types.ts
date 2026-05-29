@@ -2,6 +2,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type UserRole = "landlord" | "admin";
 export type TenantCheckStatus =
+  | "draft"
   | "pending_upload"
   | "documents_received"
   | "under_review"
@@ -426,8 +427,9 @@ export type Database = {
           tenant_full_name: string;
           tenant_phone: string | null;
           updated_at: string;
-          upload_token_expires_at: string;
-          upload_token_hash: string;
+          upload_token_expires_at: string | null;
+          upload_token_hash: string | null;
+          workflow_activated_at: string | null;
         };
         Insert: {
           created_at?: string;
@@ -443,8 +445,9 @@ export type Database = {
           tenant_full_name: string;
           tenant_phone?: string | null;
           updated_at?: string;
-          upload_token_expires_at: string;
-          upload_token_hash: string;
+          upload_token_expires_at?: string | null;
+          upload_token_hash?: string | null;
+          workflow_activated_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["tenant_checks"]["Insert"]>;
         Relationships: [];

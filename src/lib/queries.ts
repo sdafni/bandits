@@ -27,7 +27,9 @@ export type TenantCheckDetail = Database["public"]["Tables"]["tenant_checks"]["R
   ai_reports: Database["public"]["Tables"]["ai_reports"]["Row"] | null;
 };
 
-export type PublicCheckDetail = Omit<TenantCheckDetail, "ai_reports">;
+export type PublicCheckDetail = Omit<TenantCheckDetail, "ai_reports"> & {
+  landlord: Pick<Database["public"]["Tables"]["users"]["Row"], "full_name" | "company_name"> | null;
+};
 export type ProtectionSnapshot = {
   depositQuote: Database["public"]["Tables"]["deposit_protection_quotes"]["Row"] | null;
   insuranceEligibility: Database["public"]["Tables"]["insurance_eligibility"]["Row"] | null;
@@ -170,6 +172,8 @@ export async function getPublicCheckByToken(token: string): Promise<PublicCheckD
       `,
     )
     .eq("upload_token_hash", tokenHash)
+    .neq("status", "draft")
+    .not("workflow_activated_at", "is", null)
     .gt("upload_token_expires_at", new Date().toISOString())
     .single();
 
@@ -178,10 +182,15 @@ export async function getPublicCheckByToken(token: string): Promise<PublicCheckD
   }
 
   const record = data as Record<string, unknown>;
+  const landlordId = String(record.landlord_id ?? "");
+  const { data: landlordRow } = landlordId
+    ? await admin.from("users").select("full_name, company_name").eq("id", landlordId).maybeSingle()
+    : { data: null };
 
   return {
     ...record,
     properties: Array.isArray(record.properties) ? record.properties[0] ?? null : record.properties,
+    landlord: landlordRow,
     tenant_documents: Array.isArray(record.tenant_documents) ? record.tenant_documents : [],
     tenant_public_profiles: Array.isArray(record.tenant_public_profiles)
       ? record.tenant_public_profiles[0] ?? null

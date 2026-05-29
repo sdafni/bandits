@@ -21,7 +21,7 @@ export type BillingPlanLimits = {
 
 export const BILLING_PLANS = [
   {
-    description: "For individual landlords running occasional screening checks.",
+    description: "For landlords with 1–2 properties and a few checks a month.",
     features: [
       "1 active tenant check at a time",
       "Max 3 completed checks per month",
@@ -36,7 +36,7 @@ export const BILLING_PLANS = [
     shortPrice: "€19",
   },
   {
-    description: "For active landlords and agents who need a steady screening workflow.",
+    description: "For active landlords who run checks regularly.",
     features: [
       "Up to 10 active tenant checks",
       "Max 25 completed checks per month",
@@ -51,13 +51,13 @@ export const BILLING_PLANS = [
     shortPrice: "€49",
   },
   {
-    description: "For property managers and teams running screening as an operational process.",
+    description: "For managers and teams with many properties.",
     features: [
       "Up to 40 active tenant checks",
       "Max 100 completed checks per month",
-      "Team-style operational workflow",
-      "Priority review queue",
-      "Premium support and onboarding",
+      "Built for multiple properties",
+      "Faster review",
+      "Priority support",
     ],
     featured: false,
     key: "premium",
@@ -120,7 +120,7 @@ export function getBillingPlanLimits(key: BillingPlanKey | null | undefined): Bi
   return PLAN_LIMITS[key ?? "basic"];
 }
 
-export const WORKSPACE_ACCESS_LABEL = "Trial Workspace";
+export const WORKSPACE_ACCESS_LABEL = "Starter plan";
 
 export function getBillingPlanName(key: BillingPlanKey | null | undefined) {
   if (!key) {
@@ -142,7 +142,7 @@ export function getWorkspaceBillingLabel(options: {
 }
 
 export function getSubscriptionStatusBadge(hasActiveSubscription: boolean) {
-  return hasActiveSubscription ? "Active" : "Starter access";
+  return hasActiveSubscription ? "Active" : "Starter plan";
 }
 
 export function getBillingPlanPriceId(key: BillingPlanKey) {

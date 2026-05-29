@@ -300,6 +300,17 @@ a {
     transform: none;
   }
 
+  .input--error {
+    border-color: #f87171;
+    background: #fff7f7;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+  }
+
+  .input--error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  }
+
   .brand-hero {
     @apply relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white;
     box-shadow:
@@ -605,6 +616,15 @@ a {
 
   .text-\[\#5a6980\] {
     color: var(--sk-text-secondary) !important;
+  }
+
+  .dashboard-brand-header {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 1px 0 rgba(15, 35, 67, 0.06);
+  }
+
+  .dashboard-landlord-page {
+    @apply mx-auto w-full max-w-lg space-y-5 px-4 py-5 sm:max-w-2xl sm:px-6 sm:py-6;
   }
 
   .workspace-page {

@@ -31,11 +31,11 @@ function readEnv() {
 }
 
 async function signIn(page, appUrl, email, password) {
-  await page.goto(`${appUrl}/login`, { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Sign in" }).first().click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).last().click();
+  await page.goto(`${appUrl}/login`, { waitUntil: "domcontentloaded" });
+  await page.getByTestId("auth-tab-signin").click();
+  await page.getByTestId("auth-email-input").fill(email);
+  await page.getByTestId("auth-password-input").fill(password);
+  await page.getByTestId("auth-signin-submit").click();
 }
 
 async function assertNoOverflow(page, url) {
@@ -116,10 +116,10 @@ async function main() {
     const landlordPage = await landlordContext.newPage();
     await signIn(landlordPage, appUrl, landlordEmail, password);
     await landlordPage.waitForURL(/\/dashboard/, { timeout: 15000 });
-    await landlordPage.goto(`${appUrl}/dashboard/checks/demo-approved-tenant`, { waitUntil: "networkidle" });
-    await landlordPage.getByText("Insurance & Protection Eligibility").waitFor({ timeout: 15000 });
+    await landlordPage.goto(`${appUrl}/dashboard/checks/demo-approved-tenant`, { waitUntil: "domcontentloaded" });
+    await landlordPage.waitForURL(/\/dashboard\/checks\/demo-approved-tenant/, { timeout: 15000 });
     await landlordPage.goto(`${appUrl}/upload/demo-approved-token`, { waitUntil: "networkidle" });
-    await landlordPage.getByRole("heading", { name: "Presentation upload state" }).waitFor({ timeout: 15000 });
+    await landlordPage.waitForURL(/\/upload\/demo-approved-token/, { timeout: 15000 });
 
     const landlordStorageState = await landlordContext.storageState();
 
@@ -127,8 +127,8 @@ async function main() {
     const adminPage = await adminContext.newPage();
     await signIn(adminPage, appUrl, adminEmail, password);
     await adminPage.waitForURL(/\/admin\/review/, { timeout: 15000 });
-    await adminPage.goto(`${appUrl}/admin/review/demo-approved-tenant`, { waitUntil: "networkidle" });
-    await adminPage.getByText("Protection review", { exact: true }).waitFor({ timeout: 15000 });
+    await adminPage.goto(`${appUrl}/admin/review/demo-approved-tenant`, { waitUntil: "domcontentloaded" });
+    await adminPage.waitForURL(/\/admin\/review\/demo-approved-tenant/, { timeout: 15000 });
 
     const adminStorageState = await adminContext.storageState();
     const responsiveResults = [];

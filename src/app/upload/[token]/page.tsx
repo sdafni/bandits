@@ -19,6 +19,8 @@ import {
   getDocumentDefinition,
   getDocumentLabel,
 } from "@/lib/trust-workflows";
+import { getRequestLocale } from "@/lib/i18n-server";
+import { translate } from "@/lib/i18n/messages";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +35,16 @@ export default async function TenantUploadPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const locale = await getRequestLocale();
+  const t = (key: string, vars?: Record<string, string | number>) => {
+    let value = translate(locale, key);
+    if (vars) {
+      for (const [name, replacement] of Object.entries(vars)) {
+        value = value.replace(`{${name}}`, String(replacement));
+      }
+    }
+    return value;
+  };
   const isDemoToken = isDemoUploadToken(token);
 
   if (!hasSupabaseServiceEnv() && !isDemoToken) {
@@ -102,17 +114,19 @@ export default async function TenantUploadPage({
     detail.requested_documents.length === 0
       ? 0
       : Math.round(((detail.requested_documents.length - missingDocumentTypes.length) / detail.requested_documents.length) * 100);
+  const landlordDisplayName =
+    detail.landlord?.company_name?.trim() || detail.landlord?.full_name?.trim() || null;
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10 lg:py-16">
       <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
         <WorkspaceRibbon
           items={[
-            { href: "/", label: "SafeKey" },
-            { active: true, label: "Secure upload" },
-            { label: "Tenant document flow" },
+            { href: "/", label: t("tenantUpload.ribbonHome") },
+            { active: true, label: t("tenantUpload.ribbonUpload") },
+            { label: t("tenantUpload.ribbonStep") },
           ]}
-          statusLabel="Protected access"
+          statusLabel={t("tenantUpload.statusProtected")}
         />
 
         <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
@@ -127,23 +141,29 @@ export default async function TenantUploadPage({
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Tenant Passport Greece</p>
                 </div>
               </div>
-              <h1 className="text-3xl font-semibold text-slate-950">Complete your SafeKey verification pack</h1>
+              <h1 className="text-3xl font-semibold text-slate-950">{t("tenantUpload.title")}</h1>
               <p className="text-sm leading-7 text-slate-600">
-                Upload the requested documents securely for {detail.properties?.name ?? "the selected property"}.
-                This page is designed for both local and expat tenants applying in the Greek rental market.
+                {t("tenantUpload.body", {
+                  property: detail.properties?.name ?? t("tenantUpload.property"),
+                })}
               </p>
+              {landlordDisplayName ? (
+                <p className="text-sm text-slate-600">
+                  <span className="font-medium text-slate-800">{t("tenantUpload.requestedBy")}:</span> {landlordDisplayName}
+                </p>
+              ) : null}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Property</p>
+                <p className="text-sm text-slate-500">{t("tenantUpload.property")}</p>
                 <p className="mt-1 font-semibold text-slate-950">{detail.properties?.name ?? "Property"}</p>
                 <p className="mt-1 text-sm text-slate-600">
                   {detail.properties?.address_line1}, {detail.properties?.city}
                 </p>
               </div>
               <div className="rounded-3xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Monthly rent</p>
+                <p className="text-sm text-slate-500">{t("tenantUpload.monthlyRent")}</p>
                 <p className="mt-1 font-semibold text-slate-950">
                   {formatCurrency(detail.properties?.monthly_rent)}
                 </p>
@@ -154,13 +174,14 @@ export default async function TenantUploadPage({
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-medium text-slate-700">Requested documents</p>
+              <p className="text-sm font-medium text-slate-700">{t("tenantUpload.requestedDocuments")}</p>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                Upload progress {uploadProgressPercent}% · Missing {missingDocumentTypes.length}
+                {t("tenantUpload.uploadProgress", {
+                  percent: uploadProgressPercent,
+                  missing: missingDocumentTypes.length,
+                })}
               </div>
-              <p className="text-xs text-muted">
-                Recommended documents improve trust confidence. Missing documents do not automatically reject the tenant.
-              </p>
+              <p className="text-xs text-muted">{t("tenantUpload.uploadHint")}</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {(Object.keys(TRUST_DOCUMENT_CATEGORIES) as Array<keyof typeof TRUST_DOCUMENT_CATEGORIES>).map((category) => {
                   const items = detail.requested_documents.filter(
@@ -190,7 +211,7 @@ export default async function TenantUploadPage({
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-3xl border border-[#dbe2eb] bg-white p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Verification progression</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">{t("tenantUpload.progressTitle")}</p>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <p>{operationalState.analystState}</p>
                   <p>{operationalState.nextStep}</p>
@@ -198,7 +219,7 @@ export default async function TenantUploadPage({
                 </div>
               </div>
               <div className="rounded-3xl border border-[#dbe2eb] bg-white p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Greek market checks</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">{t("tenantUpload.checksTitle")}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {getVerificationChecklist(detail.requested_documents).map((item) => (
                     <span
@@ -213,12 +234,11 @@ export default async function TenantUploadPage({
             </div>
 
             <div className="rounded-3xl border border-[#dbe2eb] bg-white px-4 py-4 text-sm leading-7 text-[#0f2343]">
-              Your documents are stored securely in SafeKey and are only available to the landlord, property
-              professional, and authorized review staff assigned to this verification case.
+              {t("tenantUpload.privacyNote")}
             </div>
 
             <div className="rounded-3xl border border-[#dbe2eb] bg-white px-4 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Compliance indicators</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">{t("tenantUpload.securityTitle")}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {getComplianceIndicators(detail.status).map((item) => (
                   <span
@@ -267,14 +287,14 @@ export default async function TenantUploadPage({
 
         <section className="card space-y-5">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">Already uploaded</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">Current document pack</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5a6980]">{t("tenantUpload.uploadedTitle")}</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{t("tenantUpload.uploadedHeading")}</h2>
           </div>
 
           <div className="space-y-4">
             {documents.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-sm text-slate-500">
-                No documents uploaded yet.
+                {t("tenantUpload.noDocuments")}
               </div>
             ) : (
               documents.map((document) => (
@@ -286,14 +306,14 @@ export default async function TenantUploadPage({
                         {document.document_type.replaceAll("_", " ")} • Uploaded {formatDate(document.created_at)}
                       </p>
                     </div>
-                    <Badge tone="info">Stored for review</Badge>
+                    <Badge tone="info">{t("tenantUpload.storedForReview")}</Badge>
                     {document.signedUrl ? (
                       <Link
                         className="inline-flex items-center gap-2 text-sm font-medium text-[#0f2343]"
                         href={document.signedUrl}
                         target="_blank"
                       >
-                        Open file
+                        {t("tenantUpload.openFile")}
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     ) : isDemoToken ? (

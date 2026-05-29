@@ -12,15 +12,14 @@ import { SubscriptionCheckoutForm } from "@/components/subscription-checkout-for
 import { parseBillingPlanIntent } from "@/lib/billing-navigation";
 import { requireLandlord } from "@/lib/auth";
 import { getRequestLocale } from "@/lib/i18n-server";
+import { translate } from "@/lib/i18n/messages";
+import { BILLING_PLANS, formatStripeAmount, isEntitledSubscriptionStatus } from "@/lib/billing";
 import {
-  BILLING_PLANS,
-  ENTERPRISE_CONTACT_PRODUCT,
-  SCREENING_PAYMENT_PRODUCT,
-  formatStripeAmount,
-  getBillingPlanName,
-  getSubscriptionStatusBadge,
-  isEntitledSubscriptionStatus,
-} from "@/lib/billing";
+  getLocalizedPlanDescription,
+  getLocalizedPlanFeatures,
+  getLocalizedPlanName,
+} from "@/lib/billing-i18n";
+import { withLocalePath } from "@/lib/i18n";
 import { BillingCheckoutSuccess } from "@/components/billing-checkout-success";
 import { SignOutForm } from "@/components/sign-out-form";
 import { getBillingOverviewForUser } from "@/lib/billing-queries";
@@ -28,10 +27,13 @@ import { getStripeProductionReadiness } from "@/lib/env";
 import { cn, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "Billing",
-  description: "Manage SafeKey subscriptions, invoices, and screening payments.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  return {
+    title: translate(locale, "billing.pageTitle"),
+    description: translate(locale, "billing.pageDescription"),
+  };
+}
 
 function planCardClassName({ featured, selected }: { featured?: boolean; selected?: boolean }) {
   return cn(
@@ -46,7 +48,8 @@ export default async function DashboardBillingPage({
   searchParams: Promise<{ checkout?: string; plan?: string }>;
 }) {
   const locale = await getRequestLocale();
-  const isGreek = locale === "el";
+  const t = (key: string) => translate(locale, key);
+  const localePath = (path: string) => withLocalePath(locale, path);
   const { profile } = await requireLandlord();
   const overview = await getBillingOverviewForUser(profile.id);
   const stripeReadiness = getStripeProductionReadiness();
@@ -62,22 +65,11 @@ export default async function DashboardBillingPage({
 
   const statusMessages: { key: string; className: string; message: string }[] = [];
 
-  if (!overview.schemaReady) {
+  if (!overview.schemaReady || !stripeReadiness.isCheckoutReady) {
     statusMessages.push({
-      key: "schema",
-      className: "border-amber-200 bg-amber-50 text-amber-950",
-      message:
-        "Billing tables are not deployed in Supabase yet. Apply migrations `202605270001_add_billing_infrastructure.sql` and `202605270002_stripe_webhook_idempotency.sql` before enabling live checkout.",
-    });
-  } else if (!stripeReadiness.isCheckoutReady) {
-    statusMessages.push({
-      key: "stripe-config",
-      className: "border-amber-200 bg-amber-50 text-amber-950",
-      message: `Stripe production keys or live price IDs are missing. Set ${
-        stripeReadiness.missingCheckoutKeys.length > 0
-          ? stripeReadiness.missingCheckoutKeys.join(", ")
-          : "STRIPE_SECRET_KEY, STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID, STRIPE_PREMIUM_PRICE_ID, STRIPE_SCREENING_PRICE_ID"
-      } in Vercel Production, then redeploy.`,
+      key: "plans-unavailable",
+      className: "border-slate-200 bg-slate-50 text-slate-700",
+      message: t("billing.plansUnavailable"),
     });
   }
 
@@ -85,13 +77,13 @@ export default async function DashboardBillingPage({
     statusMessages.push({
       key: "checkout-success",
       className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-      message: "Subscription activated successfully.",
+      message: t("billing.checkoutSuccess"),
     });
   } else if (checkoutState === "cancelled") {
     statusMessages.push({
       key: "checkout-cancelled",
       className: "border-slate-200 bg-slate-50 text-slate-700",
-      message: "Checkout was canceled. Your existing billing setup has not been changed.",
+      message: t("billing.checkoutCancelled"),
     });
   } else if (checkoutState === "error" || checkoutState === "unconfigured" || checkoutState === "schema") {
     statusMessages.push({
@@ -99,23 +91,22 @@ export default async function DashboardBillingPage({
       className: "border-amber-200 bg-amber-50 text-amber-950",
       message:
         checkoutState === "error"
-          ? "Stripe checkout could not be started. Use the plan buttons below to try again."
+          ? t("billing.checkoutError")
           : checkoutState === "unconfigured"
-            ? "Stripe is not fully configured in production yet."
-            : "Billing tables are not ready in Supabase.",
+            ? t("billing.checkoutError")
+            : t("billing.checkoutError"),
     });
   } else if (selectedPlanIntent && selectedPlanIntent !== "screening" && checkoutState === "auto") {
     statusMessages.push({
       key: "checkout-auto",
       className: "border-slate-200 bg-slate-50 text-slate-700",
-      message: `Opening Stripe checkout for the ${selectedPlanIntent} plan...`,
+      message: t("billing.openingCheckout"),
     });
   } else if (selectedPlanIntent === "screening") {
     statusMessages.push({
       key: "screening-hint",
       className: "border-slate-200 bg-slate-50 text-slate-700",
-      message:
-        "Single screening payments are purchased from an individual tenant case on your dashboard.",
+      message: t("billing.screeningHint"),
     });
   }
 
@@ -124,21 +115,16 @@ export default async function DashboardBillingPage({
       <AppHeader
         activeNav="billing"
         homeHref="/dashboard"
-        locale={locale}
         actions={
-          <Link className="workspace-cta-secondary" href="/dashboard">
-            {isGreek ? "Επιστροφή στον πίνακα" : "Back to dashboard"}
+          <Link className="workspace-cta-secondary" href={localePath("/dashboard")}>
+            {t("billing.backToDashboard")}
           </Link>
         }
-        subtitle={
-          isGreek
-            ? "Συνδρομές, τιμολόγια και ανά υπόθεση χρέωση — συγχρονισμένα με Stripe."
-            : "Subscriptions, invoices, and per-case screening — synced with Stripe."
-        }
-        title={isGreek ? "Χρέωση" : "Billing"}
+        subtitle={t("billing.subtitle")}
+        title={t("billing.pageTitle")}
       />
 
-      <div className="workspace-page !max-w-7xl space-y-4">
+      <div className="workspace-page !max-w-7xl space-y-4" data-testid="billing-page">
         {statusMessages.length > 0 ? (
           <div className="space-y-2">
             {statusMessages.map((item) => (
@@ -156,40 +142,38 @@ export default async function DashboardBillingPage({
           ) : null}
         </Suspense>
 
-        <section className="workspace-card">
+        <section className="workspace-card" data-testid="billing-subscription-summary">
           <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-stretch">
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="section-label">Subscription</p>
+                  <p className="section-label">{t("billing.subscription")}</p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-950 sm:text-2xl">
-                    {getBillingPlanName(currentPlanKey)}
+                    {currentPlanKey ? getLocalizedPlanName(locale, currentPlanKey) : t("billing.starterLabel")}
                   </h2>
                 </div>
                 <Badge tone={overview.activeSubscription ? "success" : "neutral"}>
-                  {getSubscriptionStatusBadge(hasManagedSubscription)}
+                  {hasManagedSubscription ? t("billing.activeLabel") : t("billing.starterLabel")}
                 </Badge>
               </div>
               <p className="text-sm leading-6 text-slate-600">
-                {overview.activeSubscription
-                  ? "Synced from Stripe. Manage payment methods and invoices in the billing portal."
-                  : "Select a monthly plan below, or pay per screening from a tenant case."}
+                {overview.activeSubscription ? t("billing.subscriptionManaged") : t("billing.subscriptionActive")}
               </p>
               <div className="billing-metrics">
                 {[
                   {
-                    label: "Status",
+                    label: t("billing.statusLabel"),
                     value: overview.activeSubscription
                       ? overview.activeSubscription.status.replaceAll("_", " ")
                       : "—",
                   },
                   {
-                    label: "Renewal",
+                    label: t("billing.renewalLabel"),
                     value: overview.activeSubscription?.current_period_end
                       ? formatDate(overview.activeSubscription.current_period_end)
                       : "—",
                   },
-                  { label: "Paid screenings", value: String(paidScreenings) },
+                  { label: t("billing.paidScreeningsLabel"), value: String(paidScreenings) },
                 ].map((item) => (
                   <div className="metric-tile" key={item.label}>
                     <p className="metric-tile__label">{item.label}</p>
@@ -200,28 +184,27 @@ export default async function DashboardBillingPage({
             </div>
 
             <div className="flex flex-col rounded-xl border border-slate-200/90 bg-slate-50/40 p-4">
-              <p className="section-label">Stripe account</p>
+              <p className="section-label">{t("billing.paymentAccountLabel")}</p>
               <p className="mt-1 text-sm font-semibold text-slate-950">{overview.customer?.email ?? profile.email}</p>
-              <p className="mt-1 text-xs text-slate-600">{overview.invoices.length} invoices on file</p>
-              {stripeReadiness.isCheckoutReady && !stripeReadiness.hasWebhookSecret ? (
-                <p className="mt-3 text-xs leading-5 text-slate-600">
-                  Add `STRIPE_WEBHOOK_SECRET` in Vercel to sync subscription events automatically.
-                </p>
-              ) : null}
+              <p className="mt-1 text-xs text-slate-600">
+                {overview.invoices.length} {t("billing.invoicesOnFile")}
+              </p>
               <div className="mt-auto pt-4">
-                <BillingPortalForm disabled={!checkoutEnabled} label="Manage billing" pendingLabel="Opening..." />
+                <BillingPortalForm
+                  disabled={!checkoutEnabled}
+                  label={t("billing.manageBilling")}
+                  pendingLabel={t("billing.openingCheckout")}
+                />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-3" data-testid="billing-plans">
           <div>
-            <p className="section-label">Plans</p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-950">Choose your billing layer</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Monthly subscriptions for volume, or pay per case when you need occasional reports.
-            </p>
+            <p className="section-label">{t("billing.subscription")}</p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-950">{t("billing.plansSectionTitle")}</h2>
+            <p className="mt-1 text-sm text-slate-600">{t("billing.plansSectionBody")}</p>
           </div>
 
           <div className="responsive-plan-grid items-stretch">
@@ -235,29 +218,37 @@ export default async function DashboardBillingPage({
                   <div className="billing-plan-card__body">
                     <div className="space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-base font-semibold text-slate-950">{plan.name}</h3>
+                        <h3 className="text-base font-semibold text-slate-950">
+                          {getLocalizedPlanName(locale, plan.key)}
+                        </h3>
                         {isCurrentPlan ? (
-                          <Badge tone="success">Current</Badge>
+                          <Badge tone="success">{t("billing.current")}</Badge>
                         ) : isSelectedIntent ? (
-                          <Badge tone="neutral">Selected</Badge>
+                          <Badge tone="neutral">{t("billing.selected")}</Badge>
                         ) : plan.featured ? (
-                          <Badge tone="warning">Popular</Badge>
+                          <Badge tone="warning">{t("billing.popular")}</Badge>
                         ) : null}
                       </div>
                       <p className="text-2xl font-semibold tracking-tight text-slate-950">
                         {plan.shortPrice}
-                        <span className="ml-1 text-sm font-medium text-slate-500">/mo</span>
+                        <span className="ml-1 text-sm font-medium text-slate-500">{t("billing.perMonth")}</span>
                       </p>
-                      <p className="text-xs leading-5 text-slate-600">{plan.description}</p>
+                      <p className="text-xs leading-5 text-slate-600">
+                        {getLocalizedPlanDescription(locale, plan.key)}
+                      </p>
                     </div>
-                    <BillingPlanFeatures features={plan.features} />
+                    <BillingPlanFeatures features={getLocalizedPlanFeatures(locale, plan.key)} />
                   </div>
                   <div className="billing-plan-card__footer">
                     {hasManagedSubscription ? (
                       <BillingPortalForm
                         disabled={!checkoutEnabled}
-                        label={isCurrentPlan ? "Manage plan" : `Switch to ${plan.name}`}
-                        pendingLabel="Opening..."
+                        label={
+                          isCurrentPlan
+                            ? t("billing.managePlan")
+                            : `${t("billing.switchPlan")} ${getLocalizedPlanName(locale, plan.key)}`
+                        }
+                        pendingLabel={t("billing.openingCheckout")}
                         variant={ctaVariant === "workspace" ? "workspace" : "billing"}
                       />
                     ) : (
@@ -266,12 +257,12 @@ export default async function DashboardBillingPage({
                         formId={`checkout-form-${plan.key}`}
                         label={
                           isCurrentPlan
-                            ? "Current plan"
+                            ? t("billing.currentPlan")
                             : isSelectedIntent
-                              ? `Continue · ${plan.name}`
-                              : `Subscribe · ${plan.name}`
+                              ? `${t("billing.continuePlan")} · ${getLocalizedPlanName(locale, plan.key)}`
+                              : `${t("billing.subscribePlan")} · ${getLocalizedPlanName(locale, plan.key)}`
                         }
-                        pendingLabel="Opening checkout..."
+                        pendingLabel={t("billing.openingCheckout")}
                         planKey={plan.key}
                         variant={ctaVariant}
                       />
@@ -285,17 +276,19 @@ export default async function DashboardBillingPage({
               <div className="billing-plan-card__body">
                 <div className="space-y-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-base font-semibold text-slate-950">{SCREENING_PAYMENT_PRODUCT.name}</h3>
-                    {selectedPlanIntent === "screening" ? <Badge tone="neutral">Selected</Badge> : null}
+                    <h3 className="text-base font-semibold text-slate-950">{t("billing.screening.name")}</h3>
+                    {selectedPlanIntent === "screening" ? <Badge tone="neutral">{t("billing.selected")}</Badge> : null}
                   </div>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-950">Pay per case</p>
-                  <p className="text-xs leading-5 text-slate-600">{SCREENING_PAYMENT_PRODUCT.description}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-950">{t("billing.payPerCase")}</p>
+                  <p className="text-xs leading-5 text-slate-600">{t("billing.screening.description")}</p>
                 </div>
-                <BillingPlanFeatures features={SCREENING_PAYMENT_PRODUCT.features} />
+                <BillingPlanFeatures
+                  features={[t("billing.screening.f1"), t("billing.screening.f2"), t("billing.screening.f3")]}
+                />
               </div>
               <div className="billing-plan-card__footer">
-                <Link className="workspace-cta-secondary w-full" href="/dashboard#tenant-cases">
-                  Select tenant case
+                <Link className="workspace-cta-secondary w-full" href={localePath("/dashboard#tenant-cases")}>
+                  {t("billing.selectCase")}
                 </Link>
               </div>
             </article>
@@ -304,17 +297,24 @@ export default async function DashboardBillingPage({
               <div className="billing-plan-card__body">
                 <div className="space-y-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-base font-semibold text-slate-950">{ENTERPRISE_CONTACT_PRODUCT.name}</h3>
-                    <Badge tone="neutral">Custom</Badge>
+                    <h3 className="text-base font-semibold text-slate-950">{t("billing.enterprise.name")}</h3>
+                    <Badge tone="neutral">{t("billing.custom")}</Badge>
                   </div>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-950">Custom</p>
-                  <p className="text-xs leading-5 text-slate-600">{ENTERPRISE_CONTACT_PRODUCT.description}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-950">{t("billing.custom")}</p>
+                  <p className="text-xs leading-5 text-slate-600">{t("billing.enterprise.description")}</p>
                 </div>
-                <BillingPlanFeatures features={ENTERPRISE_CONTACT_PRODUCT.features} />
+                <BillingPlanFeatures
+                  features={[
+                    t("billing.enterprise.f1"),
+                    t("billing.enterprise.f2"),
+                    t("billing.enterprise.f3"),
+                    t("billing.enterprise.f4"),
+                  ]}
+                />
               </div>
               <div className="billing-plan-card__footer">
-                <Link className="workspace-cta-secondary w-full" href="/#support">
-                  Contact us
+                <Link className="workspace-cta-secondary w-full" href={localePath("/#support")}>
+                  {t("billing.contactUs")}
                 </Link>
               </div>
             </article>
@@ -325,7 +325,7 @@ export default async function DashboardBillingPage({
           <div className="workspace-card space-y-3">
             <div className="flex items-center gap-2">
               <Receipt className="h-4 w-4 text-slate-400" />
-              <h2 className="text-base font-semibold text-slate-950">Invoices</h2>
+              <h2 className="text-base font-semibold text-slate-950">{t("billing.invoices")}</h2>
             </div>
             {overview.invoices.length > 0 ? (
               <ul className="space-y-2">
@@ -353,7 +353,7 @@ export default async function DashboardBillingPage({
                     </div>
                     {invoice.hosted_invoice_url ? (
                       <Link className="workspace-cta-secondary shrink-0" href={invoice.hosted_invoice_url} rel="noreferrer" target="_blank">
-                        View
+                        {t("billing.viewInvoice")}
                       </Link>
                     ) : null}
                   </li>
@@ -361,9 +361,9 @@ export default async function DashboardBillingPage({
               </ul>
             ) : (
               <BillingEmptyState
-                description="Invoices appear after your first subscription charge."
+                description={t("billing.emptyInvoicesBody")}
                 icon={FileText}
-                title="No invoices yet"
+                title={t("billing.emptyInvoicesTitle")}
               />
             )}
           </div>
@@ -371,7 +371,7 @@ export default async function DashboardBillingPage({
           <div className="workspace-card space-y-3">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-slate-400" />
-              <h2 className="text-base font-semibold text-slate-950">Screening payments</h2>
+              <h2 className="text-base font-semibold text-slate-950">{t("billing.screeningPayments")}</h2>
             </div>
             {overview.recentScreeningPayments.length > 0 ? (
               <ul className="space-y-2">
@@ -396,9 +396,9 @@ export default async function DashboardBillingPage({
               </ul>
             ) : (
               <BillingEmptyState
-                description="Pay per screening from any tenant case on your dashboard."
+                description={t("billing.emptyPaymentsBody")}
                 icon={CreditCard}
-                title="No screening payments yet"
+                title={t("billing.emptyPaymentsTitle")}
               />
             )}
           </div>
@@ -408,10 +408,10 @@ export default async function DashboardBillingPage({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                {isGreek ? "Ρυθμίσεις λογαριασμού" : "Account settings"}
+                {t("billing.accountSettings")}
               </p>
               <p className="text-sm text-slate-600">
-                {isGreek ? "Η αποσύνδεση παραμένει διαθέσιμη ως δευτερεύουσα ενέργεια." : "Sign out remains available as a secondary action."}
+                {t("billing.signOutNote")}
               </p>
             </div>
             <SignOutForm />

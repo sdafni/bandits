@@ -92,15 +92,27 @@ async function main() {
   });
 
   await page.goto(`${appUrl}/login`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  await page.getByRole("button", { name: "Sign in" }).first().click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).last().click();
+  const hasTestIds = await page.getByTestId("auth-tab-signin").isVisible().catch(() => false);
+  if (hasTestIds) {
+    await page.getByTestId("auth-tab-signin").click();
+    await page.getByTestId("auth-email-input").fill(email);
+    await page.getByTestId("auth-password-input").fill(password);
+    await page.getByTestId("auth-signin-submit").click();
+  } else {
+    await page.getByRole("button", { name: /sign in|σύνδεση/i }).first().click();
+    await page.getByLabel(/email/i).fill(email);
+    await page.locator('input[name="password"]').first().fill(password);
+    await page.getByRole("button", { name: /sign in|σύνδεση/i }).last().click();
+  }
   await page.waitForFunction(() => window.location.pathname.startsWith("/dashboard"), null, {
     timeout: 120000,
   });
 
   await page.goto(`${appUrl}/dashboard/billing`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  const billingByTestId = page.getByTestId("billing-page");
+  if (await billingByTestId.isVisible().catch(() => false)) {
+    await billingByTestId.waitFor({ timeout: 30000 });
+  }
   console.log("Billing page URL:", page.url());
 
   const subscribeButton = page.getByRole("button", { name: /Subscribe/i }).first();

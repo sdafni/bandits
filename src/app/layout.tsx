@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppProviders } from "@/components/app-providers";
 import { env } from "@/lib/env";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { siteConfig } from "@/lib/site";
@@ -78,7 +79,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale}>
       <body className="overflow-x-hidden antialiased" suppressHydrationWarning>
-        {children}
+        <AppProviders initialLocale={locale}>{children}</AppProviders>
       </body>
     </html>
   );

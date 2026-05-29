@@ -15,13 +15,13 @@ const trustItems = [
   {
     title: "Secure document handling",
     description:
-      "Applicant files move through private upload links, tracked submission states, and review-aware storage controls.",
+      "Documents move through private upload links with clear status at every step.",
     icon: FileLock2,
   },
   {
     title: "Support and accountability",
     description:
-      "Operational support, screening questions, and platform assistance are available through a direct product support channel.",
+      "Questions about tenant checks or your account? Send us a message — we reply by email.",
     icon: LifeBuoy,
   },
 ] as const;

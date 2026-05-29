@@ -42,3 +42,9 @@ export function withLocalePath(locale: AppLocale, pathname: string) {
   const stripped = stripLocaleFromPath(normalized);
   return stripped === "/" ? `/${locale}` : `/${locale}${stripped}`;
 }
+
+export function localizeHref(locale: AppLocale, href: string) {
+  const [path, query] = href.split("?");
+  const localized = withLocalePath(locale, path);
+  return query ? `${localized}?${query}` : localized;
+}

@@ -2,20 +2,19 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
 import { resendConfirmationEmailAction, signInAction, signUpAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
 import { buildBillingPath, parseBillingPlanIntent } from "@/lib/billing-navigation";
-import { detectLocaleFromPath } from "@/lib/i18n";
+import { localizeHref } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/context";
 
 const initialState: ActionState = {};
 
 export function AuthPanels() {
-  const pathname = usePathname();
-  const locale = detectLocaleFromPath(pathname) ?? "el";
-  const isGreek = locale === "el";
+  const { locale, t } = useLocale();
   const searchParams = useSearchParams();
   const selectedPlan = parseBillingPlanIntent(searchParams.get("plan"));
   const authReason = searchParams.get("reason");
@@ -35,12 +34,22 @@ export function AuthPanels() {
   const signUpCompleted = signUpState.kind === "signup_success";
   const confirmationEmail = signUpState.email ?? signUpEmail;
   const passwordsMatch = password === confirmPassword;
-  const passwordMismatchError = confirmPassword && !passwordsMatch ? "Passwords do not match." : null;
+  const passwordMismatchError = confirmPassword && !passwordsMatch ? t("auth.passwordMismatch") : null;
 
   const signUpDisabled = useMemo(() => !password || !confirmPassword || !passwordsMatch, [password, confirmPassword, passwordsMatch]);
 
+  const planLabel =
+    selectedPlan === "screening"
+      ? t("auth.singleScreening")
+      : selectedPlan
+        ? `${selectedPlan} ${t("auth.planWord")}`
+        : "";
+
   return (
-    <section className="card auth-card w-full max-w-[760px] space-y-6 border border-[#e5ebf3] bg-white/98 p-5 sm:space-y-7 sm:p-10">
+    <section
+      className="card auth-card w-full max-w-[760px] space-y-6 border border-[#e5ebf3] bg-white/98 p-5 sm:space-y-7 sm:p-10"
+      data-testid="auth-panels"
+    >
       <div className="space-y-4 sm:space-y-5">
         <div className="inline-flex w-full rounded-[18px] bg-[#f7f9fc] p-1 sm:rounded-[20px]">
           <button
@@ -50,9 +59,10 @@ export function AuthPanels() {
                 : "text-slate-500 hover:bg-white/60 hover:text-[#0f2343]"
             }`}
             onClick={() => setActiveTab("sign_in")}
+            data-testid="auth-tab-signin"
             type="button"
           >
-            {isGreek ? "Σύνδεση" : "Sign in"}
+            {t("auth.signIn")}
           </button>
           <button
             className={`tab-action min-h-11 flex-1 gap-2 sm:min-h-12 ${
@@ -61,66 +71,45 @@ export function AuthPanels() {
                 : "text-slate-500 hover:bg-white/60 hover:text-[#0f2343]"
             }`}
             onClick={() => setActiveTab("sign_up")}
+            data-testid="auth-tab-signup"
             type="button"
           >
-            {isGreek ? "Δημιουργία λογαριασμού" : "Create account"}
+            {t("auth.signUp")}
           </button>
         </div>
 
         <div className="space-y-2.5">
           <h2 className="text-pretty text-[1.75rem] font-semibold leading-tight tracking-[-0.04em] text-slate-950 sm:text-[2.2rem]">
-            {activeTab === "sign_in"
-              ? isGreek
-                ? "Σύνδεση στο SafeKey"
-                : "Sign in to SafeKey"
-              : isGreek
-                ? "Άνοιξε τον λογαριασμό σου στο SafeKey"
-                : "Open your SafeKey account"}
+            {activeTab === "sign_in" ? t("auth.signInTitle") : t("auth.signUpTitle")}
           </h2>
           <p className="max-w-[32rem] text-[15px] leading-6 text-slate-600 sm:text-base">
-            {activeTab === "sign_in"
-              ? isGreek
-                ? "Ασφαλής πρόσβαση στον χώρο ελέγχων σου."
-                : "Secure access to your verification workspace."
-              : isGreek
-                ? "Δημιούργησε χώρο εργασίας και ξεκίνα ασφαλείς ελέγχους."
-                : "Create your workspace and start screening securely."}
+            {activeTab === "sign_in" ? t("auth.signInSubtitle") : t("auth.signUpSubtitle")}
           </p>
         </div>
 
         {hasPlanIntent ? (
           <div className="rounded-[22px] border border-[#e9dfc5] bg-[#fcfaf4] px-4 py-4 text-sm leading-7 text-[#5d4e31]">
-            {isGreek ? "Ξεκινάς με" : "You&apos;re starting with"}{" "}
-            <span className="font-semibold capitalize">
-              {selectedPlan === "screening"
-                ? isGreek
-                  ? "μεμονωμένο έλεγχο"
-                  : "single screening"
-                : `${selectedPlan} ${isGreek ? "πλάνο" : "plan"}`}
-            </span>
-            {isGreek
-              ? ". Μετά τη σύνδεση, το SafeKey θα σε μεταφέρει στη χρέωση και θα ξεκινήσει checkout όπου απαιτείται."
-              : ". After authentication, SafeKey will take you to billing and start checkout when applicable."}
+            {t("auth.planIntentPrefix")} <span className="font-semibold capitalize">{planLabel}</span>
+            {t("auth.planIntentSuffix")}
           </div>
         ) : null}
 
         {authReason === "session_expired" ? (
           <div className="rounded-[22px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-7 text-amber-900">
-            <p className="font-semibold">{isGreek ? "Η συνεδρία σου έληξε" : "Your session has expired"}</p>
-            <p>
-              {isGreek
-                ? "Για λόγους ασφαλείας, η συνεδρία SafeKey έληξε μετά από αδράνεια. Τα δεδομένα σου είναι ασφαλή."
-                : "For security reasons, your SafeKey session expired after inactivity. Your data is safe."}
-            </p>
+            <p className="font-semibold">{t("auth.sessionExpiredTitle")}</p>
+            <p>{t("auth.sessionExpiredBody")}</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <button className="workspace-cta workspace-cta--compact" onClick={() => setActiveTab("sign_in")} type="button">
-                {isGreek ? "Συνέχεια με σύνδεση" : "Continue to sign in"}
+                {t("auth.continueSignIn")}
               </button>
-              <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href="/dashboard">
-                {isGreek ? "Επιστροφή στον πίνακα" : "Return to dashboard"}
+              <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href={localizeHref(locale, "/dashboard")}>
+                {t("auth.returnDashboard")}
               </Link>
-              <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href="/dashboard#new-screening">
-                {isGreek ? "Συνέχιση ελέγχου" : "Resume screening"}
+              <Link
+                className="workspace-cta-secondary workspace-cta-secondary--compact"
+                href={localizeHref(locale, "/dashboard#new-screening")}
+              >
+                {t("auth.resumeScreening")}
               </Link>
             </div>
           </div>
@@ -128,39 +117,49 @@ export function AuthPanels() {
       </div>
 
       {activeTab === "sign_in" ? (
-        <form action={signInFormAction} className="space-y-6">
+        <form action={signInFormAction} className="space-y-6" data-testid="auth-signin-form">
           <input name="next" type="hidden" value={nextPath} />
           <div className="space-y-4">
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">{isGreek ? "Email" : "Email"}</span>
-              <input className="input" name="email" required type="email" />
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.email")}</span>
+              <input className="input" data-testid="auth-email-input" name="email" required type="email" />
             </label>
 
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">{isGreek ? "Κωδικός" : "Password"}</span>
-              <input className="input" minLength={8} name="password" required type="password" />
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.password")}</span>
+              <input
+                className="input"
+                data-testid="auth-password-input"
+                minLength={8}
+                name="password"
+                required
+                type="password"
+              />
             </label>
           </div>
 
           <p className="text-sm text-slate-600">
-            <Link className="font-medium text-[#0f2343] underline-offset-2 hover:underline" href="/login/forgot-password">
-              {isGreek ? "Ξέχασες τον κωδικό;" : "Forgot password?"}
+            <Link
+              className="font-medium text-[#0f2343] underline-offset-2 hover:underline"
+              href={localizeHref(locale, "/login/forgot-password")}
+            >
+              {t("auth.forgotPassword")}
             </Link>
           </p>
 
           <div className="space-y-4 pt-1">
             <FormStatusMessage state={signInState} />
-            <SubmitButton className="w-full" pendingLabel={isGreek ? "Σύνδεση..." : "Signing in..."}>
-              {isGreek ? "Σύνδεση" : "Sign in"}
+            <SubmitButton className="w-full" data-testid="auth-signin-submit" pendingLabel={t("auth.signingIn")}>
+              {t("auth.signIn")}
             </SubmitButton>
           </div>
         </form>
       ) : signUpCompleted ? (
-        <div className="space-y-4 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm leading-7 text-emerald-900">
+        <div className="space-y-4 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm leading-7 text-emerald-900" data-testid="auth-signup-success">
           <p className="text-base font-semibold text-emerald-900">
-            Account created successfully.
+            {t("auth.signupSuccessTitle")}
             <br />
-            Please check your email to confirm your account, then sign in.
+            {t("auth.signupSuccessBody")}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
@@ -168,13 +167,18 @@ export function AuthPanels() {
               onClick={() => setActiveTab("sign_in")}
               type="button"
             >
-              Go to sign in
+              {t("auth.goToSignIn")}
             </button>
             {confirmationEmail ? (
               <form action={resendFormAction} className="w-full sm:w-auto">
                 <input name="email" type="hidden" value={confirmationEmail} />
-                <SubmitButton className="w-full sm:w-auto" pendingLabel="Sending..." type="submit" variant="secondary">
-                  Resend confirmation email
+                <SubmitButton
+                  className="w-full sm:w-auto"
+                  pendingLabel={t("auth.sendingConfirmation")}
+                  type="submit"
+                  variant="secondary"
+                >
+                  {t("auth.resendConfirmation")}
                 </SubmitButton>
               </form>
             ) : null}
@@ -182,23 +186,23 @@ export function AuthPanels() {
           <FormStatusMessage state={resendState} />
         </div>
       ) : (
-        <form action={signUpFormAction} className="space-y-6">
+        <form action={signUpFormAction} className="space-y-6" data-testid="auth-signup-form">
           <input name="next" type="hidden" value={nextPath} />
           {selectedPlan ? <input name="plan" type="hidden" value={selectedPlan} /> : null}
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">{isGreek ? "Ονοματεπώνυμο" : "Full name"}</span>
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.fullName")}</span>
               <input className="input" name="full_name" required />
             </label>
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">{isGreek ? "Εταιρική επωνυμία" : "Company name"}</span>
-              <input className="input" name="company_name" placeholder={isGreek ? "Προαιρετικό" : "Optional"} />
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.companyName")}</span>
+              <input className="input" name="company_name" placeholder={t("auth.optional")} />
             </label>
           </div>
 
           <div className="space-y-4">
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">Email</span>
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.email")}</span>
               <input
                 className="input"
                 name="email"
@@ -209,7 +213,7 @@ export function AuthPanels() {
             </label>
 
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">{isGreek ? "Κωδικός" : "Password"}</span>
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.password")}</span>
               <input
                 className="input"
                 minLength={8}
@@ -221,7 +225,7 @@ export function AuthPanels() {
               />
             </label>
             <label className="space-y-2.5">
-              <span className="text-sm font-medium text-[#42526b]">Confirm password</span>
+              <span className="text-sm font-medium text-[#42526b]">{t("auth.confirmPassword")}</span>
               <input
                 className="input"
                 minLength={8}
@@ -244,9 +248,9 @@ export function AuthPanels() {
             <SubmitButton
               className="w-full"
               disabled={signUpDisabled}
-              pendingLabel={isGreek ? "Δημιουργία λογαριασμού..." : "Creating account..."}
+              pendingLabel={t("auth.creatingAccount")}
             >
-              {isGreek ? "Δημιουργία λογαριασμού" : "Create account"}
+              {t("auth.signUp")}
             </SubmitButton>
           </div>
         </form>

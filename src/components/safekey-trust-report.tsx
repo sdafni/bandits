@@ -76,7 +76,7 @@ export function SafeKeyTrustReport({
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Trust compliance snapshot</p>
         <p className="mt-2 text-sm text-slate-700">
           Consent: {report.underwritingReadiness.consentRecord.granted ? "Recorded" : "Pending"} ·
-          Audit events: {report.auditTrail.length} ·
+          Updates: {report.auditTrail.length} ·
           Document history entries: {report.underwritingReadiness.documentHistory.length}
         </p>
       </div>

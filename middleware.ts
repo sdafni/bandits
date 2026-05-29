@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  DEFAULT_LOCALE,
   detectLocaleFromPath,
   LOCALE_COOKIE,
   pickLocaleFromAcceptLanguage,
@@ -27,9 +28,11 @@ export async function middleware(request: NextRequest) {
     if (!localeFromPath) {
       const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
       const locale =
-        cookieLocale === "el" || cookieLocale === "en"
-          ? cookieLocale
-          : pickLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+        pathname === "/"
+          ? DEFAULT_LOCALE
+          : cookieLocale === "el" || cookieLocale === "en"
+            ? cookieLocale
+            : pickLocaleFromAcceptLanguage(request.headers.get("accept-language"));
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
       return NextResponse.redirect(redirectUrl, 307);
@@ -37,13 +40,22 @@ export async function middleware(request: NextRequest) {
 
     // Keep localized URLs (/el, /en) while resolving existing unprefixed routes.
     request.nextUrl.pathname = stripLocaleFromPath(pathname);
-    const response = await updateSession(request);
-    response.cookies.set(LOCALE_COOKIE, localeFromPath, {
+    const sessionResponse = await updateSession(request);
+    if (sessionResponse.headers.get("location")) {
+      return sessionResponse;
+    }
+
+    const rewrittenResponse = NextResponse.rewrite(request.nextUrl);
+    rewrittenResponse.headers.set("x-safekey-locale", localeFromPath);
+    for (const cookie of sessionResponse.cookies.getAll()) {
+      rewrittenResponse.cookies.set(cookie);
+    }
+    rewrittenResponse.cookies.set(LOCALE_COOKIE, localeFromPath, {
       maxAge: 60 * 60 * 24 * 365,
       path: "/",
       sameSite: "lax",
     });
-    return response;
+    return rewrittenResponse;
   }
 
   return updateSession(request);

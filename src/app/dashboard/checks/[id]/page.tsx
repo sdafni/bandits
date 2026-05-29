@@ -5,10 +5,14 @@ import { AiScreeningReport } from "@/components/ai-screening-report";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
 import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
-import { SafeKeyTrustReport } from "@/components/safekey-trust-report";
-import { ScreeningCheckoutForm } from "@/components/screening-checkout-form";
-import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
-import { CaseOriginBadge } from "@/components/case-origin-badge";
+import { CaseTrustReportSection } from "@/components/case-trust-report-section";
+import { CaseWorkflowPanel } from "@/components/case-workflow-panel";
+import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
+import { translate } from "@/lib/i18n/messages";
+import { getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
+import { resolveCaseAccess, resolveWorkspaceAccess } from "@/lib/workspace-access";
+import { CaseRemovePanel } from "@/components/case-remove-panel";
+import { canLandlordRemoveCheck } from "@/lib/check-removal";
 import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
 import { requireLandlord } from "@/lib/auth";
 import { getRequestLocale } from "@/lib/i18n-server";
@@ -38,7 +42,7 @@ export default async function LandlordCheckDetailPage({
   searchParams: Promise<{ payment?: string }>;
 }) {
   const locale = await getRequestLocale();
-  const isGreek = locale === "el";
+  const t = (key: string) => translate(locale, key);
   const { profile } = await requireLandlord();
   const { id } = await params;
   const query = await searchParams;
@@ -64,6 +68,8 @@ export default async function LandlordCheckDetailPage({
   const supabase = await createClient();
   const protectionSnapshot = await getProtectionSnapshot(id);
   const isDemoCase = isDemoCheckId(id);
+  const billingOverview = await getBillingOverviewForUser(profile.id, { admin: true });
+  const workspaceAccess = resolveWorkspaceAccess(billingOverview);
   const billingEligibility = isDemoCase
     ? { activeSubscription: null, customer: null, hasBillingAccess: true, screeningPayment: null }
     : await getBillingEligibilityForCheck({
@@ -71,6 +77,13 @@ export default async function LandlordCheckDetailPage({
         landlordId: profile.id,
         useAdmin: true,
       });
+  const caseAccess = resolveCaseAccess({
+    workspace: workspaceAccess,
+    checkId: id,
+    status: detail.status,
+    workflowActivatedAt: detail.workflow_activated_at ?? null,
+    hasCaseBillingAccess: billingEligibility.hasBillingAccess,
+  });
 
   const documents = isDemoCase
     ? detail.tenant_documents.map((document: Database["public"]["Tables"]["tenant_documents"]["Row"]) => ({
@@ -181,132 +194,79 @@ export default async function LandlordCheckDetailPage({
     score: detail.ai_reports?.score ?? null,
     uploadedDocuments: detail.tenant_documents.map((item) => item.document_type),
   });
-  const workflowStatus = getWorkflowStatusLabel({
-    status: detail.status,
-    uploadTokenExpiresAt: detail.upload_token_expires_at,
-  });
+  const workflowStatus = getWorkflowStatusLabel(
+    {
+      status: detail.status,
+      uploadTokenExpiresAt: detail.upload_token_expires_at,
+      workflowActivatedAt: detail.workflow_activated_at,
+    },
+    locale,
+  );
+
+  const removableCase = isDemoCase || canLandlordRemoveCheck(detail);
 
   return (
     <main className="min-h-screen">
       <AppHeader
-        locale={locale}
         actions={
           <Link
             className="secondary-action min-h-12 rounded-[18px] px-5 py-3"
             href="/dashboard"
           >
-            {isGreek ? "Επιστροφή στον πίνακα" : "Back to dashboard"}
+            {t("caseDetail.backToDashboard")}
           </Link>
         }
         homeHref="/dashboard"
-        subtitle={`${detail.properties?.name ?? "Property"} • Tenant Passport Greece case created ${formatDate(detail.created_at)}`}
-        title={isGreek ? `Υπόθεση SafeKey: ${detail.tenant_full_name}` : `SafeKey case: ${detail.tenant_full_name}`}
+        subtitle={`${detail.properties?.name ?? t("caseDetail.propertyFallback")} · ${t("caseDetail.caseSubtitle")} ${formatDate(detail.created_at)}`}
+        title={`${t("caseDetail.caseTitle")}: ${detail.tenant_full_name}`}
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
         {query.payment === "success" ? (
-          <div className="status-message border-emerald-200 bg-emerald-50 text-emerald-800">
-            Screening payment received. SafeKey can now generate the report once the admin review runs.
-          </div>
+          <div className="status-message border-emerald-200 bg-emerald-50 text-emerald-800">{t("workspace.paymentSuccess")}</div>
         ) : null}
         {query.payment === "cancelled" ? (
-          <div className="status-message border-[#e9dfc5] bg-[#fcfaf4] text-[#5d4e31]">
-            Payment was canceled. This case remains unpaid until a screening checkout is completed.
-          </div>
+          <div className="status-message border-[#e9dfc5] bg-[#fcfaf4] text-[#5d4e31]">{t("caseDetail.paymentCancelled")}</div>
+        ) : null}
+
+        {removableCase ? (
+          <CaseRemovePanel checkId={id} checkLabel={detail.tenant_full_name} removable={removableCase} />
         ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
-          <div className="card space-y-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Secure upload link</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">Applicant invitation</h2>
-              </div>
-              <Badge tone={detail.status === "report_ready" ? "success" : "info"}>
-                {workflowStatus}
-              </Badge>
-            </div>
+          <div className="space-y-5">
+            <CaseWorkflowPanel
+              caseAccess={caseAccess}
+              checkId={id}
+              secureUploadUrl={detail.secure_upload_url}
+              tenantEmail={detail.tenant_email}
+              uploadTokenExpiresAt={detail.upload_token_expires_at}
+              workflowStatusLabel={workflowStatus}
+            />
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <p className="break-all text-sm text-slate-700">{detail.secure_upload_url ?? "No link generated"}</p>
-            </div>
-                {getCaseOriginBadgeLabel(id) ? (
-                  <p className="text-xs leading-6 text-slate-500">
-                    Sample case: preloaded upload route and screening outcome for walkthroughs only.
-                  </p>
-                ) : null}
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-3xl bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-500">Tenant email</p>
-                <p className="mt-2 text-base font-semibold text-slate-950">
-                  {detail.tenant_email ?? "Not provided yet"}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-500">Link expiry</p>
-                <p className="mt-2 text-base font-semibold text-slate-950">
-                  {formatDate(detail.upload_token_expires_at)}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-slate-700">Requested documents</p>
+            <div className="card space-y-3">
+              <p className="text-sm font-medium text-slate-700">{t("caseDetail.requestedDocuments")}</p>
               <div className="flex flex-wrap gap-2">
                 {detail.requested_documents.map((item) => (
                   <Badge key={item}>{item.replaceAll("_", " ")}</Badge>
                 ))}
               </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Billing status</p>
-                  <p className="mt-2 text-base font-semibold text-slate-950">
-                    {billingEligibility.activeSubscription
-                      ? "Covered by active subscription"
-                      : billingEligibility.screeningPayment?.status === "paid"
-                        ? "One-time screening paid"
-                        : "Payment required before report generation"}
-                  </p>
-                </div>
-                <Badge
-                  tone={
-                    billingEligibility.hasBillingAccess ? "success" : "warning"
-                  }
-                >
-                  {billingEligibility.hasBillingAccess ? "Eligible" : "Pending payment"}
-                </Badge>
-              </div>
-
-              <p className="mt-3 text-sm leading-7 text-slate-700">
-                {billingEligibility.activeSubscription
-                  ? "This tenant case is covered by your active SafeKey plan."
-                  : billingEligibility.screeningPayment?.status === "paid"
-                    ? "A one-time Stripe payment has been recorded for this screening."
-                    : "Choose a plan or pay per screening to continue and activate this case."}
-              </p>
-
-              {!billingEligibility.hasBillingAccess ? (
-                <div className="mt-4">
-                  <ScreeningCheckoutForm checkId={detail.id} className="w-full" />
-                </div>
+              {getCaseOriginBadgeLabel(id) ? (
+                <p className="text-xs leading-6 text-slate-500">{t("caseDetail.sampleCaseNote")}</p>
               ) : null}
             </div>
           </div>
 
           <div className="card space-y-5">
-            <div className="flex justify-end">
-              <Link className="workspace-cta-secondary workspace-cta-secondary--compact" href={`/dashboard/checks/${id}/trust-report`}>
-                Export Trust Report PDF
-              </Link>
-            </div>
-            <SafeKeyTrustReport caseId={id} generatedAt={formatDate(new Date().toISOString())} report={trustReport} />
+            <CaseTrustReportSection
+              caseAccess={caseAccess}
+              caseId={id}
+              generatedAt={formatDate(new Date().toISOString())}
+              report={trustReport}
+            />
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Screening report</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">SafeKey screening decision</h2>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">{t("caseDetail.reportKicker")}</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{t("caseDetail.reportTitle")}</h2>
             </div>
 
             {detail.ai_reports ? (
@@ -318,8 +278,7 @@ export default async function LandlordCheckDetailPage({
               />
             ) : (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-sm text-slate-500">
-                The report has not been generated yet. Once the admin review runs, the final score and
-                recommendation will appear here.
+                {t("caseDetail.reportPending")}
               </div>
             )}
           </div>
@@ -329,16 +288,16 @@ export default async function LandlordCheckDetailPage({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">
-                Insurance & Protection Eligibility
+                {t("caseDetail.protectionKicker")}
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Rental protection outlook</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{t("caseDetail.protectionTitle")}</h2>
             </div>
             {protectionAssessment ? (
               <Badge tone={getEligibilityTone(protectionAssessment.status)}>
                 {formatEligibilityStatus(protectionAssessment.status)}
               </Badge>
             ) : (
-              <Badge tone="info">Pending report</Badge>
+              <Badge tone="info">{t("caseDetail.protectionPending")}</Badge>
             )}
           </div>
 
@@ -346,7 +305,7 @@ export default async function LandlordCheckDetailPage({
             <>
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-3xl bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-500">Eligibility status</p>
+                  <p className="text-sm font-medium text-slate-500">{t("caseDetail.protectionEligibility")}</p>
                   <p className="mt-2 text-xl font-semibold text-slate-950">
                     {formatEligibilityStatus(protectionAssessment.status)}
                   </p>
@@ -355,29 +314,29 @@ export default async function LandlordCheckDetailPage({
                   </p>
                 </div>
                 <div className="rounded-3xl bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-500">Recommended package</p>
+                  <p className="text-sm font-medium text-slate-500">{t("caseDetail.protectionPackage")}</p>
                   <p className="mt-2 text-xl font-semibold text-slate-950">
-                    {protectionAssessment.recommendedPackage ?? "No protection package recommended yet"}
+                    {protectionAssessment.recommendedPackage ?? t("caseDetail.protectionPackagePending")}
                   </p>
                   <p className="mt-3 text-sm leading-7 text-slate-700">
-                    Next action: {protectionAssessment.nextAction}
+                    {t("caseDetail.protectionNextAction")}: {protectionAssessment.nextAction}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                 <div className="rounded-3xl bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-500">Missing requirements</p>
+                  <p className="text-sm font-medium text-slate-500">{t("caseDetail.protectionMissing")}</p>
                   <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-700">
                     {protectionAssessment.missingRequirements.length > 0 ? (
                       protectionAssessment.missingRequirements.map((item) => <li key={item}>• {item}</li>)
                     ) : (
-                      <li>No additional protection requirements are currently highlighted.</li>
+                      <li>{t("caseDetail.protectionMissingNone")}</li>
                     )}
                   </ul>
                 </div>
                 <div className="rounded-3xl bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-500">Deposit protection option</p>
+                  <p className="text-sm font-medium text-slate-500">{t("caseDetail.protectionDeposit")}</p>
                   {protectionAssessment.depositQuote ? (
                     <div className="mt-3 space-y-2 text-sm leading-7 text-slate-700">
                       <p>{protectionAssessment.depositQuote.summary}</p>
@@ -391,7 +350,7 @@ export default async function LandlordCheckDetailPage({
                         Indicative protection fee:{" "}
                         <span className="font-semibold text-slate-950">
                           {protectionAssessment.depositQuote.proposedProtectionFee == null
-                            ? "Pending"
+                            ? t("caseDetail.protectionDepositPending")
                             : formatCurrency(protectionAssessment.depositQuote.proposedProtectionFee)}
                         </span>
                       </p>

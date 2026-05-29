@@ -1,3 +1,6 @@
+import type { AppLocale } from "@/lib/i18n";
+import { translate } from "@/lib/i18n/messages";
+
 export type TrustWorkflowExperience = "basic" | "pro" | "premium";
 
 export type TrustDocumentCategoryKey =
@@ -285,21 +288,28 @@ export function buildTrustWorkflowReport(params: {
   };
 }
 
-export function getWorkflowStatusLabel(params: {
-  status: "pending_upload" | "documents_received" | "under_review" | "report_ready";
-  uploadTokenExpiresAt?: string | null;
-}) {
+export function getWorkflowStatusLabel(
+  params: {
+    status: "draft" | "pending_upload" | "documents_received" | "under_review" | "report_ready";
+    uploadTokenExpiresAt?: string | null;
+    workflowActivatedAt?: string | null;
+  },
+  locale: AppLocale = "en",
+) {
+  if (params.status === "draft" || !params.workflowActivatedAt) {
+    return translate(locale, "checkStatus.draft");
+  }
   if (params.status === "report_ready") {
-    return "Completed";
+    return translate(locale, "checkStatus.recommendationReady");
   }
   if (params.uploadTokenExpiresAt && new Date(params.uploadTokenExpiresAt).getTime() < Date.now()) {
-    return "Expired";
+    return translate(locale, "checkStatus.linkExpired");
   }
   if (params.status === "pending_upload") {
-    return "Waiting for tenant";
+    return translate(locale, "checkStatus.awaitingDocuments");
   }
   if (params.status === "documents_received") {
-    return "Upload in progress";
+    return translate(locale, "checkStatus.documentsReceived");
   }
-  return "Under review";
+  return translate(locale, "checkStatus.underReview");
 }

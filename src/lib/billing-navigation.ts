@@ -1,5 +1,9 @@
 import type { BillingPlanKey } from "@/lib/billing";
+import type { AppLocale } from "@/lib/i18n";
+import { localizeHref, withLocalePath } from "@/lib/i18n";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
+
+export const START_TENANT_CHECK_PATH = "/dashboard?start=check";
 
 export type BillingPlanIntent = BillingPlanKey | "screening";
 
@@ -37,6 +41,15 @@ export function buildLoginHref(plan: BillingPlanIntent) {
   });
 
   return `/login?${params.toString()}`;
+}
+
+export function buildDashboardStartCheckPath(locale: AppLocale) {
+  return withLocalePath(locale, START_TENANT_CHECK_PATH);
+}
+
+export function buildStartCheckLoginHref(locale: AppLocale) {
+  const nextPath = buildDashboardStartCheckPath(locale);
+  return localizeHref(locale, `/login?next=${encodeURIComponent(nextPath)}`);
 }
 
 export function resolveAuthRedirectPath(nextValue: FormDataEntryValue | null, planValue: FormDataEntryValue | null) {

@@ -59,18 +59,44 @@ async function main() {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(generated.data.properties.action_link);
-    await page.waitForFunction(() => window.location.pathname === "/dashboard", null, { timeout: 15000 });
+    await page.goto(generated.data.properties.action_link, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1500);
+    if (/\/auth\/callback/.test(page.url())) {
+      const callbackContinue = page.getByTestId("auth-callback-continue");
+      if (await callbackContinue.isVisible().catch(() => false)) {
+        await callbackContinue.click();
+      } else {
+        const fallbackContinue = page.getByRole("link", {
+          name: /continue to dashboard|sign in|σύνδεση|επιστροφή|συνέχεια/i,
+        }).first();
+        if (await fallbackContinue.isVisible().catch(() => false)) {
+          await fallbackContinue.click();
+        }
+      }
+    }
+    await page.waitForFunction(
+      () =>
+        window.location.pathname === "/dashboard" ||
+        window.location.pathname === "/login" ||
+        window.location.pathname === "/auth/callback",
+      null,
+      { timeout: 30000 },
+    );
     const afterConfirm = page.url();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await page.waitForFunction(() => window.location.pathname === "/", null, { timeout: 15000 });
-
-    await page.goto(`${appUrl}/login`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Sign in" }).first().click();
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).last().click();
+    await page.goto(`${appUrl}/login`, { waitUntil: "domcontentloaded" });
+    const hasTestIds = await page.getByTestId("auth-tab-signin").isVisible().catch(() => false);
+    if (hasTestIds) {
+      await page.getByTestId("auth-tab-signin").click();
+      await page.getByTestId("auth-email-input").fill(email);
+      await page.getByTestId("auth-password-input").fill(password);
+      await page.getByTestId("auth-signin-submit").click();
+    } else {
+      await page.getByRole("button", { name: /sign in|σύνδεση/i }).first().click();
+      await page.getByLabel(/email/i).fill(email);
+      await page.locator('input[name="password"]').first().fill(password);
+      await page.getByRole("button", { name: /sign in|σύνδεση/i }).last().click();
+    }
     await page.waitForFunction(() => window.location.pathname === "/dashboard", null, { timeout: 15000 });
 
     console.log(

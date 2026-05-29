@@ -1,20 +1,25 @@
 import type { ActionState } from "@/app/actions";
+import { sanitizeUserFacingError } from "@/lib/form-validation";
 
 export function FormStatusMessage({ state }: { state: ActionState }) {
-  if (!state.error && !state.success) {
+  const safeError = state.error
+    ? sanitizeUserFacingError(state.error, "Something went wrong. Please review the form and try again.")
+    : undefined;
+
+  if (!safeError && !state.success) {
     return null;
   }
 
   return (
     <p
       className={
-        state.error
-          ? "status-message border-[#eadcc3] bg-[#fffaf2] text-[#6a4f12]"
+        safeError
+          ? "status-message border-rose-200 bg-rose-50 text-rose-800"
           : "status-message border-[#d9e5df] bg-[#f5fbf7] text-[#21543b]"
       }
       role="status"
     >
-      {state.error ?? state.success}
+      {safeError ?? state.success}
     </p>
   );
 }

@@ -160,6 +160,11 @@ async function syncCheckoutSession(
       },
       { onConflict: "tenant_check_id" },
     );
+
+    if (screeningStatus === "paid" && session.metadata.tenant_check_id) {
+      const { activateTenantWorkflowForCheck } = await import("@/lib/workflow-activation");
+      await activateTenantWorkflowForCheck(session.metadata.tenant_check_id).catch(() => undefined);
+    }
   }
 
   if (completed && session.mode === "subscription") {

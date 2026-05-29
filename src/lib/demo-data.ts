@@ -18,7 +18,9 @@ type TenantCheckDetail = Database["public"]["Tables"]["tenant_checks"]["Row"] & 
   ai_reports: Database["public"]["Tables"]["ai_reports"]["Row"] | null;
 };
 
-type PublicCheckDetail = Omit<TenantCheckDetail, "ai_reports">;
+type PublicCheckDetail = Omit<TenantCheckDetail, "ai_reports"> & {
+  landlord: Pick<Database["public"]["Tables"]["users"]["Row"], "full_name" | "company_name"> | null;
+};
 
 type ProtectionSnapshot = {
   depositQuote: Database["public"]["Tables"]["deposit_protection_quotes"]["Row"] | null;
@@ -423,7 +425,15 @@ export function getDemoPublicCheckByToken(token: string): PublicCheckDetail | nu
   }
 
   const { ai_reports: _report, ...detail } = item.detail;
-  return detail;
+  const landlord = demoLandlords.find((entry) => entry.id === detail.landlord_id) ?? demoLandlords[0];
+
+  return {
+    ...detail,
+    landlord: {
+      company_name: landlord.company_name,
+      full_name: landlord.full_name,
+    },
+  };
 }
 
 export function getDemoProtectionSnapshot(checkId: string): ProtectionSnapshot | null {
@@ -753,6 +763,7 @@ function buildDemoCase(input: {
     updated_at: resolvedActivityAt,
     upload_token_expires_at: isoDaysFromNow(10),
     upload_token_hash: `demo-hash-${input.caseId}`,
+    workflow_activated_at: reviewRequestedAt ?? createdAt,
   };
 
   const protectionPackages = buildDemoProtectionPackages(input.caseId);

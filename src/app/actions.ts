@@ -12,7 +12,7 @@ import {
   isBillingSchemaReady,
 } from "@/lib/billing-queries";
 import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
-import { isDemoUploadToken } from "@/lib/demo-data";
+import { isDemoUploadToken, isDemoCheckId } from "@/lib/demo-data";
 import { notifyTenantUploadInvitation } from "@/lib/notifications";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
 import { getBillingPlanLimits, isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
@@ -34,11 +34,30 @@ import { getAdminCheckDetail, getLandlordCheckDetail, getPublicCheckByToken } fr
 import { buildProtectionAssessment, getFallbackProtectionPackages } from "@/lib/protection";
 import { createSecureToken, hashToken } from "@/lib/security";
 import { getDefaultRequestedDocumentsForPlan } from "@/lib/trust-workflows";
+import { activateTenantWorkflowForCheck } from "@/lib/workflow-activation";
+import { canLandlordRemoveCheck } from "@/lib/check-removal";
+import { isDraftCheck } from "@/lib/workspace-access";
 import {
   createBillingPortalSession,
   createScreeningCheckoutSession,
   getOrCreateStripeCustomer,
 } from "@/lib/stripe";
+import {
+  formEntry,
+  optionalFormEntry,
+  parseFormSchema,
+  preprocessFormNumber,
+  preprocessFormString,
+  preprocessOptionalFormString,
+  sanitizeUserFacingError,
+  type FieldErrors,
+} from "@/lib/form-validation";
+import {
+  screeningValuesFromFormData,
+  validateScreeningSubmit,
+} from "@/lib/screening-form-validation";
+import { getRequestLocale } from "@/lib/i18n-server";
+import { getScreeningValidationMessages } from "@/lib/screening-validation-messages";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,54 +65,84 @@ export type ActionState = {
   error?: string;
   success?: string;
   email?: string;
-  kind?: "signup_success";
+  kind?: "signup_success" | "unlock_required" | "check_created" | "check_deleted";
+  uploadUrl?: string;
+  checkId?: string;
+  linkActive?: boolean;
+  checkStatus?: string;
+  propertyName?: string;
+  tenantName?: string;
+  fieldErrors?: FieldErrors;
 };
 
 type AdminCheckDetail = TenantCheckDetail;
 
 const signInSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  email: z.preprocess(
+    preprocessFormString,
+    z.string().trim().email("Enter a valid email address."),
+  ),
+  password: z.preprocess(
+    preprocessFormString,
+    z.string().min(8, "Password must be at least 8 characters."),
+  ),
 });
 
 const signUpSchema = z.object({
-  companyName: z.string().trim().max(120).optional(),
-  email: z.string().trim().email("Enter a valid email address."),
-  fullName: z.string().trim().min(2, "Full name is required."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-});
-
-const createCheckSchema = z.object({
-  propertyName: z.string().trim().min(2, "Property name is required."),
-  addressLine1: z.string().trim().min(6, "Property address is required."),
-  city: z.string().trim().min(2, "City is required."),
-  postalCode: z.string().trim().optional(),
-  monthlyRent: z.coerce.number().positive("Monthly rent must be positive."),
-  tenantFullName: z.string().trim().min(2, "Tenant full name is required."),
-  tenantEmail: z
-    .string()
-    .trim()
-    .email("Enter a valid tenant email.")
-    .optional()
-    .or(z.literal("")),
-  tenantPhone: z.string().trim().optional(),
+  companyName: z.preprocess(preprocessOptionalFormString, z.string().trim().max(120).optional()),
+  email: z.preprocess(
+    preprocessFormString,
+    z.string().trim().email("Enter a valid email address."),
+  ),
+  fullName: z.preprocess(
+    preprocessFormString,
+    z.string().trim().min(2, "Full name is required."),
+  ),
+  password: z.preprocess(
+    preprocessFormString,
+    z.string().min(8, "Password must be at least 8 characters."),
+  ),
 });
 
 const uploadProfileSchema = z.object({
-  fullName: z.string().trim().min(2, "Full name is required."),
-  email: z.string().trim().email("A valid email is required."),
-  phone: z.string().trim().min(6, "Phone number is required."),
-  currentAddress: z.string().trim().min(8, "Current address is required."),
-  employmentStatus: z.string().trim().min(2, "Employment status is required."),
-  employerName: z.string().trim().optional(),
-  monthlyIncome: z.coerce.number().positive("Monthly income must be positive."),
-  notes: z.string().trim().optional(),
-  moveInDate: z.string().trim().optional(),
-  documentType: z.string().trim().min(2, "Document category is required."),
-  documentNotes: z.string().trim().optional(),
-  consentConfirmed: z.boolean().refine((value) => value, {
-    message: "Consent must be confirmed before upload.",
-  }),
+  fullName: z.preprocess(
+    preprocessFormString,
+    z.string().trim().min(2, "Full name is required."),
+  ),
+  email: z.preprocess(
+    preprocessFormString,
+    z.string().trim().email("A valid email is required."),
+  ),
+  phone: z.preprocess(
+    preprocessFormString,
+    z.string().trim().min(6, "Phone number is required."),
+  ),
+  currentAddress: z.preprocess(
+    preprocessFormString,
+    z.string().trim().min(8, "Current address is required."),
+  ),
+  employmentStatus: z.preprocess(
+    preprocessFormString,
+    z.string().trim().min(2, "Employment status is required."),
+  ),
+  employerName: z.preprocess(preprocessOptionalFormString, z.string().trim().max(120).optional()),
+  monthlyIncome: z.preprocess(
+    preprocessFormNumber,
+    z.number({ error: "Monthly income is required." }).positive("Monthly income must be positive."),
+  ),
+  notes: z.preprocess(preprocessOptionalFormString, z.string().trim().max(2000).optional()),
+  moveInDate: z.preprocess(preprocessOptionalFormString, z.string().trim().max(40).optional()),
+  documentType: z.preprocess(
+    preprocessFormString,
+    z.string().trim().min(2, "Document category is required."),
+  ),
+  documentNotes: z.preprocess(preprocessOptionalFormString, z.string().trim().max(2000).optional()),
+  consentConfirmed: z.preprocess(
+    (value) => value === true || value === "on" || value === "true",
+    z.boolean().refine((value) => value, {
+      message: "Consent must be confirmed before upload.",
+    }),
+  ),
 });
 
 const protectionReviewSchema = z.object({
@@ -108,13 +157,13 @@ const protectionReviewSchema = z.object({
 
 export async function signInAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   try {
-    const parsed = signInSchema.safeParse({
-      email: formData.get("email"),
-      password: formData.get("password"),
+    const parsed = parseFormSchema(signInSchema, {
+      email: formEntry(formData.get("email")),
+      password: formEntry(formData.get("password")),
     });
 
     if (!parsed.success) {
-      return { error: parsed.error.issues[0]?.message ?? "Please check your credentials." };
+      return { error: parsed.error, fieldErrors: parsed.fieldErrors };
     }
 
     const email = parsed.data.email.toLowerCase();
@@ -131,7 +180,9 @@ export async function signInAction(_prevState: ActionState, formData: FormData):
     });
 
     if (error) {
-      return { error: error.message };
+      return {
+        error: sanitizeUserFacingError(error, "We could not sign you in. Check your email and password."),
+      };
     }
 
     revalidatePath("/", "layout");
@@ -142,21 +193,23 @@ export async function signInAction(_prevState: ActionState, formData: FormData):
       throw error;
     }
     const normalizedError = formatAuthActionError(error, "sign in");
-    return { error: normalizedError.userMessage };
+    return {
+      error: sanitizeUserFacingError(normalizedError.userMessage, "We could not sign you in. Please try again."),
+    };
   }
 }
 
 export async function signUpAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   try {
-    const parsed = signUpSchema.safeParse({
-      companyName: formData.get("company_name"),
-      email: formData.get("email"),
-      fullName: formData.get("full_name"),
-      password: formData.get("password"),
+    const parsed = parseFormSchema(signUpSchema, {
+      companyName: formEntry(formData.get("company_name")),
+      email: formEntry(formData.get("email")),
+      fullName: formEntry(formData.get("full_name")),
+      password: formEntry(formData.get("password")),
     });
 
     if (!parsed.success) {
-      return { error: parsed.error.issues[0]?.message ?? "Please check the form fields." };
+      return { error: parsed.error, fieldErrors: parsed.fieldErrors };
     }
 
     const email = parsed.data.email.toLowerCase();
@@ -184,7 +237,9 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
     });
 
     if (error) {
-      return { error: error.message };
+      return {
+        error: sanitizeUserFacingError(error, "We could not create your account. Please try again."),
+      };
     }
 
     const signInResult = await supabase.auth.signInWithPassword({
@@ -207,7 +262,9 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
       throw error;
     }
     const normalizedError = formatAuthActionError(error, "sign up");
-    return { error: normalizedError.userMessage };
+    return {
+      error: sanitizeUserFacingError(normalizedError.userMessage, "We could not create your account. Please try again."),
+    };
   }
 }
 
@@ -239,7 +296,9 @@ export async function resendConfirmationEmailAction(
     });
 
     if (error) {
-      return { error: error.message };
+      return {
+        error: sanitizeUserFacingError(error, "We could not resend the confirmation email. Please try again."),
+      };
     }
 
     return {
@@ -440,29 +499,15 @@ export async function createTenantCheckAction(
 ): Promise<ActionState> {
   const { profile } = await requireLandlord();
   const supabase = await createClient();
-  const parsed = createCheckSchema.safeParse({
-    propertyName: formData.get("property_name"),
-    addressLine1: formData.get("address_line1"),
-    city: formData.get("city"),
-    postalCode: formData.get("postal_code"),
-    monthlyRent: formData.get("monthly_rent"),
-    tenantFullName: formData.get("tenant_full_name"),
-    tenantEmail: formData.get("tenant_email"),
-    tenantPhone: formData.get("tenant_phone"),
-  });
+  const locale = await getRequestLocale();
+  const values = screeningValuesFromFormData(formData);
+  const parsed = validateScreeningSubmit(values, getScreeningValidationMessages(locale));
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Please check the form fields." };
+    return { error: parsed.error, fieldErrors: parsed.fieldErrors };
   }
 
-  const requestedDocuments = Array.from(
-    new Set(
-      formData
-        .getAll("requested_documents")
-        .map((value) => String(value))
-        .filter(Boolean),
-    ),
-  );
+  const requestedDocuments = parsed.data.requestedDocuments;
 
   const billingOverview = await getBillingOverviewForUser(profile.id);
   const planKey = (billingOverview.activeSubscription?.plan_key as BillingPlanKey | null) ?? null;
@@ -476,7 +521,8 @@ export async function createTenantCheckAction(
       supabase
         .from("tenant_checks")
         .select("id", { count: "exact", head: true })
-        .neq("status", "report_ready"),
+        .neq("status", "report_ready")
+        .neq("status", "draft"),
       supabase
         .from("tenant_checks")
         .select("review_completed_at, created_at")
@@ -485,10 +531,14 @@ export async function createTenantCheckAction(
     ]);
 
   if (activeChecksError) {
-    return { error: activeChecksError.message };
+    return {
+      error: sanitizeUserFacingError(activeChecksError, "We could not verify your active case limit."),
+    };
   }
   if (completedError) {
-    return { error: completedError.message };
+    return {
+      error: sanitizeUserFacingError(completedError, "We could not verify your monthly screening limit."),
+    };
   }
 
   const completedThisMonth = (completedRows ?? []).filter((row) => {
@@ -508,9 +558,6 @@ export async function createTenantCheckAction(
     };
   }
 
-  const token = createSecureToken();
-  const tokenHash = hashToken(token);
-  const uploadUrl = new URL(`/upload/${token}`, env.appUrl).toString();
   const { data: checkId, error: checkError } = await supabase.rpc("create_tenant_check", {
     p_address_line1: parsed.data.addressLine1,
     p_city: parsed.data.city,
@@ -519,35 +566,273 @@ export async function createTenantCheckAction(
     p_property_name: parsed.data.propertyName,
     p_requested_documents:
       requestedDocuments.length > 0 ? requestedDocuments : getDefaultRequestedDocumentsForPlan(planKey),
-    p_secure_upload_url: uploadUrl,
+    p_secure_upload_url: "",
+    p_status: "draft",
     p_tenant_email: normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase() ?? null,
     p_tenant_full_name: parsed.data.tenantFullName,
     p_tenant_phone: normalizeOptionalString(parsed.data.tenantPhone),
-    p_upload_token_expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
-    p_upload_token_hash: tokenHash,
+    p_upload_token_expires_at: new Date(0).toISOString(),
+    p_upload_token_hash: "",
   });
 
   if (checkError) {
-    return { error: checkError.message };
+    return {
+      error: sanitizeUserFacingError(checkError, "The screening could not be saved. Please try again."),
+    };
   }
 
   if (!checkId) {
     return { error: "The tenant verification request could not be created." };
   }
 
-  const tenantEmail = normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase();
+  const eligibility = await getBillingEligibilityForCheck({
+    checkId,
+    landlordId: profile.id,
+    useAdmin: true,
+  });
 
-  if (tenantEmail) {
-    await notifyTenantUploadInvitation({
-      tenantEmail,
-      tenantName: parsed.data.tenantFullName,
-      uploadUrl,
-      propertyName: parsed.data.propertyName,
-    });
+  let uploadUrl: string | undefined;
+  let linkActive = false;
+
+  if (eligibility.hasBillingAccess) {
+    try {
+      const activation = await activateTenantWorkflowForCheck(checkId, { sendEmail: false });
+      uploadUrl = activation.uploadUrl;
+      linkActive = true;
+    } catch (error) {
+      return {
+        error: sanitizeUserFacingError(error, "The check was saved, but the upload link could not be created."),
+        checkId,
+        kind: "check_created",
+        linkActive: false,
+        propertyName: parsed.data.propertyName,
+        tenantName: parsed.data.tenantFullName,
+        email: normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase(),
+      };
+    }
   }
 
   revalidatePath("/dashboard");
-  redirect(`/dashboard/checks/${checkId}`);
+  revalidatePath(`/dashboard/checks/${checkId}`);
+
+  return {
+    kind: "check_created",
+    success: linkActive
+      ? "Check created. Send the upload link to your tenant."
+      : "Check saved. Choose a plan to create the upload link for your tenant.",
+    checkId,
+    uploadUrl,
+    linkActive,
+    checkStatus: linkActive ? "pending_upload" : "draft",
+    propertyName: parsed.data.propertyName,
+    tenantName: parsed.data.tenantFullName,
+    email: normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase(),
+  };
+}
+
+export async function activateCaseUploadLinkAction(
+  checkId: string,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireLandlord();
+    const detail = await getLandlordCheckDetail(checkId);
+
+    if (!detail) {
+      return { error: "This check no longer exists." };
+    }
+
+    const eligibility = await getBillingEligibilityForCheck({
+      checkId,
+      landlordId: profile.id,
+      useAdmin: true,
+    });
+
+    if (!eligibility.hasBillingAccess) {
+      return {
+        error: "Activate a plan to generate the secure upload link.",
+        kind: "unlock_required",
+      };
+    }
+
+    const { uploadUrl } = await activateTenantWorkflowForCheck(checkId, { sendEmail: false });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/checks/${checkId}`);
+
+    return {
+      kind: "check_created",
+      success: "Secure upload link is ready. Share it with your tenant.",
+      checkId,
+      uploadUrl,
+      linkActive: true,
+      checkStatus: "pending_upload",
+      propertyName: detail.properties?.name ?? undefined,
+      tenantName: detail.tenant_full_name,
+      email: detail.tenant_email ?? undefined,
+    };
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: sanitizeUserFacingError(error, "The secure upload link could not be generated."),
+    };
+  }
+}
+
+export async function deleteTenantCheckAction(checkId: string): Promise<ActionState> {
+  try {
+    if (isDemoCheckId(checkId)) {
+      return {
+        kind: "check_deleted",
+        success: "Tenant check removed.",
+      };
+    }
+
+    const { profile } = await requireLandlord();
+    const detail = await getLandlordCheckDetail(checkId);
+
+    if (!detail || detail.landlord_id !== profile.id) {
+      return { error: "This tenant check no longer exists." };
+    }
+
+    if (!canLandlordRemoveCheck(detail)) {
+      return {
+        error: "This check cannot be removed because tenant documents were already submitted.",
+      };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.from("tenant_checks").delete().eq("id", checkId).eq("landlord_id", profile.id);
+
+    if (error) {
+      return {
+        error: sanitizeUserFacingError(error, "The tenant check could not be removed. Please try again."),
+      };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/checks/${checkId}`);
+
+    return {
+      kind: "check_deleted",
+      success: "Tenant check removed.",
+    };
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: sanitizeUserFacingError(error, "The tenant check could not be removed. Please try again."),
+    };
+  }
+}
+
+export async function sendTenantUploadLinkAction(
+  checkId: string,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireLandlord();
+    const detail = await getLandlordCheckDetail(checkId);
+
+    if (!detail) {
+      return { error: "This tenant check no longer exists." };
+    }
+
+    const eligibility = await getBillingEligibilityForCheck({
+      checkId,
+      landlordId: profile.id,
+      useAdmin: true,
+    });
+
+    if (!eligibility.hasBillingAccess) {
+      return {
+        error: "Choose a plan to activate this secure upload link.",
+        kind: "unlock_required",
+      };
+    }
+
+    if (!detail.tenant_email) {
+      return { error: "Add a tenant email on the check page before sending the link by email." };
+    }
+
+    const { uploadUrl } = await activateTenantWorkflowForCheck(checkId, {
+      resendEmail: true,
+      sendEmail: true,
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/checks/${checkId}`);
+
+    return {
+      success: "Upload link sent to your tenant by email.",
+      uploadUrl,
+      checkId,
+      linkActive: true,
+    };
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: sanitizeUserFacingError(error, "We could not send the upload link."),
+    };
+  }
+}
+
+export async function activateTenantWorkflowAction(
+  checkId: string,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireLandlord();
+    const detail = await getLandlordCheckDetail(checkId);
+
+    if (!detail) {
+      return { error: "This tenant case no longer exists." };
+    }
+
+    const eligibility = await getBillingEligibilityForCheck({
+      checkId,
+      landlordId: profile.id,
+      useAdmin: true,
+    });
+
+    if (!eligibility.hasBillingAccess) {
+      return {
+        error: "Unlock your SafeKey screening workflow to send the upload link.",
+        kind: "unlock_required",
+      };
+    }
+
+    const { uploadUrl } = await activateTenantWorkflowForCheck(checkId, {
+      resendEmail: !isDraftCheck(detail.status, detail.workflow_activated_at ?? null),
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/checks/${checkId}`);
+
+    return {
+      success: "Upload link is active. Share it with your tenant when ready.",
+      uploadUrl,
+    };
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error: sanitizeUserFacingError(error, "The screening workflow could not be activated."),
+    };
+  }
 }
 
 export async function uploadDocumentsAction(
@@ -559,23 +844,23 @@ export async function uploadDocumentsAction(
     return { error: "Sample upload links are read-only. Create a live screening from your dashboard." };
   }
 
-  const parsed = uploadProfileSchema.safeParse({
-    fullName: formData.get("full_name"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
-    currentAddress: formData.get("current_address"),
-    employmentStatus: formData.get("employment_status"),
-    employerName: formData.get("employer_name"),
-    monthlyIncome: formData.get("monthly_income"),
-    notes: formData.get("notes"),
-    moveInDate: formData.get("move_in_date"),
-    documentType: formData.get("document_type"),
-    documentNotes: formData.get("document_notes"),
+  const parsed = parseFormSchema(uploadProfileSchema, {
+    fullName: formEntry(formData.get("full_name")),
+    email: formEntry(formData.get("email")),
+    phone: formEntry(formData.get("phone")),
+    currentAddress: formEntry(formData.get("current_address")),
+    employmentStatus: formEntry(formData.get("employment_status")),
+    employerName: optionalFormEntry(formData.get("employer_name")),
+    monthlyIncome: formEntry(formData.get("monthly_income")),
+    notes: optionalFormEntry(formData.get("notes")),
+    moveInDate: optionalFormEntry(formData.get("move_in_date")),
+    documentType: formEntry(formData.get("document_type")),
+    documentNotes: optionalFormEntry(formData.get("document_notes")),
     consentConfirmed: formData.get("consent_confirmed") === "on",
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Please complete the upload form." };
+    return { error: parsed.error, fieldErrors: parsed.fieldErrors };
   }
 
   const files = formData
@@ -598,6 +883,10 @@ export async function uploadDocumentsAction(
 
   if (!check) {
     return { error: "This upload link is invalid or has expired." };
+  }
+
+  if (check.status === "draft" || !check.workflow_activated_at) {
+    return { error: "This screening workflow has not been activated yet." };
   }
 
   if (check.status === "report_ready") {
@@ -752,6 +1041,12 @@ export async function generateReportAction(
     return {
       error:
         "This case requires an active subscription or a completed one-time screening payment before a report can be generated.",
+    };
+  }
+
+  if (isDraftCheck(detail.status, detail.workflow_activated_at ?? null)) {
+    return {
+      error: "Activate the screening workflow before generating a report for this case.",
     };
   }
 

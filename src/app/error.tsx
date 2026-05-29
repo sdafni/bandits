@@ -20,11 +20,6 @@ export default function GlobalError({
             the previous page.
           </p>
         </div>
-        {error.message ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {error.message}
-          </div>
-        ) : null}
         <div className="flex flex-wrap gap-3">
           <button className="primary-action rounded-full px-5 py-3" onClick={reset} type="button">
             Try again

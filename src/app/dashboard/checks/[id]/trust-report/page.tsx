@@ -1,12 +1,17 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SafeKeyTrustReport } from "@/components/safekey-trust-report";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { TrustReportPrintButton } from "@/components/trust-report-print-button";
 import { requireLandlord } from "@/lib/auth";
+import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
+import { isDemoCheckId } from "@/lib/demo-data";
+import { getRequestLocale } from "@/lib/i18n-server";
+import { translate } from "@/lib/i18n/messages";
 import { buildTrustWorkflowReport } from "@/lib/trust-workflows";
 import { getLandlordCheckDetail } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
+import { canUseCapability, resolveCaseAccess, resolveWorkspaceAccess } from "@/lib/workspace-access";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +20,36 @@ export default async function TrustReportExportPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireLandlord();
+  const locale = await getRequestLocale();
+  const t = (key: string) => translate(locale, key);
+  const { profile } = await requireLandlord();
   const { id } = await params;
   const detail = await getLandlordCheckDetail(id);
   if (!detail) {
     notFound();
+  }
+
+  const isDemoCase = isDemoCheckId(id);
+  const billingOverview = await getBillingOverviewForUser(profile.id, { admin: true });
+  const workspaceAccess = resolveWorkspaceAccess(billingOverview);
+  const billingEligibility = isDemoCase
+    ? { hasBillingAccess: true }
+    : await getBillingEligibilityForCheck({
+        checkId: id,
+        landlordId: profile.id,
+        useAdmin: true,
+      });
+
+  const caseAccess = resolveCaseAccess({
+    workspace: workspaceAccess,
+    checkId: id,
+    status: detail.status,
+    workflowActivatedAt: detail.workflow_activated_at ?? null,
+    hasCaseBillingAccess: billingEligibility.hasBillingAccess,
+  });
+
+  if (!canUseCapability(caseAccess, "export_trust_report")) {
+    redirect(`/dashboard/checks/${id}?unlock=trust_report`);
   }
 
   const trustReport = buildTrustWorkflowReport({
@@ -55,18 +85,14 @@ export default async function TrustReportExportPage({
       <div className="mx-auto max-w-4xl space-y-4 print:max-w-none">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <Link className="workspace-cta-secondary" href={`/dashboard/checks/${id}`}>
-            Back to case
+            {t("workspace.backToCase")}
           </Link>
           <TrustReportPrintButton />
         </div>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 print:rounded-none print:border-0 print:p-0">
-          <div className="mb-4 flex items-center justify-between">
-            <SafeKeyBrand href="/" variant="compact" />
-            <p className="text-xs text-slate-500">Generated {formatDate(new Date().toISOString())}</p>
-          </div>
-          <SafeKeyTrustReport caseId={id} generatedAt={formatDate(new Date().toISOString())} report={trustReport} />
-        </section>
+        <SafeKeyTrustReport caseId={id} generatedAt={formatDate(new Date().toISOString())} report={trustReport} />
+        <div className="print:hidden">
+          <SafeKeyBrand variant="logo" />
+        </div>
       </div>
     </main>
   );

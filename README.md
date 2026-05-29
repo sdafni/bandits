@@ -86,6 +86,11 @@ Use the Vercel deployment guide in `docs/vercel-deployment.md` for:
 - production auth callback checks
 - final launch checklist
 
+## Documentation
+
+- [Vercel deployment](./docs/vercel-deployment.md)
+- [SafeKey Insurance Lab](./docs/safekey-insurance-lab/README.md) — research and institutional architecture (not production)
+
 ## Notes
 
 - Upload links are hashed and stored in Postgres.

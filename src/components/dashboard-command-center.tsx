@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Plus } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { shouldIncludeDemoCasesInWorkspace } from "@/lib/demo-data";
 
 type CommandCheck = {
   id: string;
-  status: "pending_upload" | "documents_received" | "under_review" | "report_ready";
+  status: "draft" | "pending_upload" | "documents_received" | "under_review" | "report_ready";
   created_at: string;
   review_completed_at: string | null;
   review_requested_at: string | null;
@@ -69,11 +69,13 @@ export function DashboardCommandCenter({
   planLabel,
   planUsage,
   subscriptionStatus,
+  workspaceMode = "preview",
   stats,
 }: {
   isFirstWorkspace?: boolean;
   isGreek?: boolean;
   experience?: "basic" | "pro" | "premium";
+  workspaceMode?: "preview" | "subscribed";
   checks: CommandCheck[];
   planLabel: string;
   planUsage: string;
@@ -113,24 +115,18 @@ export function DashboardCommandCenter({
             {isBasic ? (isGreek ? "Απλή διαχείριση ενοικιαστή" : "Simple tenant screening") : isGreek ? "Λειτουργίες ελέγχου" : "Screening operations"}
           </h2>
           <p className="mt-0.5 text-sm text-slate-200 sm:text-xs">
-            {isBasic
+            {workspaceMode === "preview"
               ? isGreek
-                ? "Δημιούργησε έλεγχο, μοιράσου ασφαλή σύνδεσμο και λάβε καθαρή σύσταση εμπιστοσύνης."
-                : "Start a screening, share a secure upload link, and get a clear trust recommendation."
+                ? "Προεπισκόπηση χώρου εργασίας. Οι ενεργοποιήσεις γίνονται στο σημείο αποστολής συνδέσμου ή αναφοράς."
+                : "Workspace preview. Activation happens when you send the upload link or export the trust report."
               : isFirstWorkspace
-              ? isGreek
-                ? "Δημιούργησε την πρώτη υπόθεση, μοιράσου σύνδεσμο αποστολής και λάβε αναφορά αξιοπιστίας."
-                : "Create your first case, share the upload link, and receive a trust report."
-              : `${stats.active} ${isGreek ? "ενεργές" : "active"} · ${actionCount} ${isGreek ? "ενέργειες σε αναμονή" : `queued action${actionCount === 1 ? "" : "s"}`}${
-                  stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} ${isGreek ? "υψηλού κινδύνου" : "elevated risk"}` : ""
-                }`}
+                ? isGreek
+                  ? "Οργάνωσε την πρώτη σου υπόθεση ελέγχου ενοικιαστή."
+                  : "Organize your first tenant screening case."
+                : `${stats.active} ${isGreek ? "ενεργές" : "active"} · ${actionCount} ${isGreek ? "ενέργειες σε αναμονή" : `queued action${actionCount === 1 ? "" : "s"}`}${
+                    stats.elevatedRisk > 0 ? ` · ${stats.elevatedRisk} ${isGreek ? "υψηλού κινδύνου" : "elevated risk"}` : ""
+                  }`}
           </p>
-        </div>
-        <div className="command-shell__actions shrink-0">
-          <a className="workspace-cta workspace-cta--compact" href={isFirstWorkspace ? "#new-screening" : "#tenant-cases"}>
-            <Plus className="h-3.5 w-3.5" />
-            {isGreek ? "Νέος έλεγχος" : "New screening"}
-          </a>
         </div>
       </div>
 

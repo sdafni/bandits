@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 const STATUS_TONE = {
+  draft: "neutral",
   pending_upload: "warning",
   documents_received: "info",
   under_review: "info",
@@ -37,7 +38,6 @@ export default async function AdminReviewPage() {
     <main className="min-h-screen">
       <AppHeader
         homeHref="/admin/review"
-        locale={locale}
         subtitle={`Admin workspace for ${profile.full_name ?? profile.email}. Review SafeKey uploads, inspect extracted text, and publish screening plus protection outcomes.`}
         title={isGreek ? "Κέντρο αξιολόγησης SafeKey" : "SafeKey review desk"}
         variant="admin"
@@ -101,17 +101,17 @@ export default async function AdminReviewPage() {
                               {check.properties?.name ?? "Property"} • {getOperationalTimestamp(check)}
                             </p>
                           </div>
-                          <Badge tone={STATUS_TONE[check.status]}>{state.analystState}</Badge>
+                          <Badge tone={STATUS_TONE[check.status]}>{state?.analystState ?? check.status.replaceAll("_", " ")}</Badge>
                         </div>
 
                         <div className="mt-4 grid gap-2 sm:grid-cols-2">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Case movement</p>
-                            <p className="mt-2 text-sm font-medium text-[#0f2343]">{state.humanState}</p>
+                            <p className="mt-2 text-sm font-medium text-[#0f2343]">{state?.humanState ?? "—"}</p>
                           </div>
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">Next analyst step</p>
-                            <p className="mt-2 text-sm font-medium text-[#0f2343]">{state.nextStep}</p>
+                            <p className="mt-2 text-sm font-medium text-[#0f2343]">{state?.nextStep ?? "—"}</p>
                           </div>
                         </div>
                       </div>
