@@ -13,6 +13,7 @@ const { Client } = require("pg");
 const { createClient } = require("@supabase/supabase-js");
 
 const MIGRATIONS = [
+  "202605260004_add_protection_architecture.sql",
   "202605280000_drop_legacy_create_tenant_check.sql",
   "202605280001_add_draft_workflow.sql",
   "202605300001_professional_report_pdf.sql",
