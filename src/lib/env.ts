@@ -25,7 +25,7 @@ export const env = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
-  emailFrom: process.env.SAFEKEY_EMAIL_FROM ?? "SafeKey <onboarding@resend.dev>",
+  emailFrom: resolveEmailFromAddress(),
   stripeMerchantDisplayName: process.env.STRIPE_MERCHANT_DISPLAY_NAME ?? "ABE Studio",
   stripeStatementDescriptor: process.env.STRIPE_STATEMENT_DESCRIPTOR ?? "ABE STUDIO",
   supportEmail: process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
@@ -34,8 +34,29 @@ export const env = {
   helloEmail: process.env.HELLO_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
 };
 
+function resolveEmailFromAddress() {
+  const raw =
+    process.env.FROM_EMAIL?.trim() ||
+    process.env.SAFEKEY_EMAIL_FROM?.trim() ||
+    "";
+
+  if (!raw) {
+    return process.env.NODE_ENV === "production" ? "" : "SafeKey <onboarding@resend.dev>";
+  }
+
+  if (raw.includes("<") && raw.includes(">")) {
+    return raw;
+  }
+
+  return `SafeKey <${raw}>`;
+}
+
 export function hasEmailDeliveryEnv() {
   return Boolean(env.resendApiKey && env.emailFrom);
+}
+
+export function hasOpenAiEnv() {
+  return Boolean(env.openAiApiKey?.trim());
 }
 
 export function assertSupabaseBrowserEnv() {

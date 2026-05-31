@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getStripeProductionReadiness,
   hasEmailDeliveryEnv,
+  hasOpenAiEnv,
   hasSupabaseServiceEnv,
 } from "@/lib/env";
 
@@ -14,6 +15,7 @@ export async function GET() {
   return NextResponse.json({
     uploadsReady: hasSupabaseServiceEnv(),
     emailReady: hasEmailDeliveryEnv(),
+    openAiReady: hasOpenAiEnv(),
     stripeCheckoutReady: stripe.isCheckoutReady,
     stripeWebhookReady: stripe.hasWebhookSecret,
     stripeMissingCheckoutKeys: stripe.missingCheckoutKeys,

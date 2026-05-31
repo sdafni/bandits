@@ -1,4 +1,11 @@
-import { env, hasEmailDeliveryEnv } from "@/lib/env";
+import "server-only";
+
+import { createAdminClient } from "@/lib/supabase/admin";
+import { env } from "@/lib/env";
+import { escapeHtml, renderSafeKeyEmail } from "@/lib/email/layout";
+import { sendEmail } from "@/lib/email/resend";
+import type { Recommendation } from "@/lib/database.types";
+import { getRecommendationLabel, getRiskLevelFromScore, getRiskLevelLabel } from "@/lib/risk-report";
 
 type TenantUploadInvitationInput = {
   propertyName: string;
@@ -12,119 +19,212 @@ type WelcomeEmailInput = {
   fullName?: string | null;
 };
 
+type LandlordCheckNotificationInput = {
+  landlordId: string;
+  checkId: string;
+  tenantName: string;
+  propertyName: string;
+};
+
+type LandlordReportReadyInput = LandlordCheckNotificationInput & {
+  reportScore?: number | null;
+  recommendation?: Recommendation | string | null;
+  reportSummary?: string | null;
+  pdfDownloadUrl?: string | null;
+};
+
+async function getLandlordRecipient(landlordId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin.from("users").select("email, full_name").eq("id", landlordId).maybeSingle();
+  if (!data?.email) {
+    return null;
+  }
+
+  return {
+    email: data.email,
+    firstName: data.full_name?.trim()?.split(" ")[0] ?? "there",
+  };
+}
+
 export async function notifyTenantUploadInvitation(input: TenantUploadInvitationInput) {
   const subject = `SafeKey secure upload invitation · ${input.propertyName}`;
   const text = [
-    `Γεια σου ${input.tenantName},`,
+    `Hello ${input.tenantName},`,
     "",
-    "Μόλις έλαβες ασφαλή πρόσκληση από το SafeKey για υποβολή εγγράφων ενοικίασης.",
+    "You received a secure SafeKey invitation to submit tenant screening documents.",
     "",
-    `Ακίνητο: ${input.propertyName}`,
-    `Ασφαλής σύνδεσμος υποβολής: ${input.uploadUrl}`,
+    `Property: ${input.propertyName}`,
+    `Secure upload link: ${input.uploadUrl}`,
     "",
-    "Ο σύνδεσμος είναι ιδιωτικός. Μην τον κοινοποιήσεις σε τρίτους.",
+    "This link is private. Do not share it with anyone else.",
     "",
     "SafeKey Trust Operations",
   ].join("\n");
-  const html = `
-  <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f8fafc;padding:24px;">
-    <div style="max-width:580px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;">
-      <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#0f2343;">SafeKey</p>
-      <h1 style="margin:0 0 12px;font-size:22px;color:#0f172a;">Secure tenant upload invitation</h1>
+  const html = renderSafeKeyEmail({
+    title: "Secure tenant upload invitation",
+    bodyHtml: `
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(input.tenantName)}, your landlord invited you to submit requested screening documents securely.</p>
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
-      <a href="${input.uploadUrl}" style="display:inline-block;background:#0f2343;color:#fff;text-decoration:none;border-radius:12px;padding:12px 18px;font-weight:700;">Open secure upload page</a>
       <p style="margin:16px 0 0;font-size:13px;color:#475569;line-height:1.5;">This link is private and time-limited. If anything looks unexpected, contact your landlord before sharing documents.</p>
-    </div>
-  </div>`;
-
-  if (!hasEmailDeliveryEnv()) {
-    console.info("[safekey-email:skipped]", { to: input.tenantEmail, subject });
-    return { delivered: false, reason: "email_not_configured" as const };
-  }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.emailFrom,
-      to: [input.tenantEmail],
-      subject,
-      html,
-      text,
-    }),
+    `,
+    cta: { label: "Open secure upload page", href: input.uploadUrl },
   });
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    console.error("[safekey-email:failed]", { status: response.status, body });
-    return { delivered: false, reason: "provider_error" as const };
-  }
-
-  return { delivered: true as const };
+  return sendEmail({
+    to: input.tenantEmail,
+    subject,
+    html,
+    text,
+  });
 }
 
 export async function notifyWelcomeEmail(input: WelcomeEmailInput) {
   const firstName = input.fullName?.trim()?.split(" ")[0] ?? "there";
   const subject = "Welcome to SafeKey";
+  const dashboardUrl = `${env.appUrl}/dashboard`;
   const text = [
     `Hello ${firstName},`,
     "",
     "Welcome to SafeKey.",
-    "Your account is now ready. You can continue to your dashboard and start your first tenant check.",
+    "Your account is ready. You can open your dashboard and start your first tenant check.",
     "",
-    `${env.appUrl}/dashboard`,
+    dashboardUrl,
     "",
     "SafeKey Trust Operations",
   ].join("\n");
-  const html = `
-  <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f8fafc;padding:24px;">
-    <div style="max-width:580px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;">
-      <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#0f2343;">SafeKey</p>
-      <h1 style="margin:0 0 12px;font-size:22px;color:#0f172a;">Welcome to SafeKey</h1>
+  const html = renderSafeKeyEmail({
+    title: "Welcome to SafeKey",
+    bodyHtml: `
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(firstName)}, your account is ready.</p>
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;">SafeKey helps you run secure tenant checks and receive your SafeKey Report with a calm, clear workflow.</p>
-      <a href="${env.appUrl}/dashboard" style="display:inline-block;background:#0f2343;color:#fff;text-decoration:none;border-radius:12px;padding:12px 18px;font-weight:700;">Open dashboard</a>
-    </div>
-  </div>`;
+    `,
+    cta: { label: "Open dashboard", href: dashboardUrl },
+  });
 
-  if (!hasEmailDeliveryEnv()) {
-    console.info("[safekey-email:skipped]", { to: input.recipientEmail, subject });
+  return sendEmail({
+    to: input.recipientEmail,
+    subject,
+    html,
+    text,
+  });
+}
+
+/** Landlord notification when a tenant submits documents. */
+export async function notifyLandlordDocumentsReceived(input: LandlordCheckNotificationInput) {
+  const landlord = await getLandlordRecipient(input.landlordId);
+  if (!landlord) {
+    console.info("[safekey-email:skipped]", { reason: "landlord_email_missing", checkId: input.checkId });
     return { delivered: false, reason: "email_not_configured" as const };
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.emailFrom,
-      to: [input.recipientEmail],
-      subject,
-      html,
-      text,
-    }),
+  const checkUrl = `${env.appUrl}/dashboard/checks/${input.checkId}`;
+  const subject = `Documents received · ${input.propertyName}`;
+  const text = [
+    `Hello ${landlord.firstName},`,
+    "",
+    `${input.tenantName} submitted documents for your tenant check.`,
+    "",
+    `Property: ${input.propertyName}`,
+    "",
+    `Review the case: ${checkUrl}`,
+    "",
+    "SafeKey Trust Operations",
+  ].join("\n");
+  const html = renderSafeKeyEmail({
+    title: "Tenant documents received",
+    bodyHtml: `
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(landlord.firstName)}, <strong>${escapeHtml(input.tenantName)}</strong> submitted documents for your tenant check.</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
+      <p style="margin:0;color:#334155;line-height:1.6;">Your SafeKey Report will be prepared after review.</p>
+    `,
+    cta: { label: "View tenant check", href: checkUrl },
   });
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    console.error("[safekey-email:failed]", { status: response.status, body });
-    return { delivered: false, reason: "provider_error" as const };
-  }
-
-  return { delivered: true as const };
+  return sendEmail({
+    to: landlord.email,
+    subject,
+    html,
+    text,
+  });
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+/** Landlord notification when the SafeKey Report is ready. */
+export async function notifyLandlordReportReady(input: LandlordReportReadyInput) {
+  const landlord = await getLandlordRecipient(input.landlordId);
+  if (!landlord) {
+    console.info("[safekey-email:skipped]", { reason: "landlord_email_missing", checkId: input.checkId });
+    return { delivered: false, reason: "email_not_configured" as const };
+  }
+
+  const reportUrl = `${env.appUrl}/dashboard/checks/${input.checkId}`;
+  const pdfDownloadUrl = input.pdfDownloadUrl ?? `${env.appUrl}/api/reports/${input.checkId}/download`;
+  const score =
+    typeof input.reportScore === "number" ? input.reportScore : null;
+  const recommendationKey =
+    input.recommendation === "approve" ||
+    input.recommendation === "conditional" ||
+    input.recommendation === "decline"
+      ? input.recommendation
+      : null;
+  const recommendationLabel = recommendationKey
+    ? getRecommendationLabel(recommendationKey)
+    : input.recommendation ?? null;
+  const riskLevelLabel =
+    score != null ? getRiskLevelLabel(getRiskLevelFromScore(score)) : null;
+  const summaryLine = input.reportSummary?.trim() || null;
+
+  const subject = "Your SafeKey Tenant Report Is Ready";
+  const text = [
+    `Hello ${landlord.firstName},`,
+    "",
+    `Your SafeKey Tenant Report is ready for ${input.tenantName}.`,
+    "",
+    `Property: ${input.propertyName}`,
+    score != null ? `SafeKey Score: ${score}/100` : null,
+    riskLevelLabel ? `Risk level: ${riskLevelLabel}` : null,
+    recommendationLabel ? `Recommendation: ${recommendationLabel}` : null,
+    summaryLine ? `Summary: ${summaryLine}` : null,
+    "",
+    `Download PDF: ${pdfDownloadUrl}`,
+    `View online: ${reportUrl}`,
+    "",
+    "SafeKey Trust Operations",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const html = renderSafeKeyEmail({
+    title: "Your SafeKey Tenant Report Is Ready",
+    bodyHtml: `
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(landlord.firstName)}, your SafeKey Tenant Report is ready for <strong>${escapeHtml(input.tenantName)}</strong>.</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
+      ${
+        score != null
+          ? `<p style="margin:0 0 8px;color:#334155;line-height:1.6;"><strong>SafeKey Score:</strong> ${score}/100</p>`
+          : ""
+      }
+      ${
+        riskLevelLabel
+          ? `<p style="margin:0 0 8px;color:#334155;line-height:1.6;"><strong>Risk level:</strong> ${escapeHtml(riskLevelLabel)}</p>`
+          : ""
+      }
+      ${
+        recommendationLabel
+          ? `<p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Recommendation:</strong> ${escapeHtml(recommendationLabel)}</p>`
+          : ""
+      }
+      ${
+        summaryLine
+          ? `<p style="margin:0 0 12px;color:#334155;line-height:1.6;">${escapeHtml(summaryLine)}</p>`
+          : ""
+      }
+    `,
+    cta: { label: "Download PDF report", href: pdfDownloadUrl },
+  });
+
+  return sendEmail({
+    to: landlord.email,
+    subject,
+    html,
+    text,
+  });
 }

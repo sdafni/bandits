@@ -74,17 +74,57 @@ export function buildStoragePath(checkId: string, documentType: string, fileName
   return `${checkId}/${documentType}/${Date.now()}-${crypto.randomUUID()}-${slugifyFilename(fileName)}`;
 }
 
-export async function extractTextFromUpload(file: File, context: { documentType: string; notes?: string | null }) {
+function extractPdfText(buffer: Buffer) {
+  const raw = buffer.toString("latin1");
+  const streamMatches = raw.match(/stream[\s\S]*?endstream/g) ?? [];
+  const chunks: string[] = [];
+
+  for (const stream of streamMatches) {
+    const parenMatches = stream.match(/\(([^\\)]{2,})\)/g) ?? [];
+    for (const match of parenMatches) {
+      chunks.push(match.slice(1, -1));
+    }
+
+    const literalMatches = stream.match(/[A-Za-z][A-Za-z0-9 ,.'-]{3,}/g) ?? [];
+    chunks.push(...literalMatches.slice(0, 20));
+  }
+
+  return chunks.join(" ").replace(/\s+/g, " ").trim().slice(0, 4000);
+}
+
+export async function extractTextFromUpload(
+  file: File,
+  context: {
+    documentType: string;
+    notes?: string | null;
+    profile?: {
+      employmentStatus?: string | null;
+      employerName?: string | null;
+      monthlyIncome?: number | null;
+    };
+  },
+) {
   const notesSnippet = context.notes?.trim() ? `\nTenant note: ${context.notes.trim()}` : "";
+  const profileSnippet = context.profile
+    ? [
+        context.profile.employmentStatus ? `Employment: ${context.profile.employmentStatus}` : null,
+        context.profile.employerName ? `Employer: ${context.profile.employerName}` : null,
+        context.profile.monthlyIncome != null ? `Declared income: ${context.profile.monthlyIncome}` : null,
+      ]
+        .filter(Boolean)
+        .join(". ")
+    : "";
+  const profilePrefix = profileSnippet ? `${profileSnippet}. ` : "";
   const mimeType = getUploadMimeType(file);
 
   if (TEXT_MIME_TYPES.has(mimeType)) {
     const text = await file.text();
-    return `${text.slice(0, 4000)}${notesSnippet}`;
+    return `${profilePrefix}${text.slice(0, 4000)}${notesSnippet}`;
   }
 
   if (mimeType.startsWith("image/")) {
     return [
+      profilePrefix,
       `Image document uploaded for ${context.documentType}.`,
       "Image content has been registered for review and can be validated by the SafeKey team.",
       context.notes?.trim() ? `Tenant note: ${context.notes.trim()}` : null,
@@ -94,9 +134,17 @@ export async function extractTextFromUpload(file: File, context: { documentType:
   }
 
   if (mimeType === "application/pdf") {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const extracted = extractPdfText(buffer);
+
+    if (extracted.length >= 40) {
+      return `${profilePrefix}${extracted}${notesSnippet}`;
+    }
+
     return [
+      profilePrefix,
       `PDF document uploaded for ${context.documentType}.`,
-      "PDF content has been registered and is ready for review within the SafeKey workflow.",
+      extracted ? `Extracted content preview: ${extracted.slice(0, 500)}` : "PDF text could not be extracted automatically.",
       context.notes?.trim() ? `Tenant note: ${context.notes.trim()}` : null,
     ]
       .filter(Boolean)
@@ -104,6 +152,7 @@ export async function extractTextFromUpload(file: File, context: { documentType:
   }
 
   return [
+    profilePrefix,
     `Uploaded ${file.name} for ${context.documentType}.`,
     context.notes?.trim() ? `Tenant note: ${context.notes.trim()}` : null,
   ]

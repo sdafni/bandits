@@ -1,51 +1,9 @@
-import OpenAI from "openai";
-import { env } from "@/lib/env";
-import type { Recommendation, TenantRiskReasoning } from "@/lib/database.types";
+import type { GeneratedTenantReport, TenantReviewInput } from "@/lib/ai/types";
+import type { Recommendation } from "@/lib/database.types";
 import { formatCurrency } from "@/lib/utils";
+import { getRiskLevelFromScore, hasIdentityDocument } from "@/lib/risk-report";
 
-export type TenantReviewInput = {
-  checkId: string;
-  tenantFullName: string;
-  requestedDocuments: string[];
-  propertyMonthlyRent: number | null;
-  tenantProfile: {
-    employmentStatus: string | null;
-    employerName: string | null;
-    monthlyIncome: number | null;
-    currentAddress: string | null;
-    notes: string | null;
-  } | null;
-  documents: Array<{
-    documentType: string;
-    fileName: string;
-    extractedText: string | null;
-  }>;
-};
-
-export type GeneratedTenantReport = {
-  score: number;
-  recommendation: Recommendation;
-  summary: string;
-  redFlags: string[];
-  strengths: string[];
-  missingDocuments: string[];
-  reasoning: TenantRiskReasoning;
-  generatedBy: string;
-};
-
-export async function generateTenantRiskReport(input: TenantReviewInput): Promise<GeneratedTenantReport> {
-  if (env.openAiApiKey) {
-    try {
-      return await generateWithOpenAi(input);
-    } catch {
-      return generateHeuristicReport(input);
-    }
-  }
-
-  return generateHeuristicReport(input);
-}
-
-function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantReport {
+export function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantReport {
   const providedTypes = new Set(input.documents.map((document) => document.documentType));
   const missingDocuments = input.requestedDocuments.filter((document) => !providedTypes.has(document));
   const redFlags: string[] = [];
@@ -56,9 +14,16 @@ function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantRepor
 
   if (missingDocuments.length > 0) {
     score -= missingDocuments.length * 9;
-    redFlags.push(`Missing ${missingDocuments.length} requested document(s).`);
+    redFlags.push(`Missing ${missingDocuments.length} requested document(s): ${missingDocuments.join(", ")}.`);
   } else {
     strengths.push("Uploaded every requested document.");
+  }
+
+  if (!hasIdentityDocument(providedTypes)) {
+    score -= 12;
+    redFlags.push("No government-issued identity document was submitted.");
+  } else {
+    strengths.push("Identity document present in the submitted pack.");
   }
 
   const income = input.tenantProfile?.monthlyIncome ?? null;
@@ -84,7 +49,7 @@ function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantRepor
   const extractedBlob = input.documents
     .map((document) => `${document.documentType}: ${document.extractedText ?? ""}`.toLowerCase())
     .join(" ");
-  const watchTerms = ["arrears", "eviction", "late payment", "debt", "court", "default"];
+  const watchTerms = ["arrears", "eviction", "late payment", "debt", "court", "default", "bankruptcy", "foreclosure"];
 
   const extractedSignals = watchTerms.filter((term) => extractedBlob.includes(term));
 
@@ -94,7 +59,7 @@ function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantRepor
   }
 
   if (input.tenantProfile?.employmentStatus) {
-    strengths.push(`Employment status recorded as ${input.tenantProfile.employmentStatus}.`);
+    strengths.push(`Employment status recorded as ${input.tenantProfile.employmentStatus.replaceAll("_", " ")}.`);
   } else {
     score -= 4;
     reviewNotes.push("Employment status was not provided.");
@@ -103,10 +68,13 @@ function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantRepor
   if (input.documents.length >= 3) {
     score += 4;
     strengths.push("Document pack is broad enough for an initial review.");
+  } else if (input.documents.length === 1) {
+    score -= 3;
+    reviewNotes.push("Only one document uploaded in this batch.");
   }
 
   score = Math.min(98, Math.max(18, score));
-  const identityConfidence = Math.max(30, Math.min(96, providedTypes.has("government_id") ? 84 : 42));
+  const identityConfidence = Math.max(30, Math.min(96, hasIdentityDocument(providedTypes) ? 84 : 42));
   const incomeStability = Math.max(
     28,
     Math.min(
@@ -158,24 +126,39 @@ function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantRepor
 
   const recommendation: Recommendation =
     score >= 76 ? "approve" : score >= 56 ? "conditional" : "decline";
+  const riskLevel = getRiskLevelFromScore(score);
 
   const summary = [
-    `${input.tenantFullName}'s pack scores ${score}/100.`,
+    `SafeKey Score: ${score}/100 (${riskLevel} risk).`,
     missingDocuments.length
-      ? `There are still ${missingDocuments.length} requested items missing.`
+      ? `${missingDocuments.length} requested item(s) are still missing.`
       : "The requested document pack is complete.",
     income && rent
       ? `Reported income is ${formatCurrency(income)} against rent of ${formatCurrency(rent)}.`
       : "Financial coverage could not be fully verified from the submitted profile.",
   ].join(" ");
 
+  const explanation = [
+    `${input.tenantFullName} received a SafeKey Score of ${score}/100 (${riskLevel} risk).`,
+    redFlags.length > 0
+      ? `Key concerns: ${redFlags.slice(0, 2).join(" ")}`
+      : "No material red flags were identified in the submitted pack.",
+    recommendation === "approve"
+      ? "The file supports proceeding with standard tenancy steps."
+      : recommendation === "conditional"
+        ? "Proceed only after outstanding documents or affordability gaps are resolved."
+        : "The current file presents material risk and should not proceed without escalation.",
+  ].join(" ");
+
   return {
     score,
     recommendation,
     summary,
+    explanation,
     redFlags,
     strengths,
     missingDocuments,
+    riskLevel,
     reasoning: {
       documentCompleteness,
       debtToIncomeRatio,
@@ -186,44 +169,9 @@ function generateHeuristicReport(input: TenantReviewInput): GeneratedTenantRepor
       incomeStability,
       rentAffordability,
       reviewNotes,
+      riskLevel,
+      explanation,
     },
     generatedBy: "heuristic-fallback",
-  };
-}
-
-async function generateWithOpenAi(input: TenantReviewInput): Promise<GeneratedTenantReport> {
-  const client = new OpenAI({ apiKey: env.openAiApiKey });
-  const response = await client.responses.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    input: [
-      {
-        role: "system",
-        content: [
-          {
-            type: "input_text",
-            text:
-              "You are a tenant screening analyst for a Greek landlord platform. Return strict JSON with score, recommendation, summary, redFlags, strengths, missingDocuments, and reasoning { identityConfidence, incomeStability, rentAffordability, employmentResidencyConfidence, documentCompleteness, debtToIncomeRatio, missingDocumentCount, extractedSignals, reviewNotes }. Recommendation must be approve, conditional, or decline.",
-          },
-        ],
-      },
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: JSON.stringify(input),
-          },
-        ],
-      },
-    ],
-  });
-
-  const rawText = response.output_text;
-  const parsed = JSON.parse(rawText) as GeneratedTenantReport;
-
-  return {
-    ...parsed,
-    generatedBy: "openai",
   };
 }

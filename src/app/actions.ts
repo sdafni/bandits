@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { z } from "zod";
 import { generateTenantRiskReport } from "@/lib/ai";
+import { generateAndStoreProfessionalReport } from "@/lib/reports/generate-and-store";
+import {
+  generateAndPersistTenantRiskReport,
+  loadTenantCheckReportSource,
+  markCheckUnderReview,
+} from "@/lib/risk-report-engine";
 import { requireAdmin, requireLandlord } from "@/lib/auth";
 import {
   getBillingEligibilityForCheck,
@@ -13,7 +19,7 @@ import {
 } from "@/lib/billing-queries";
 import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
 import { isDemoUploadToken, isDemoCheckId } from "@/lib/demo-data";
-import { notifyTenantUploadInvitation } from "@/lib/notifications";
+import { notifyLandlordDocumentsReceived, notifyLandlordReportReady, notifyTenantUploadInvitation } from "@/lib/notifications";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
 import { getBillingPlanLimits, isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
 import type { InsuranceEligibilityStatus } from "@/lib/database.types";
@@ -930,6 +936,11 @@ export async function uploadDocumentsAction(
       const extraction = await extractTextFromUpload(file, {
         documentType: parsed.data.documentType,
         notes: parsed.data.documentNotes,
+        profile: {
+          employmentStatus: parsed.data.employmentStatus,
+          employerName: normalizeOptionalString(parsed.data.employerName),
+          monthlyIncome: parsed.data.monthlyIncome,
+        },
       });
 
       const { error: storageError } = await admin.storage
@@ -992,6 +1003,73 @@ export async function uploadDocumentsAction(
       throw new Error(`Could not update the verification request. ${checkUpdateError.message}`);
     }
 
+    await notifyLandlordDocumentsReceived({
+      landlordId: check.landlord_id,
+      checkId: check.id,
+      tenantName: check.tenant_full_name,
+      propertyName: check.properties?.name ?? "Property",
+    }).catch(() => undefined);
+
+    const billingEligibility = await getBillingEligibilityForCheck({
+      checkId: check.id,
+      landlordId: check.landlord_id,
+      useAdmin: true,
+    });
+
+    let reportGenerated = false;
+
+    if (billingEligibility.hasBillingAccess) {
+      const reportSource = await loadTenantCheckReportSource(check.id);
+
+      if (reportSource && reportSource.tenant_documents.length > 0) {
+        await markCheckUnderReview(admin, check.id, new Date().toISOString());
+
+        try {
+          const report = await generateAndPersistTenantRiskReport(admin, reportSource);
+
+          try {
+            await syncProtectionArtifacts(check.id, report, {
+              documents: reportSource.tenant_documents,
+              landlordId: check.landlord_id,
+              propertyMonthlyRent: reportSource.properties?.monthly_rent ?? null,
+              requestedDocuments: reportSource.requested_documents,
+              tenantId: reportSource.tenant_public_profiles?.id ?? null,
+              tenantProfile: reportSource.tenant_public_profiles as AdminCheckDetail["tenant_public_profiles"],
+            });
+          } catch (error) {
+            if (!isProtectionSchemaMissingError(error)) {
+              throw error;
+            }
+          }
+
+          await notifyLandlordReportReady({
+            landlordId: check.landlord_id,
+            checkId: check.id,
+            tenantName: check.tenant_full_name,
+            propertyName: check.properties?.name ?? "Property",
+            reportScore: report.score,
+            recommendation: report.recommendation,
+            reportSummary: report.summary,
+            pdfDownloadUrl: `${env.appUrl}/api/reports/${check.id}/download`,
+          }).catch(() => undefined);
+
+          reportGenerated = true;
+        } catch (error) {
+          await admin
+            .from("tenant_checks")
+            .update({ status: "documents_received" })
+            .eq("id", check.id);
+
+          return {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Documents were saved, but the SafeKey Report could not be generated.",
+          };
+        }
+      }
+    }
+
     revalidatePath(`/upload/${token}`);
     revalidatePath("/dashboard");
     revalidatePath(`/dashboard/checks/${check.id}`);
@@ -999,8 +1077,9 @@ export async function uploadDocumentsAction(
     revalidatePath(`/admin/review/${check.id}`);
 
     return {
-      success:
-        "Document batch uploaded successfully. You can submit more files from this link or leave the review team to continue the verification workflow.",
+      success: reportGenerated
+        ? "Documents uploaded successfully. Your SafeKey Report is ready in the landlord dashboard."
+        : "Document batch uploaded successfully. You can submit more files from this link or leave the review team to continue the verification workflow.",
     };
   } catch (error) {
     await rollbackUploadedBatch(admin, createdDocumentIds, uploadedStoragePaths);
@@ -1063,45 +1142,24 @@ export async function generateReportAction(
   }
 
   try {
-    const report = await generateTenantRiskReport({
-      checkId: detail.id,
-      documents: detail.tenant_documents.map((document) => ({
-        documentType: document.document_type,
-        extractedText: document.extracted_text,
-        fileName: document.file_name,
-      })),
-      propertyMonthlyRent: detail.properties?.monthly_rent ?? null,
-      requestedDocuments: detail.requested_documents,
-      tenantFullName: detail.tenant_full_name,
-      tenantProfile: detail.tenant_public_profiles
-        ? {
-            currentAddress: detail.tenant_public_profiles.current_address,
-            employerName: detail.tenant_public_profiles.employer_name,
-            employmentStatus: detail.tenant_public_profiles.employment_status,
-            monthlyIncome: detail.tenant_public_profiles.monthly_income,
-            notes: detail.tenant_public_profiles.notes,
-          }
+    const reportSource = {
+      id: detail.id,
+      landlord_id: detail.landlord_id,
+      tenant_full_name: detail.tenant_full_name,
+      requested_documents: detail.requested_documents,
+      review_requested_at: detail.review_requested_at,
+      properties: detail.properties
+        ? { monthly_rent: detail.properties.monthly_rent, name: detail.properties.name }
         : null,
-    });
+      tenant_documents: detail.tenant_documents.map((document) => ({
+        document_type: document.document_type,
+        extracted_text: document.extracted_text,
+        file_name: document.file_name,
+      })),
+      tenant_public_profiles: detail.tenant_public_profiles,
+    };
 
-    const { error: reportError } = await supabase.from("ai_reports").upsert(
-      {
-        generated_by: report.generatedBy,
-        missing_documents: report.missingDocuments,
-        recommendation: report.recommendation,
-        reasoning: report.reasoning,
-        red_flags: report.redFlags,
-        score: report.score,
-        strengths: report.strengths,
-        summary: report.summary,
-        tenant_check_id: detail.id,
-      },
-      { onConflict: "tenant_check_id" },
-    );
-
-    if (reportError) {
-      throw new Error(reportError.message);
-    }
+    const report = await generateAndPersistTenantRiskReport(supabase, reportSource);
 
     try {
       await syncProtectionArtifacts(detail.id, report, {
@@ -1118,18 +1176,16 @@ export async function generateReportAction(
       }
     }
 
-    const { error: completeError } = await supabase
-      .from("tenant_checks")
-      .update({
-        review_completed_at: new Date().toISOString(),
-        review_requested_at: detail.review_requested_at ?? new Date().toISOString(),
-        status: "report_ready",
-      })
-      .eq("id", detail.id);
-
-    if (completeError) {
-      throw new Error(completeError.message);
-    }
+    await notifyLandlordReportReady({
+      landlordId: detail.landlord_id,
+      checkId: detail.id,
+      tenantName: detail.tenant_full_name,
+      propertyName: detail.properties?.name ?? "Property",
+      reportScore: report.score,
+      recommendation: report.recommendation,
+      reportSummary: report.summary,
+      pdfDownloadUrl: `${env.appUrl}/api/reports/${detail.id}/download`,
+    }).catch(() => undefined);
 
     revalidatePath("/admin/review");
     revalidatePath(`/admin/review/${detail.id}`);
@@ -1149,6 +1205,48 @@ export async function generateReportAction(
         error instanceof Error
           ? error.message
           : "The report could not be generated. Please try again.",
+    };
+  }
+}
+
+export async function regenerateProfessionalReportAction(
+  checkId: string,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireLandlord();
+    const detail = await getLandlordCheckDetail(checkId);
+
+    if (!detail) {
+      return { error: "This tenant check no longer exists." };
+    }
+
+    if (!detail.ai_reports) {
+      return { error: "Generate the SafeKey analysis before creating a PDF report." };
+    }
+
+    const stored = await generateAndStoreProfessionalReport(checkId);
+    if (!stored) {
+      return { error: "The professional PDF could not be generated." };
+    }
+
+    revalidatePath(`/dashboard/checks/${checkId}`);
+    revalidatePath("/dashboard");
+
+    return {
+      success: "Professional SafeKey PDF report regenerated successfully.",
+    };
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "The professional report could not be regenerated.",
     };
   }
 }
@@ -1354,6 +1452,9 @@ async function syncProtectionArtifacts(
         generated_by: "generatedBy" in report ? report.generatedBy : report.generated_by,
         id: "id" in report ? report.id : crypto.randomUUID(),
         missing_documents: "missingDocuments" in report ? report.missingDocuments : report.missing_documents,
+        pdf_generated_at: "pdf_generated_at" in report ? report.pdf_generated_at ?? null : null,
+        pdf_storage_path: "pdf_storage_path" in report ? report.pdf_storage_path ?? null : null,
+        pdf_version: "pdf_version" in report ? report.pdf_version ?? null : null,
         recommendation: report.recommendation,
         reasoning: report.reasoning,
         red_flags: "redFlags" in report ? report.redFlags : report.red_flags,
