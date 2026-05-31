@@ -69,7 +69,12 @@ export function sanitizeUserFacingError(
     return fallback;
   }
 
-  const message = error instanceof Error ? error.message : String(error);
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+        ? error.message
+        : String(error);
   if (isInternalErrorMessage(message)) {
     return fallback;
   }

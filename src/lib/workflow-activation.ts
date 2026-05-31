@@ -23,7 +23,7 @@ export async function getTenantCheckForActivation(checkId: string) {
     .maybeSingle();
 
   if (error) {
-    throw error;
+    throw new Error(typeof error.message === "string" ? error.message : "Tenant check lookup failed.");
   }
 
   if (!data) {
@@ -83,10 +83,8 @@ export async function activateTenantWorkflowForCheck(
     .eq("id", checkId);
 
   if (error) {
-    throw error;
+    throw new Error(typeof error.message === "string" ? error.message : "Failed to activate tenant workflow.");
   }
-
-  if (sendEmail && check.tenant_email) {
     await notifyTenantUploadInvitation({
       propertyName: check.properties?.name ?? "Property",
       tenantEmail: check.tenant_email,
