@@ -23,7 +23,7 @@ export type DashboardCheck = {
     score: number;
     summary?: string;
   } | null;
-  tenant_documents: Array<{ id: string }>;
+  tenant_documents: Array<{ document_type: string; id: string }>;
   upload_token_expires_at?: string | null;
 };
 

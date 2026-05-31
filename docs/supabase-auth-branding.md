@@ -5,11 +5,26 @@ Apply these settings in Supabase Dashboard to remove generic "Supabase Auth" onb
 ## Auth Email Sender
 
 1. Open Supabase Project -> Authentication -> Email Templates / SMTP.
-2. Set sender name to one of:
-   - `SafeKey`
-   - `SafeKey Security`
-   - `SafeKey Greece`
-3. Configure SMTP domain sender in production (recommended) so sender is not generic.
+2. Set sender name to: `SafeKey`
+3. Set reply-to / contact email to: `blonje@gmail.com`
+4. Configure SMTP domain sender in production (recommended) so sender is not generic.
+5. Disable or replace any footer that shows "Supabase Auth" or "Powered by Supabase".
+
+## Password Reset Email Template
+
+1. Open template: **Reset password**.
+2. Set subject: `Reset your SafeKey password`
+3. Replace HTML body with: `supabase/auth-email/recovery.html`
+4. CTA must use token-hash callback format:
+   - `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/login/reset-password&email={{ .Email }}`
+
+## Magic Link Email Template
+
+1. Open template: **Magic link**.
+2. Set subject: `Sign in to SafeKey`
+3. Replace HTML body with: `supabase/auth-email/magic-link.html`
+4. CTA must use token-hash callback format:
+   - `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=magiclink&next=/dashboard&email={{ .Email }}`
 
 ## Confirmation Email Template
 

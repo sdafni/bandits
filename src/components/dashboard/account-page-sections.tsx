@@ -7,13 +7,11 @@ import { withLocalePath } from "@/lib/i18n";
 
 export function AccountPageSections({
   billingNavEnabled = false,
-  companyName,
   email,
   fullName,
   planStatusLabel,
 }: {
   billingNavEnabled?: boolean;
-  companyName?: string | null;
   email: string;
   fullName?: string | null;
   planStatusLabel: string;
@@ -101,22 +99,6 @@ export function AccountPageSections({
             ))}
         </ul>
       </section>
-
-      <section className="rounded-2xl border border-slate-200/90 bg-white px-5 py-6 shadow-sm sm:px-6">
-        <h3 className="text-sm font-semibold text-slate-900">{t("account.businessTitle")}</h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{t("account.businessHint")}</p>
-        <dl className="mt-4 space-y-4 text-sm">
-          <div>
-            <dt className="font-medium text-slate-500">{t("account.companyLabel")}</dt>
-            <dd className="mt-1 text-slate-700">{companyName?.trim() || t("account.placeholderSoon")}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-slate-500">{t("account.vatLabel")}</dt>
-            <dd className="mt-1 text-slate-700">{t("account.placeholderSoon")}</dd>
-          </div>
-        </dl>
-      </section>
-
     </div>
   );
 }

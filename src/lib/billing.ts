@@ -83,7 +83,8 @@ export const SCREENING_PAYMENT_PRODUCT = {
     "No monthly plan required",
   ],
   name: "Single screening",
-  priceLabel: "Pay per screening",
+  priceLabel: "€39 per check",
+  shortPrice: "€39",
 } as const;
 
 export const ENTERPRISE_CONTACT_PRODUCT = {

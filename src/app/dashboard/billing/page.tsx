@@ -13,7 +13,7 @@ import { parseBillingPlanIntent } from "@/lib/billing-navigation";
 import { requireLandlord } from "@/lib/auth";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { translate } from "@/lib/i18n/messages";
-import { BILLING_PLANS, formatStripeAmount, isEntitledSubscriptionStatus } from "@/lib/billing";
+import { BILLING_PLANS, formatStripeAmount, isEntitledSubscriptionStatus, SCREENING_PAYMENT_PRODUCT } from "@/lib/billing";
 import {
   getLocalizedPlanDescription,
   getLocalizedPlanFeatures,
@@ -279,7 +279,10 @@ export default async function DashboardBillingPage({
                     <h3 className="text-base font-semibold text-slate-950">{t("billing.screening.name")}</h3>
                     {selectedPlanIntent === "screening" ? <Badge tone="neutral">{t("billing.selected")}</Badge> : null}
                   </div>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-950">{t("billing.payPerCase")}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-950">
+                    {SCREENING_PAYMENT_PRODUCT.shortPrice}
+                    <span className="ml-1 text-sm font-medium text-slate-500">{t("billing.perCheck")}</span>
+                  </p>
                   <p className="text-xs leading-5 text-slate-600">{t("billing.screening.description")}</p>
                 </div>
                 <BillingPlanFeatures

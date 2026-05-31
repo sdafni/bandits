@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, MapPin, ShieldCheck, UserCheck } from "lucide-react";
+import { Lock, MapPin, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,8 @@ export function TrustSignalsStrip({ className, compact = false }: { className?: 
     { icon: ShieldCheck, label: t("dashboard.trust.gdpr") },
     { icon: UserCheck, label: t("dashboard.trust.privateVerification") },
     { icon: MapPin, label: t("dashboard.trust.greece") },
+    { icon: ShieldCheck, label: t("dashboard.trust.insuranceEligibility") },
+    { icon: Sparkles, label: t("dashboard.trust.rentalProtectionPackages") },
   ];
 
   return (

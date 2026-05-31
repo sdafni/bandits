@@ -5,7 +5,7 @@ import { ArrowRight, FileSearch, Globe2, Scale, Shield, Sparkles } from "lucide-
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { PublicSiteFooterContent } from "@/components/public-site-footer-content";
 import { SafeKeyBrand } from "@/components/safekey-brand";
-import { BILLING_PLANS } from "@/lib/billing";
+import { BILLING_PLANS, SCREENING_PAYMENT_PRODUCT } from "@/lib/billing";
 import { getLocalizedPlanName } from "@/lib/billing-i18n";
 import { buildLoginHref, buildStartCheckLoginHref } from "@/lib/billing-navigation";
 import { useLocale } from "@/lib/i18n/context";
@@ -34,7 +34,14 @@ export function HomePageContent() {
     { title: t("why.pain3Title"), description: t("why.pain3Body") },
   ];
 
-  const greeceTrustSignals = [t("market.signal1"), t("market.signal2"), t("market.signal3"), t("market.signal4")];
+  const greeceTrustSignals = [
+    t("market.signal1"),
+    t("market.signal2"),
+    t("market.signal3"),
+    t("market.signal4"),
+    t("market.signal5"),
+    t("market.signal6"),
+  ];
 
   const workflowSteps = [
     { step: "01", title: t("workflow.step1Title"), description: t("workflow.step1Body") },
@@ -278,7 +285,10 @@ export function HomePageContent() {
             <div className="card space-y-6 lg:col-span-1">
               <div className="space-y-3">
                 <h3 className="text-xl font-semibold text-slate-950">{t("billing.screening.name")}</h3>
-                <p className="text-4xl font-semibold tracking-[-0.04em] text-[#0f2343]">{t("pricing.payPerCase")}</p>
+                <p className="text-4xl font-semibold tracking-[-0.04em] text-[#0f2343]">
+                  {SCREENING_PAYMENT_PRODUCT.shortPrice}
+                  <span className="ml-1 text-sm font-medium text-slate-500">{t("pricing.perCheck")}</span>
+                </p>
                 <p className="text-sm leading-7 text-slate-700">{t("pricing.screeningDesc")}</p>
               </div>
               <Link

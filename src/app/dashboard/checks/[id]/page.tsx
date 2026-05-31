@@ -8,6 +8,7 @@ import { Badge } from "@/components/badge";
 import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
 import { CaseTrustReportSection } from "@/components/case-trust-report-section";
 import { CaseWorkflowPanel } from "@/components/case-workflow-panel";
+import { SafeKeyScoreboardPanel } from "@/components/safekey-scoreboard";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
@@ -27,6 +28,7 @@ import {
   getEligibilityTone,
 } from "@/lib/protection";
 import { buildTrustWorkflowReport, getWorkflowStatusLabel } from "@/lib/trust-workflows";
+import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
 import { getLandlordCheckDetail, getProtectionSnapshot } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -219,6 +221,11 @@ export default async function LandlordCheckDetailPage({
     },
     locale,
   );
+  const documentScoreboard = buildSafeKeyScoreboard({
+    requested_documents: detail.requested_documents,
+    status: detail.status,
+    tenant_documents: detail.tenant_documents,
+  });
 
   const removableCase = isDemoCase || canLandlordRemoveCheck(detail);
 
@@ -255,12 +262,11 @@ export default async function LandlordCheckDetailPage({
             />
 
             <div className="card space-y-3">
-              <p className="text-sm font-medium text-slate-700">{t("caseDetail.requestedDocuments")}</p>
-              <div className="flex flex-wrap gap-2">
-                {detail.requested_documents.map((item) => (
-                  <Badge key={item}>{item.replaceAll("_", " ")}</Badge>
-                ))}
-              </div>
+              <SafeKeyScoreboardPanel
+                locale={locale}
+                scoreboard={documentScoreboard}
+                title={t("caseDetail.scoreboardTitle")}
+              />
               {getCaseOriginBadgeLabel(id) ? (
                 <p className="text-xs leading-6 text-slate-500">{t("caseDetail.sampleCaseNote")}</p>
               ) : null}

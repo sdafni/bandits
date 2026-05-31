@@ -14,6 +14,7 @@ import {
 } from "@/lib/dashboard-tier";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
+import { resolveDocumentCollectionPhase } from "@/lib/document-submission";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { canLandlordRemoveCheck } from "@/lib/check-removal";
 import { isDemoCheckId } from "@/lib/demo-data";
@@ -33,8 +34,21 @@ function useHumanStatusLabel() {
     if (check.status === "report_ready") {
       return t("dashboard.statusRecommendationReady");
     }
-    if (check.status === "documents_received" || check.status === "under_review") {
+    if (check.status === "under_review") {
       return t("dashboard.statusUnderReview");
+    }
+
+    const collection = resolveDocumentCollectionPhase({
+      requested_documents: check.requested_documents,
+      status: check.status,
+      tenant_documents: check.tenant_documents,
+    });
+
+    if (collection.phase === "documents_complete") {
+      return t("dashboard.statusDocumentsComplete");
+    }
+    if (collection.phase === "partial_submission") {
+      return t("dashboard.statusPartialSubmission");
     }
     if (check.status === "pending_upload" && check.workflow_activated_at) {
       if (check.upload_token_expires_at && new Date(check.upload_token_expires_at).getTime() < Date.now()) {

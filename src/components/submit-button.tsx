@@ -8,9 +8,11 @@ type SubmitButtonProps = {
   className?: string;
   disabled?: boolean;
   forcePending?: boolean;
+  name?: string;
   onClick?: () => void;
   pendingLabel?: string;
   type?: "button" | "submit";
+  value?: string;
   variant?: "primary" | "secondary" | "billing" | "workspace";
 };
 
@@ -19,9 +21,11 @@ export function SubmitButton({
   className,
   disabled = false,
   forcePending = false,
+  name,
   onClick,
   pendingLabel = "Working...",
   type = "submit",
+  value,
   variant = "primary",
 }: SubmitButtonProps) {
   const { pending: formPending } = useFormStatus();
@@ -42,8 +46,10 @@ export function SubmitButton({
         className,
       )}
       disabled={isDisabled}
+      name={name}
       onClick={onClick}
       type={type}
+      value={value}
     >
       {pending ? (
         <>

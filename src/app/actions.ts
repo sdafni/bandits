@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
@@ -41,7 +42,13 @@ import type { TenantCheckDetail } from "@/lib/queries";
 import { getAdminCheckDetail, getLandlordCheckDetail, getPublicCheckByToken } from "@/lib/queries";
 import { buildProtectionAssessment, getFallbackProtectionPackages } from "@/lib/protection";
 import { createSecureToken, hashToken } from "@/lib/security";
-import { getDefaultRequestedDocumentsForPlan } from "@/lib/trust-workflows";
+import {
+  countReceivedDocuments,
+  getDocumentUploadFieldName,
+  getUploadedDocumentTypes,
+  isDocumentSubmissionComplete,
+} from "@/lib/document-submission";
+import { getDefaultRequestedDocumentsForPlan, getDocumentLabel } from "@/lib/trust-workflows";
 import { activateTenantWorkflowForCheck } from "@/lib/workflow-activation";
 import { canLandlordRemoveCheck } from "@/lib/check-removal";
 import { isDraftCheck } from "@/lib/workspace-access";
@@ -68,6 +75,7 @@ import { getRequestLocale } from "@/lib/i18n-server";
 import { getScreeningValidationMessages } from "@/lib/screening-validation-messages";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { ensureTenantDocumentsBucket } from "@/lib/tenant-document-storage";
 
 export type ActionState = {
   error?: string;
@@ -140,11 +148,6 @@ const uploadProfileSchema = z.object({
   ),
   notes: z.preprocess(preprocessOptionalFormString, z.string().trim().max(2000).optional()),
   moveInDate: z.preprocess(preprocessOptionalFormString, z.string().trim().max(40).optional()),
-  documentType: z.preprocess(
-    preprocessFormString,
-    z.string().trim().min(2, "Document category is required."),
-  ),
-  documentNotes: z.preprocess(preprocessOptionalFormString, z.string().trim().max(2000).optional()),
   consentConfirmed: z.preprocess(
     (value) => value === true || value === "on" || value === "true",
     z.boolean().refine((value) => value, {
@@ -851,6 +854,26 @@ export async function uploadDocumentsAction(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  try {
+    return await uploadDocumentsActionInternal(token, formData);
+  } catch (error) {
+    console.error(
+      "[safekey-upload:action]",
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+
+    return {
+      error:
+        error instanceof Error
+          ? sanitizeUserFacingError(error, "Something went wrong while uploading your documents. Please try again.")
+          : "Something went wrong while uploading your documents. Please try again.",
+    };
+  }
+}
+
+async function uploadDocumentsActionInternal(token: string, formData: FormData): Promise<ActionState> {
   if (isDemoUploadToken(token)) {
     return { error: "Sample upload links are read-only. Create a live screening from your dashboard." };
   }
@@ -865,8 +888,6 @@ export async function uploadDocumentsAction(
     monthlyIncome: formEntry(formData.get("monthly_income")),
     notes: optionalFormEntry(formData.get("notes")),
     moveInDate: optionalFormEntry(formData.get("move_in_date")),
-    documentType: formEntry(formData.get("document_type")),
-    documentNotes: optionalFormEntry(formData.get("document_notes")),
     consentConfirmed: formData.get("consent_confirmed") === "on",
   });
 
@@ -874,14 +895,7 @@ export async function uploadDocumentsAction(
     return { error: parsed.error, fieldErrors: parsed.fieldErrors };
   }
 
-  const files = formData
-    .getAll("documents")
-    .filter((value): value is File => value instanceof File && value.size > 0);
-  const fileValidationError = validateUploadFiles(files);
-
-  if (fileValidationError) {
-    return { error: fileValidationError };
-  }
+  const uploadIntent = formEntry(formData.get("upload_intent")) === "submit_complete" ? "submit_complete" : "save_progress";
 
   if (!hasSupabaseServiceEnv()) {
     return {
@@ -912,6 +926,8 @@ export async function uploadDocumentsAction(
   const createdDocumentIds: string[] = [];
 
   try {
+    await ensureTenantDocumentsBucket();
+
     const { error: profileError } = await admin.from("tenant_public_profiles").upsert(
       {
         consent_confirmed: true,
@@ -934,13 +950,51 @@ export async function uploadDocumentsAction(
       return { error: profileError.message };
     }
 
-    for (const file of files) {
+    const alreadyUploaded = getUploadedDocumentTypes(check.tenant_documents);
+    const pendingDocumentTypes = check.requested_documents.filter(
+      (documentType) => !alreadyUploaded.has(documentType),
+    );
+
+    if (pendingDocumentTypes.length === 0) {
+      return { error: "All requested documents have already been submitted." };
+    }
+
+    const uploadBatches: Array<{ documentType: string; files: File[] }> = [];
+
+    for (const documentType of pendingDocumentTypes) {
+      const files = formData
+        .getAll(getDocumentUploadFieldName(documentType))
+        .filter((value): value is File => value instanceof File && value.size > 0);
+
+      if (files.length === 0) {
+        if (uploadIntent === "submit_complete") {
+          return {
+            error: `Please upload ${getDocumentLabel(documentType)} before submitting your complete application.`,
+          };
+        }
+        continue;
+      }
+
+      const fileValidationError = validateUploadFiles(files);
+      if (fileValidationError) {
+        return { error: fileValidationError };
+      }
+
+      uploadBatches.push({ documentType, files });
+    }
+
+    if (uploadBatches.length === 0) {
+      return { error: "Please select at least one document to upload." };
+    }
+
+    for (const batch of uploadBatches) {
+      for (const file of batch.files) {
       const mimeType = getUploadMimeType(file);
-      const storagePath = buildStoragePath(check.id, parsed.data.documentType, file.name);
+      const storagePath = buildStoragePath(check.id, batch.documentType, file.name);
       const buffer = Buffer.from(await file.arrayBuffer());
       const extraction = await extractTextFromUpload(file, {
-        documentType: parsed.data.documentType,
-        notes: parsed.data.documentNotes,
+        documentType: batch.documentType,
+        notes: parsed.data.notes,
         profile: {
           employmentStatus: parsed.data.employmentStatus,
           employerName: normalizeOptionalString(parsed.data.employerName),
@@ -965,7 +1019,7 @@ export async function uploadDocumentsAction(
       const { data: document, error: documentError } = await admin
         .from("tenant_documents")
         .insert({
-          document_type: parsed.data.documentType,
+          document_type: batch.documentType,
           extracted_text: extraction,
           file_name: file.name,
           file_size: file.size,
@@ -982,6 +1036,34 @@ export async function uploadDocumentsAction(
       }
 
       createdDocumentIds.push(document.id);
+      }
+    }
+
+    const finalUploadedTypes = new Set(alreadyUploaded);
+    for (const batch of uploadBatches) {
+      finalUploadedTypes.add(batch.documentType);
+    }
+
+    if (!isDocumentSubmissionComplete(check.requested_documents, finalUploadedTypes)) {
+      revalidatePath(`/upload/${token}`);
+      revalidatePath("/dashboard");
+      revalidatePath(`/dashboard/checks/${check.id}`);
+
+      const receivedCount = countReceivedDocuments(check.requested_documents, finalUploadedTypes);
+
+      return {
+        success: `Progress saved. ${receivedCount} of ${check.requested_documents.length} requested document categories received. Return anytime to finish your application.`,
+      };
+    }
+
+    if (uploadIntent !== "submit_complete") {
+      revalidatePath(`/upload/${token}`);
+      revalidatePath("/dashboard");
+      revalidatePath(`/dashboard/checks/${check.id}`);
+
+      return {
+        success: `Progress saved. All ${check.requested_documents.length} requested document categories are ready. Submit your complete application when you are ready for review.`,
+      };
     }
 
     const { error: reportDeleteError } = await admin
@@ -1015,66 +1097,27 @@ export async function uploadDocumentsAction(
       propertyName: check.properties?.name ?? "Property",
     }).catch(() => undefined);
 
-    const analysisGate = await assertMonetizationGateForCheck({
+    const analysisContext = {
       checkId: check.id,
-      gate: "run_analysis",
       landlordId: check.landlord_id,
-      useAdmin: true,
-    });
+      propertyName: check.properties?.name ?? "Property",
+      tenantName: check.tenant_full_name,
+      token,
+    };
 
-    let reportGenerated = false;
-
-    if (analysisGate.allowed) {
-      const reportSource = await loadTenantCheckReportSource(check.id);
-
-      if (reportSource && reportSource.tenant_documents.length > 0) {
-        await markCheckUnderReview(admin, check.id, new Date().toISOString());
-
-        try {
-          const report = await generateAndPersistTenantRiskReport(admin, reportSource);
-
-          try {
-            await syncProtectionArtifacts(check.id, report, {
-              documents: reportSource.tenant_documents,
-              landlordId: check.landlord_id,
-              propertyMonthlyRent: reportSource.properties?.monthly_rent ?? null,
-              requestedDocuments: reportSource.requested_documents,
-              tenantId: reportSource.tenant_public_profiles?.id ?? null,
-              tenantProfile: reportSource.tenant_public_profiles as AdminCheckDetail["tenant_public_profiles"],
-            });
-          } catch (error) {
-            if (!isProtectionSchemaMissingError(error)) {
-              throw error;
-            }
-          }
-
-          await notifyLandlordReportReady({
-            landlordId: check.landlord_id,
-            checkId: check.id,
-            tenantName: check.tenant_full_name,
-            propertyName: check.properties?.name ?? "Property",
-            reportScore: report.score,
-            recommendation: report.recommendation,
-            reportSummary: report.summary,
-            pdfDownloadUrl: `${env.appUrl}/api/reports/${check.id}/download`,
-          }).catch(() => undefined);
-
-          reportGenerated = true;
-        } catch (error) {
-          await admin
-            .from("tenant_checks")
-            .update({ status: "documents_received" })
-            .eq("id", check.id);
-
-          return {
-            error:
-              error instanceof Error
-                ? error.message
-                : "Documents were saved, but the SafeKey Report could not be generated.",
-          };
-        }
+    after(async () => {
+      try {
+        await runDeferredUploadAnalysis(analysisContext);
+      } catch (error) {
+        console.error(
+          "[safekey-upload:deferred-analysis]",
+          JSON.stringify({
+            checkId: analysisContext.checkId,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
       }
-    }
+    });
 
     revalidatePath(`/upload/${token}`);
     revalidatePath("/dashboard");
@@ -1083,9 +1126,8 @@ export async function uploadDocumentsAction(
     revalidatePath(`/admin/review/${check.id}`);
 
     return {
-      success: reportGenerated
-        ? "Documents uploaded successfully. Your SafeKey Report is ready in the landlord dashboard."
-        : "Document batch uploaded successfully. You can submit more files from this link or leave the review team to continue the verification workflow.",
+      success:
+        "Your complete application was submitted successfully. SafeKey will review your documents and update your landlord when the report is ready.",
     };
   } catch (error) {
     await rollbackUploadedBatch(admin, createdDocumentIds, uploadedStoragePaths);
@@ -1096,6 +1138,80 @@ export async function uploadDocumentsAction(
           ? error.message
           : "Something went wrong while uploading your documents. Please try again.",
     };
+  }
+}
+
+async function runDeferredUploadAnalysis(context: {
+  checkId: string;
+  landlordId: string;
+  propertyName: string;
+  tenantName: string;
+  token: string;
+}) {
+  const analysisGate = await assertMonetizationGateForCheck({
+    checkId: context.checkId,
+    gate: "run_analysis",
+    landlordId: context.landlordId,
+    useAdmin: true,
+  });
+
+  if (!analysisGate.allowed) {
+    return;
+  }
+
+  const reportSource = await loadTenantCheckReportSource(context.checkId);
+
+  if (!reportSource || reportSource.tenant_documents.length === 0) {
+    return;
+  }
+
+  const admin = createAdminClient();
+  await markCheckUnderReview(admin, context.checkId, new Date().toISOString());
+
+  try {
+    const report = await generateAndPersistTenantRiskReport(admin, reportSource);
+
+    try {
+      await syncProtectionArtifacts(context.checkId, report, {
+        documents: reportSource.tenant_documents,
+        landlordId: context.landlordId,
+        propertyMonthlyRent: reportSource.properties?.monthly_rent ?? null,
+        requestedDocuments: reportSource.requested_documents,
+        tenantId: reportSource.tenant_public_profiles?.id ?? null,
+        tenantProfile: reportSource.tenant_public_profiles as AdminCheckDetail["tenant_public_profiles"],
+      });
+    } catch (error) {
+      if (!isProtectionSchemaMissingError(error)) {
+        throw error;
+      }
+    }
+
+    await notifyLandlordReportReady({
+      landlordId: context.landlordId,
+      checkId: context.checkId,
+      tenantName: context.tenantName,
+      propertyName: context.propertyName,
+      reportScore: report.score,
+      recommendation: report.recommendation,
+      reportSummary: report.summary,
+      pdfDownloadUrl: `${env.appUrl}/api/reports/${context.checkId}/download`,
+    }).catch(() => undefined);
+
+    revalidatePath(`/upload/${context.token}`);
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/checks/${context.checkId}`);
+    revalidatePath("/admin/review");
+    revalidatePath(`/admin/review/${context.checkId}`);
+  } catch (error) {
+    console.error(
+      "[safekey-upload:analysis]",
+      JSON.stringify({
+        checkId: context.checkId,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+
+    await admin.from("tenant_checks").update({ status: "documents_received" }).eq("id", context.checkId);
   }
 }
 

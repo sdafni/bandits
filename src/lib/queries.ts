@@ -17,7 +17,7 @@ export type TenantCheckListItem = Database["public"]["Tables"]["tenant_checks"][
     Database["public"]["Tables"]["ai_reports"]["Row"],
     "score" | "recommendation" | "summary" | "created_at"
   > | null;
-  tenant_documents: Pick<Database["public"]["Tables"]["tenant_documents"]["Row"], "id">[];
+  tenant_documents: Pick<Database["public"]["Tables"]["tenant_documents"]["Row"], "id" | "document_type">[];
 };
 
 export type TenantCheckDetail = Database["public"]["Tables"]["tenant_checks"]["Row"] & {
@@ -49,7 +49,7 @@ export async function getLandlordChecks(): Promise<TenantCheckListItem[]> {
         *,
         properties (*),
         ai_reports (score, recommendation, summary, created_at),
-        tenant_documents (id)
+        tenant_documents (id, document_type)
       `,
     )
     .order("created_at", { ascending: false });
@@ -106,7 +106,7 @@ export async function getAdminChecks(): Promise<TenantCheckListItem[]> {
         *,
         properties (*),
         ai_reports (score, recommendation, summary, created_at),
-        tenant_documents (id)
+        tenant_documents (id, document_type)
       `,
     )
     .order("created_at", { ascending: false });

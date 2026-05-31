@@ -56,6 +56,8 @@ export async function notifyTenantUploadInvitation(input: TenantUploadInvitation
     `Property: ${input.propertyName}`,
     `Secure upload link: ${input.uploadUrl}`,
     "",
+    "Expected review time: 24-48 hours after all requested documents are uploaded.",
+    "",
     "This link is private. Do not share it with anyone else.",
     "",
     "SafeKey Trust Operations",
@@ -65,6 +67,7 @@ export async function notifyTenantUploadInvitation(input: TenantUploadInvitation
     bodyHtml: `
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(input.tenantName)}, your landlord invited you to submit requested screening documents securely.</p>
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Expected review time:</strong> 24-48 hours after all requested documents are uploaded.</p>
       <p style="margin:16px 0 0;font-size:13px;color:#475569;line-height:1.5;">This link is private and time-limited. If anything looks unexpected, contact your landlord before sharing documents.</p>
     `,
     cta: { label: "Open secure upload page", href: input.uploadUrl },

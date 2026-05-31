@@ -10,18 +10,19 @@ import { SafeKeyBrand } from "@/components/safekey-brand";
 import { WorkspaceRibbon } from "@/components/workspace-ribbon";
 import type { Database } from "@/lib/database.types";
 import { hasSupabaseServiceEnv } from "@/lib/env";
-import { getComplianceIndicators, getOperationalState, getVerificationChecklist } from "@/lib/operations";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { getComplianceIndicators, getTenantUploadOperationalState, getVerificationChecklist } from "@/lib/operations";
 import { getPublicCheckByToken } from "@/lib/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken } from "@/lib/security";
+import { SafeKeyScoreboardPanel } from "@/components/safekey-scoreboard";
 import {
-  TRUST_DOCUMENT_CATEGORIES,
-  getDocumentDefinition,
-  getDocumentLabel,
-} from "@/lib/trust-workflows";
-import { getRequestLocale } from "@/lib/i18n-server";
+  getUploadedDocumentTypes,
+  resolveDocumentCollectionPhase,
+} from "@/lib/document-submission";
 import { translate } from "@/lib/i18n/messages";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { getRequestLocale } from "@/lib/i18n-server";
+import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -107,13 +108,23 @@ export default async function TenantUploadPage({
         signedUrl: null,
       }))
     : await createLiveSignedDocuments(detail.tenant_documents);
-  const operationalState = getOperationalState(detail.status);
-  const uploadedDocumentTypes = new Set(documents.map((item) => item.document_type));
-  const missingDocumentTypes = detail.requested_documents.filter((item) => !uploadedDocumentTypes.has(item));
-  const uploadProgressPercent =
-    detail.requested_documents.length === 0
-      ? 0
-      : Math.round(((detail.requested_documents.length - missingDocumentTypes.length) / detail.requested_documents.length) * 100);
+  const uploadedDocumentTypes = getUploadedDocumentTypes(documents);
+  const collectionPhase = resolveDocumentCollectionPhase({
+    requested_documents: detail.requested_documents,
+    status: detail.status,
+    tenant_documents: documents,
+  });
+  const operationalState = getTenantUploadOperationalState({
+    requested_documents: detail.requested_documents,
+    status: detail.status,
+    tenant_documents: documents,
+  });
+  const alreadyUploadedTypes = [...uploadedDocumentTypes];
+  const scoreboard = buildSafeKeyScoreboard({
+    requested_documents: detail.requested_documents,
+    status: detail.status,
+    tenant_documents: documents,
+  });
   const landlordDisplayName =
     detail.landlord?.company_name?.trim() || detail.landlord?.full_name?.trim() || null;
 
@@ -173,41 +184,15 @@ export default async function TenantUploadPage({
               </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-slate-700">{t("tenantUpload.requestedDocuments")}</p>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                {t("tenantUpload.uploadProgress", {
-                  percent: uploadProgressPercent,
-                  missing: missingDocumentTypes.length,
-                })}
-              </div>
-              <p className="text-xs text-muted">{t("tenantUpload.uploadHint")}</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {(Object.keys(TRUST_DOCUMENT_CATEGORIES) as Array<keyof typeof TRUST_DOCUMENT_CATEGORIES>).map((category) => {
-                  const items = detail.requested_documents.filter(
-                    (value) => getDocumentDefinition(value)?.category === category,
-                  );
-                  if (items.length === 0) {
-                    return null;
-                  }
-
-                  return (
-                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3" key={category}>
-                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        {TRUST_DOCUMENT_CATEGORIES[category].label}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {items.map((item) => (
-                          <Badge key={item} tone={uploadedDocumentTypes.has(item) ? "success" : "warning"}>
-                            {getDocumentLabel(item)}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <SafeKeyScoreboardPanel
+              locale={locale}
+              scoreboard={scoreboard}
+              title={t("tenantUpload.requestedDocuments")}
+            />
+            {collectionPhase.phase === "partial_submission" ? (
+              <p className="text-xs text-amber-800">{t("tenantUpload.applicationIncomplete")}</p>
+            ) : null}
+            <p className="text-xs text-muted">{t("tenantUpload.uploadHint")}</p>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-3xl border border-[#dbe2eb] bg-white p-4">
@@ -280,7 +265,12 @@ export default async function TenantUploadPage({
                 </div>
               </div>
             ) : (
-              <TenantUploadForm tenantName={detail.tenant_full_name} token={token} />
+              <TenantUploadForm
+                alreadyUploadedTypes={alreadyUploadedTypes}
+                requestedDocuments={detail.requested_documents}
+                tenantName={detail.tenant_full_name}
+                token={token}
+              />
             )}
           </section>
         </section>

@@ -1,4 +1,5 @@
 import type { Database } from "@/lib/database.types";
+import { resolveDocumentCollectionPhase } from "@/lib/document-submission";
 import { formatDate } from "@/lib/utils";
 
 type TenantCheckRow = Database["public"]["Tables"]["tenant_checks"]["Row"];
@@ -15,9 +16,56 @@ const DOCUMENT_LABELS: Record<string, string> = {
   proof_of_income: "Proof of income",
   landlord_reference: "Landlord reference",
   rental_reference: "Landlord reference",
+  residency_permit: "Residency permit",
   supporting_document: "Supporting document",
   tax_return: "Tax return",
 };
+
+export function getTenantUploadOperationalState(params: {
+  requested_documents: string[];
+  status: TenantCheckStatus;
+  tenant_documents: Array<{ document_type: string }>;
+}) {
+  const collection = resolveDocumentCollectionPhase(params);
+
+  switch (collection.phase) {
+    case "waiting_for_documents":
+      return {
+        analystState: "Waiting for your documents",
+        complianceState: "Upload link is open",
+        humanState: "Please upload every requested document",
+        nextStep: "Add one file for each requested category, then submit",
+      };
+    case "partial_submission":
+      return {
+        analystState: "Application incomplete",
+        complianceState: "Some documents received",
+        humanState: `${collection.received} of ${collection.total} documents received`,
+        nextStep: "Upload the remaining requested documents to finish",
+      };
+    case "documents_complete":
+      return {
+        analystState: "Documents complete",
+        complianceState: "All requested documents received",
+        humanState: "Documents complete — thank you",
+        nextStep: "SafeKey will begin review shortly",
+      };
+    case "under_review":
+      return {
+        analystState: "Under review",
+        complianceState: "Being reviewed",
+        humanState: "Being reviewed",
+        nextStep: "You will hear back from your landlord",
+      };
+    case "report_ready":
+      return {
+        analystState: "Recommendation ready",
+        complianceState: "Complete",
+        humanState: "Complete",
+        nextStep: "Your landlord has the recommendation",
+      };
+  }
+}
 
 export function getOperationalState(status: TenantCheckStatus) {
   switch (status) {

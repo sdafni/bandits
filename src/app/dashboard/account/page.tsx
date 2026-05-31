@@ -39,7 +39,6 @@ export default async function DashboardAccountPage() {
       <div className="dashboard-landlord-page space-y-5">
         <AccountPageSections
           billingNavEnabled={billingNavEnabled}
-          companyName={profile.company_name}
           email={user.email ?? profile.email}
           fullName={profile.full_name}
           planStatusLabel={planStatusLabel}

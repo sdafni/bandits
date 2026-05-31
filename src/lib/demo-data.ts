@@ -8,7 +8,7 @@ type TenantCheckListItem = Database["public"]["Tables"]["tenant_checks"]["Row"] 
     Database["public"]["Tables"]["ai_reports"]["Row"],
     "score" | "recommendation" | "summary" | "created_at"
   > | null;
-  tenant_documents: Pick<Database["public"]["Tables"]["tenant_documents"]["Row"], "id">[];
+  tenant_documents: Pick<Database["public"]["Tables"]["tenant_documents"]["Row"], "id" | "document_type">[];
 };
 
 type TenantCheckDetail = Database["public"]["Tables"]["tenant_checks"]["Row"] & {
@@ -1028,7 +1028,10 @@ function toListItem(detail: TenantCheckDetail): TenantCheckListItem {
           summary: detail.ai_reports.summary,
         }
       : null,
-    tenant_documents: detail.tenant_documents.map((item) => ({ id: item.id })),
+    tenant_documents: detail.tenant_documents.map((item) => ({
+      document_type: item.document_type,
+      id: item.id,
+    })),
   };
 }
 
