@@ -85,6 +85,8 @@ export async function activateTenantWorkflowForCheck(
   if (error) {
     throw new Error(typeof error.message === "string" ? error.message : "Failed to activate tenant workflow.");
   }
+
+  if (sendEmail && check.tenant_email) {
     await notifyTenantUploadInvitation({
       propertyName: check.properties?.name ?? "Property",
       tenantEmail: check.tenant_email,
