@@ -640,7 +640,14 @@ function buildDemoCase(input: {
   aiReport?:
     | Omit<
         Database["public"]["Tables"]["ai_reports"]["Row"],
-        "created_at" | "generated_by" | "id" | "tenant_check_id" | "updated_at"
+        | "created_at"
+        | "generated_by"
+        | "id"
+        | "tenant_check_id"
+        | "updated_at"
+        | "pdf_generated_at"
+        | "pdf_storage_path"
+        | "pdf_version"
       >
     | null;
   caseId: string;
@@ -727,6 +734,9 @@ function buildDemoCase(input: {
   const aiReport: Database["public"]["Tables"]["ai_reports"]["Row"] | null =
     status === "report_ready" && input.aiReport
       ? {
+          pdf_generated_at: null,
+          pdf_storage_path: null,
+          pdf_version: null,
           ...input.aiReport,
           created_at: reviewCompletedAt ?? createdAt,
           generated_by: "demo-seed",
