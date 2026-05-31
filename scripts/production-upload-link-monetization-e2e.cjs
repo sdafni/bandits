@@ -37,13 +37,13 @@ function parseArgs(env) {
   return { appUrl };
 }
 
-async function signIn(page, appUrl, email, password) {
-  await page.goto(`${appUrl}/en/login`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  await page.getByTestId("auth-tab-signin").click();
-  await page.getByTestId("auth-email-input").fill(email);
-  await page.getByTestId("auth-password-input").fill(password);
-  await page.getByTestId("auth-signin-submit").click();
-  await page.waitForURL(/\/dashboard/, { timeout: 120000 });
+async function establishSession(page, appUrl, accessToken, refreshToken) {
+  const response = await page.context().request.post(`${appUrl}/auth/callback/session`, {
+    data: { accessToken, refreshToken },
+  });
+  if (!response.ok()) {
+    throw new Error(`Session bootstrap failed: HTTP ${response.status()}`);
+  }
 }
 
 async function seedSubscription(admin, userId, email, appUrl) {
@@ -71,18 +71,36 @@ async function seedSubscription(admin, userId, email, appUrl) {
   );
 }
 
-async function createCheckViaDashboard(page) {
-  await page.goto(`${page.url().split("/dashboard")[0]}/en/dashboard`, { waitUntil: "domcontentloaded" });
-  await page.getByRole("link", { name: /new check|νέος έλεγχος/i }).first().click({ timeout: 30000 });
-  await page.getByLabel(/property name|όνομα ακινήτου/i).fill("E2E Kolonaki Flat");
-  await page.getByLabel(/tenant name|όνομα ενοικιαστ/i).fill("Elena Konstantinou");
-  await page.getByRole("button", { name: /continue|συνέχεια|next|επόμενο/i }).click();
-  await page.getByLabel(/address|διεύθυνση/i).first().fill("Skoufa 18");
-  await page.getByLabel(/city|πόλη/i).fill("Athens");
-  await page.getByLabel(/rent|ενοίκιο/i).fill("1200");
-  await page.getByRole("button", { name: /continue|συνέχεια|next|επόμενο/i }).click();
-  await page.getByRole("button", { name: /save|submit|create|αποθήκευση|δημιουργία/i }).last().click();
-  await page.getByRole("heading", { level: 2, name: /saved|αποθηκεύτηκε/i }).waitFor({ timeout: 120000 });
+async function createCheckViaDashboard(page, appUrl) {
+  await page.goto(`${appUrl}/en/dashboard`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.evaluate(() => window.localStorage.removeItem("safekey.new-screening.draft.v1"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page
+    .getByTestId("dashboard-welcome-cta")
+    .or(page.getByTestId("dashboard-primary-cta"))
+    .or(page.getByRole("button", { name: /Start Tenant Check/i }))
+    .first()
+    .click({ timeout: 30000 });
+
+  const draftGate = page.getByRole("button", { name: /Start over|Delete draft/i });
+  if (await draftGate.first().isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: /Start over/i }).click();
+  }
+
+  await page.locator("#property_name").waitFor({ timeout: 30000 });
+  await page.locator("#property_name").fill("E2E Kolonaki Flat");
+  await page.locator("#monthly_rent").fill("1200");
+  await page.locator("#address_line1").fill("Skoufa 18");
+  await page.locator("#city").fill("Athens");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.locator("#tenant_full_name").fill("Elena Konstantinou");
+  await page.locator("#tenant_email").fill("elena.e2e@mailinator.com");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Start Tenant Check" }).last().click();
+  await page.getByRole("heading", { level: 2, name: /Your Tenant Check is saved/i }).waitFor({ timeout: 120000 });
 }
 
 async function main() {
@@ -90,8 +108,9 @@ async function main() {
   const { appUrl } = parseArgs(env);
   const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  if (!supabaseUrl || !serviceKey) {
+  if (!supabaseUrl || !serviceKey || !anonKey) {
     throw new Error("Missing Supabase env for E2E");
   }
 
@@ -101,6 +120,9 @@ async function main() {
   const email = `uploadlink.e2e.${Date.now()}@mailinator.com`;
   const password = "Password123!";
   const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const anon = createClient(supabaseUrl, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
@@ -125,31 +147,36 @@ async function main() {
   const results = [];
 
   try {
-    await signIn(page, appUrl, email, password);
-    await createCheckViaDashboard(page);
+    const signIn = await anon.auth.signInWithPassword({ email, password });
+    if (signIn.error || !signIn.data.session) {
+      throw signIn.error ?? new Error("Could not sign in test user");
+    }
+
+    await establishSession(page, appUrl, signIn.data.session.access_token, signIn.data.session.refresh_token);
+    await createCheckViaDashboard(page, appUrl);
 
     const noPlanPath = path.join(outDir, "02-success-without-active-plan.png");
     await page.screenshot({ path: noPlanPath, fullPage: true });
     results.push({ file: "02-success-without-active-plan.png", ok: true });
 
     await page.getByRole("button", { name: "Create Upload Link" }).click();
-    await page.getByRole("dialog").waitFor({ timeout: 15000 });
+    await page.getByRole("heading", { name: "Choose a Plan First to Continue" }).waitFor({ timeout: 15000 });
     const modalPath = path.join(outDir, "03-plan-required-modal.png");
     await page.screenshot({ path: modalPath, fullPage: true });
     results.push({ file: "03-plan-required-modal.png", ok: true });
-    await page.getByRole("button", { name: "Not now" }).click();
-    await page.getByRole("dialog").waitFor({ state: "hidden", timeout: 10000 });
+    await page.locator("button.min-h-11").filter({ hasText: "Not now" }).click();
+    await page.getByRole("heading", { name: "Choose a Plan First to Continue" }).waitFor({ state: "hidden", timeout: 10000 });
 
     await seedSubscription(admin, userId, email, appUrl);
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByRole("heading", { level: 2, name: /saved|ready|αποθηκεύτηκε/i }).waitFor({ timeout: 30000 });
+    await page.goto(`${appUrl}/en/dashboard`, { waitUntil: "domcontentloaded" });
+    await createCheckViaDashboard(page, appUrl);
 
     const withPlanPath = path.join(outDir, "01-success-with-active-plan.png");
     await page.screenshot({ path: withPlanPath, fullPage: true });
     results.push({ file: "01-success-with-active-plan.png", ok: true });
 
     await page.getByRole("button", { name: "Create Upload Link" }).click();
-    await page.getByRole("heading", { level: 2, name: /ready|έτοιμος/i }).waitFor({ timeout: 60000 });
+    await page.getByRole("heading", { level: 2, name: /upload link is ready/i }).waitFor({ timeout: 60000 });
     const linkPath = path.join(outDir, "04-upload-link-generated.png");
     await page.screenshot({ path: linkPath, fullPage: true });
     results.push({ file: "04-upload-link-generated.png", ok: true });
