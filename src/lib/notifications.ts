@@ -33,6 +33,24 @@ type LandlordReportReadyInput = LandlordCheckNotificationInput & {
   pdfDownloadUrl?: string | null;
 };
 
+type TenantDocumentWorkflowInput = {
+  documentLabels: string[];
+  message?: string | null;
+  propertyName: string;
+  tenantEmail: string;
+  tenantName: string;
+  uploadUrl: string;
+};
+
+type TenantDocumentRejectedInput = {
+  documentLabel: string;
+  propertyName: string;
+  reason: string;
+  tenantEmail: string;
+  tenantName: string;
+  uploadUrl: string;
+};
+
 async function getLandlordRecipient(landlordId: string) {
   const admin = createAdminClient();
   const { data } = await admin.from("users").select("email, full_name").eq("id", landlordId).maybeSingle();
@@ -230,4 +248,67 @@ export async function notifyLandlordReportReady(input: LandlordReportReadyInput)
     html,
     text,
   });
+}
+
+export async function notifyTenantMissingDocumentsRequested(input: TenantDocumentWorkflowInput) {
+  const subject = `SafeKey · Additional documents requested · ${input.propertyName}`;
+  const labels = input.documentLabels.join(", ");
+  const text = [
+    `Hello ${input.tenantName},`,
+    "",
+    "Your landlord requested additional documents for your SafeKey application.",
+    "",
+    `Property: ${input.propertyName}`,
+    `Requested: ${labels}`,
+    input.message ? `Message: ${input.message}` : "",
+    "",
+    `Secure upload link: ${input.uploadUrl}`,
+    "",
+    "SafeKey Trust Operations",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const html = renderSafeKeyEmail({
+    title: "Additional documents requested",
+    bodyHtml: `
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(input.tenantName)}, your landlord requested additional documents for your screening application.</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Requested:</strong> ${escapeHtml(labels)}</p>
+      ${input.message ? `<p style="margin:0 0 12px;color:#334155;line-height:1.6;">${escapeHtml(input.message)}</p>` : ""}
+    `,
+    cta: { label: "Open secure upload page", href: input.uploadUrl },
+  });
+
+  return sendEmail({ to: input.tenantEmail, subject, html, text });
+}
+
+export async function notifyTenantDocumentRejected(input: TenantDocumentRejectedInput) {
+  const subject = `SafeKey · Document resubmission needed · ${input.propertyName}`;
+  const text = [
+    `Hello ${input.tenantName},`,
+    "",
+    "A document in your SafeKey application needs to be resubmitted.",
+    "",
+    `Property: ${input.propertyName}`,
+    `Document: ${input.documentLabel}`,
+    `Reason: ${input.reason}`,
+    "",
+    `Secure upload link: ${input.uploadUrl}`,
+    "",
+    "SafeKey Trust Operations",
+  ].join("\n");
+
+  const html = renderSafeKeyEmail({
+    title: "Document resubmission needed",
+    bodyHtml: `
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(input.tenantName)}, one of your submitted documents needs to be uploaded again.</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Document:</strong> ${escapeHtml(input.documentLabel)}</p>
+      <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Reason:</strong> ${escapeHtml(input.reason)}</p>
+    `,
+    cta: { label: "Resubmit document", href: input.uploadUrl },
+  });
+
+  return sendEmail({ to: input.tenantEmail, subject, html, text });
 }

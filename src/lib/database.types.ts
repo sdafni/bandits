@@ -449,6 +449,9 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          landlord_decided_at: string | null;
+          landlord_decision: "pending" | "approved" | "declined" | "conditional";
+          landlord_decision_notes: string | null;
           landlord_id: string;
           property_id: string;
           requested_documents: string[];
@@ -467,6 +470,9 @@ export type Database = {
         Insert: {
           created_at?: string;
           id?: string;
+          landlord_decided_at?: string | null;
+          landlord_decision?: "pending" | "approved" | "declined" | "conditional";
+          landlord_decision_notes?: string | null;
           landlord_id: string;
           property_id: string;
           requested_documents?: string[];
@@ -505,6 +511,26 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["tenant_check_protection_options"]["Insert"]>;
         Relationships: [];
       };
+      case_reviewer_notes: {
+        Row: {
+          author_id: string;
+          author_role: "admin" | "landlord";
+          body: string;
+          created_at: string;
+          id: string;
+          tenant_check_id: string;
+        };
+        Insert: {
+          author_id: string;
+          author_role: "admin" | "landlord";
+          body: string;
+          created_at?: string;
+          id?: string;
+          tenant_check_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["case_reviewer_notes"]["Insert"]>;
+        Relationships: [];
+      };
       tenant_documents: {
         Row: {
           created_at: string;
@@ -514,6 +540,9 @@ export type Database = {
           file_size: number | null;
           id: string;
           mime_type: string | null;
+          rejected_at: string | null;
+          rejected_by: string | null;
+          rejection_reason: string | null;
           storage_path: string;
           tenant_check_id: string;
           updated_at: string;
@@ -528,6 +557,9 @@ export type Database = {
           file_size?: number | null;
           id?: string;
           mime_type?: string | null;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
           storage_path: string;
           tenant_check_id: string;
           updated_at?: string;

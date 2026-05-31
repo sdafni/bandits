@@ -98,8 +98,14 @@ export function normalizeRequestedDocuments(requestedDocuments: string[]) {
   return requestedDocuments.map(normalizeDocumentType);
 }
 
-export function normalizeUploadedDocumentTypes(documents: Array<{ document_type: string }>) {
-  return new Set(documents.map((document) => normalizeDocumentType(document.document_type)));
+export function normalizeUploadedDocumentTypes(
+  documents: Array<{ document_type: string; upload_status?: string | null }>,
+) {
+  return new Set(
+    documents
+      .filter((document) => document.upload_status !== "rejected")
+      .map((document) => normalizeDocumentType(document.document_type)),
+  );
 }
 
 export function getCatalogDocumentDefinition(value: string) {

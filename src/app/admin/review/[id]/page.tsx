@@ -7,6 +7,8 @@ import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
 import { GenerateReportForm } from "@/components/generate-report-form";
 import { ProtectionReviewForm } from "@/components/protection-review-form";
+import { SafeKeyCoreWorkflowPanel } from "@/components/safekey-core-panel";
+import { SafeKeyScoreboardPanel } from "@/components/safekey-scoreboard";
 import { getBillingEligibilityForCheck, getBillingOverviewForUser } from "@/lib/billing-queries";
 import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
 import { WORKSPACE_ACCESS_LABEL } from "@/lib/billing";
@@ -20,6 +22,9 @@ import {
   getEligibilityTone,
 } from "@/lib/protection";
 import { getAdminCheckDetail, getProtectionSnapshot } from "@/lib/queries";
+import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
+import { buildTenantSummaryCard, resolveSafeKeyCoreContext } from "@/lib/safekey-core";
+import { getCaseReviewerNotesAdmin } from "@/lib/safekey-core-queries";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -146,6 +151,25 @@ export default async function AdminReviewDetailPage({
       }
     : null;
 
+  const documentScoreboard = buildSafeKeyScoreboard({
+    requested_documents: detail.requested_documents,
+    status: detail.status,
+    tenant_documents: detail.tenant_documents,
+  });
+  const reviewerNotes = isDemoCase ? [] : await getCaseReviewerNotesAdmin(id);
+  const coreContext = resolveSafeKeyCoreContext({
+    hasReport: Boolean(detail.ai_reports),
+    isAdmin: true,
+    status: detail.status,
+  });
+  const tenantSummary = buildTenantSummaryCard({
+    aiReport: detail.ai_reports,
+    check: detail,
+    profile: detail.tenant_public_profiles,
+    property: detail.properties,
+    tenantDocuments: detail.tenant_documents,
+  });
+
   return (
     <main className="min-h-screen">
       <AppHeader
@@ -191,14 +215,21 @@ export default async function AdminReviewDetailPage({
               </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-slate-700">Requested documents</p>
-              <div className="flex flex-wrap gap-2">
-                {detail.requested_documents.map((item) => (
-                  <Badge key={item}>{item.replaceAll("_", " ")}</Badge>
-                ))}
-              </div>
-            </div>
+            <SafeKeyScoreboardPanel
+              locale={locale}
+              scoreboard={documentScoreboard}
+              title={isGreek ? "Πρόοδος εγγράφων" : "Document progress"}
+            />
+
+            <SafeKeyCoreWorkflowPanel
+              asAdmin
+              checkId={id}
+              context={coreContext}
+              documents={detail.tenant_documents}
+              missingDocumentTypes={documentScoreboard.missingDocumentTypes}
+              notes={reviewerNotes}
+              summary={tenantSummary}
+            />
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">

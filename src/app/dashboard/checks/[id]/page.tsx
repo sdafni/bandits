@@ -9,6 +9,7 @@ import { RecoveryNavigationActions } from "@/components/recovery-navigation-acti
 import { CaseTrustReportSection } from "@/components/case-trust-report-section";
 import { CaseWorkflowPanel } from "@/components/case-workflow-panel";
 import { SafeKeyScoreboardPanel } from "@/components/safekey-scoreboard";
+import { SafeKeyCoreWorkflowPanel } from "@/components/safekey-core-panel";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
@@ -29,6 +30,8 @@ import {
 } from "@/lib/protection";
 import { buildTrustWorkflowReport, getWorkflowStatusLabel } from "@/lib/trust-workflows";
 import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
+import { buildTenantSummaryCard, resolveSafeKeyCoreContext } from "@/lib/safekey-core";
+import { getCaseReviewerNotes } from "@/lib/safekey-core-queries";
 import { getLandlordCheckDetail, getProtectionSnapshot } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -226,6 +229,19 @@ export default async function LandlordCheckDetailPage({
     status: detail.status,
     tenant_documents: detail.tenant_documents,
   });
+  const reviewerNotes = isDemoCase ? [] : await getCaseReviewerNotes(id);
+  const coreContext = resolveSafeKeyCoreContext({
+    hasReport: Boolean(detail.ai_reports),
+    isAdmin: false,
+    status: detail.status,
+  });
+  const tenantSummary = buildTenantSummaryCard({
+    aiReport: detail.ai_reports,
+    check: detail,
+    profile: detail.tenant_public_profiles,
+    property: detail.properties,
+    tenantDocuments: detail.tenant_documents,
+  });
 
   const removableCase = isDemoCase || canLandlordRemoveCheck(detail);
 
@@ -271,6 +287,15 @@ export default async function LandlordCheckDetailPage({
                 <p className="text-xs leading-6 text-slate-500">{t("caseDetail.sampleCaseNote")}</p>
               ) : null}
             </div>
+
+            <SafeKeyCoreWorkflowPanel
+              checkId={id}
+              context={coreContext}
+              documents={detail.tenant_documents}
+              missingDocumentTypes={documentScoreboard.missingDocumentTypes}
+              notes={reviewerNotes}
+              summary={tenantSummary}
+            />
           </div>
 
           <div className="card space-y-5" id="safekey-report">
