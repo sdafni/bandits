@@ -22,6 +22,7 @@ import {
   getDocumentDefinition,
   type TrustWorkflowExperience,
 } from "@/lib/trust-workflows";
+import { getDefaultRecommendedDocuments } from "@/lib/safekey-document-catalog";
 import { getLocalizedDocumentCategoryLabel, getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
 import {
   clearNewCheckDraft,
@@ -110,14 +111,7 @@ export function NewCheckForm({
     () =>
       (experience === "basic"
         ? ["national_id", "bank_statement", "payslips"]
-        : [
-            "national_id",
-            "passport",
-            "bank_statement",
-            "payslips",
-            "employment_contract",
-            "landlord_reference",
-          ]) as string[],
+        : getDefaultRecommendedDocuments()) as string[],
     [experience],
   );
   const [state, action] = useActionState(createTenantCheckAction, initialState);
@@ -166,13 +160,12 @@ export function NewCheckForm({
     [
       "bank_statement",
       "payslips",
-      "proof_of_savings",
-      "guarantor_documents",
-      "freelance_income",
-      "relocation_contract",
+      "employer_letter",
+      "guarantor",
       "employment_contract",
       "tax_return",
-      "accountant_letter",
+      "utility_bill",
+      "recommendation_letter",
     ].includes(value),
   );
   const requestedProgress = Math.round((requestedDocuments.length / TRUST_DOCUMENT_DEFINITIONS.length) * 100);
@@ -532,7 +525,7 @@ export function NewCheckForm({
                         />
                         <span className="inline-flex items-center gap-2">
                           {getLocalizedDocumentLabel(locale, option.value)}
-                          <span className="text-xs text-slate-500 capitalize">{option.priority}</span>
+                          <span className="text-xs text-slate-500 capitalize">{option.catalogTier.replaceAll("_", " ")}</span>
                         </span>
                       </label>
                     ))}

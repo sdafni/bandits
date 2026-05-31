@@ -49,6 +49,7 @@ import {
   isDocumentSubmissionComplete,
 } from "@/lib/document-submission";
 import { getDefaultRequestedDocumentsForPlan, getDocumentLabel } from "@/lib/trust-workflows";
+import { getPendingUploadDocumentTypes } from "@/lib/safekey-document-catalog";
 import { activateTenantWorkflowForCheck } from "@/lib/workflow-activation";
 import { canLandlordRemoveCheck } from "@/lib/check-removal";
 import { isDraftCheck } from "@/lib/workspace-access";
@@ -951,8 +952,9 @@ async function uploadDocumentsActionInternal(token: string, formData: FormData):
     }
 
     const alreadyUploaded = getUploadedDocumentTypes(check.tenant_documents);
-    const pendingDocumentTypes = check.requested_documents.filter(
-      (documentType) => !alreadyUploaded.has(documentType),
+    const pendingDocumentTypes = getPendingUploadDocumentTypes(
+      check.requested_documents,
+      check.tenant_documents,
     );
 
     if (pendingDocumentTypes.length === 0) {

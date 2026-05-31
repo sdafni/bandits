@@ -8,11 +8,17 @@ import { uploadDocumentsAction, type ActionState } from "@/app/actions";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
 import {
-  countReceivedDocuments,
   getDocumentUploadFieldName,
   getUploadedDocumentTypes,
   isDocumentSubmissionComplete,
 } from "@/lib/document-submission";
+import {
+  buildRequiredSlots,
+  getPendingUploadDocumentTypes,
+  getSlotDocumentTypes,
+  isRequiredSlotReceived,
+} from "@/lib/safekey-document-catalog";
+import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { translate } from "@/lib/i18n/messages";
 import { getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
@@ -46,25 +52,52 @@ export function TenantUploadForm({
   const [state, formAction] = useActionState(action, initialState);
   const [selectedFilesByType, setSelectedFilesByType] = useState<Record<string, number>>({});
 
-  const uploadedSet = useMemo(() => new Set(alreadyUploadedTypes), [alreadyUploadedTypes]);
-  const pendingDocumentTypes = useMemo(
-    () => requestedDocuments.filter((documentType) => !uploadedSet.has(documentType)),
-    [requestedDocuments, uploadedSet],
+  const uploadedSet = useMemo(
+    () => getUploadedDocumentTypes(alreadyUploadedTypes.map((document_type) => ({ document_type }))),
+    [alreadyUploadedTypes],
   );
+  const pendingDocumentTypes = useMemo(
+    () =>
+      getPendingUploadDocumentTypes(
+        requestedDocuments,
+        alreadyUploadedTypes.map((document_type) => ({ document_type })),
+      ),
+    [alreadyUploadedTypes, requestedDocuments],
+  );
+  const scoreboardPreview = useMemo(
+    () =>
+      buildSafeKeyScoreboard({
+        requested_documents: requestedDocuments,
+        status: "pending_upload",
+        tenant_documents: alreadyUploadedTypes.map((document_type) => ({ document_type })),
+      }),
+    [alreadyUploadedTypes, requestedDocuments],
+  );
+  const pendingSlots = useMemo(() => {
+    const slots = buildRequiredSlots(requestedDocuments);
+    return slots.filter((slot) => !isRequiredSlotReceived(slot, uploadedSet));
+  }, [requestedDocuments, uploadedSet]);
 
-  const sessionSelectedCount = pendingDocumentTypes.filter(
-    (documentType) => (selectedFilesByType[documentType] ?? 0) > 0,
-  ).length;
-  const receivedCount =
-    countReceivedDocuments(requestedDocuments, uploadedSet) + sessionSelectedCount;
-  const totalCount = requestedDocuments.length;
+  function slotHasSessionSelection(slot: (typeof pendingSlots)[number]) {
+    return getSlotDocumentTypes(slot).some(
+      (documentType) => (selectedFilesByType[documentType] ?? 0) > 0,
+    );
+  }
+
+  const sessionSelectedSlotCount = pendingSlots.filter((slot) => slotHasSessionSelection(slot)).length;
+  const receivedCount = scoreboardPreview.received + sessionSelectedSlotCount;
+  const totalCount = scoreboardPreview.total;
   const canSaveProgress =
-    pendingDocumentTypes.length > 0 &&
-    pendingDocumentTypes.some((documentType) => (selectedFilesByType[documentType] ?? 0) > 0);
+    pendingSlots.length > 0 && pendingSlots.some((slot) => slotHasSessionSelection(slot));
   const canSubmit =
-    pendingDocumentTypes.length > 0 &&
-    pendingDocumentTypes.every((documentType) => (selectedFilesByType[documentType] ?? 0) > 0);
-  const applicationComplete = isDocumentSubmissionComplete(requestedDocuments, uploadedSet);
+    pendingSlots.length > 0 &&
+    pendingSlots.every(
+      (slot) => isRequiredSlotReceived(slot, uploadedSet) || slotHasSessionSelection(slot),
+    );
+  const applicationComplete = isDocumentSubmissionComplete(
+    requestedDocuments,
+    uploadedSet,
+  );
 
   useEffect(() => {
     if (state.success) {
@@ -157,6 +190,7 @@ export function TenantUploadForm({
         <div className="space-y-3">
           {requestedDocuments.map((documentType) => {
             const alreadyUploaded = uploadedSet.has(documentType);
+            const isPending = pendingDocumentTypes.includes(documentType);
             const selectedCount = selectedFilesByType[documentType] ?? 0;
             const fieldName = getDocumentUploadFieldName(documentType);
 
@@ -188,7 +222,7 @@ export function TenantUploadForm({
                   ) : null}
                 </div>
 
-                {!alreadyUploaded ? (
+                {!alreadyUploaded && isPending ? (
                   <label className="mt-3 block space-y-2">
                     <span className="text-xs font-medium uppercase tracking-[0.08em] text-slate-500">
                       {t("tenantUpload.uploadForCategory")}

@@ -6,19 +6,20 @@ type TenantCheckRow = Database["public"]["Tables"]["tenant_checks"]["Row"];
 type TenantCheckStatus = TenantCheckRow["status"];
 
 const DOCUMENT_LABELS: Record<string, string> = {
-  bank_statement: "Bank statements",
-  employment_letter: "Employment letter",
+  afm: "AFM",
+  bank_guarantee: "Bank guarantee",
+  bank_statement: "Bank statement",
+  employer_letter: "Employer letter",
   employment_contract: "Employment contract",
-  government_id: "ID document",
+  guarantor: "Guarantor",
+  landlord_reference: "Landlord reference",
   national_id: "National ID",
   passport: "Passport",
   payslips: "Payslips",
-  proof_of_income: "Proof of income",
-  landlord_reference: "Landlord reference",
-  rental_reference: "Landlord reference",
-  residency_permit: "Residency permit",
-  supporting_document: "Supporting document",
+  recommendation_letter: "Recommendation letter",
+  residence_permit: "Residence permit",
   tax_return: "Tax return",
+  utility_bill: "Utility bill",
 };
 
 export function getTenantUploadOperationalState(params: {

@@ -1,62 +1,27 @@
 import type { AppLocale } from "@/lib/i18n";
 import { translate } from "@/lib/i18n/messages";
+import {
+  SAFEKEY_DOCUMENT_CATEGORIES,
+  SAFEKEY_DOCUMENT_DEFINITIONS,
+  getCatalogDocumentDefinition,
+  getCatalogDocumentLabel,
+  getDefaultRecommendedDocuments,
+  type SafeKeyDocumentCategoryKey,
+  type SafeKeyDocumentDefinition,
+} from "@/lib/safekey-document-catalog";
 
 export type TrustWorkflowExperience = "basic" | "pro" | "premium";
 
-export type TrustDocumentCategoryKey =
-  | "identity"
-  | "income"
-  | "financial"
-  | "rental_history"
-  | "optional";
+export type TrustDocumentCategoryKey = SafeKeyDocumentCategoryKey;
+export type TrustDocumentDefinition = SafeKeyDocumentDefinition;
 
-export type TrustDocumentDefinition = {
-  value: string;
-  label: string;
-  category: TrustDocumentCategoryKey;
-  priority: "required" | "recommended" | "optional";
-};
-
-export const TRUST_DOCUMENT_CATEGORIES: Record<TrustDocumentCategoryKey, { label: string }> = {
-  identity: { label: "Identity" },
-  income: { label: "Income" },
-  financial: { label: "Financial" },
-  rental_history: { label: "Rental history" },
-  optional: { label: "Optional" },
-};
-
-export const TRUST_DOCUMENT_DEFINITIONS: TrustDocumentDefinition[] = [
-  { category: "identity", label: "Passport", priority: "required", value: "passport" },
-  { category: "identity", label: "National ID", priority: "required", value: "national_id" },
-  { category: "identity", label: "Residency permit", priority: "required", value: "residency_permit" },
-  { category: "income", label: "Payslips", priority: "recommended", value: "payslips" },
-  { category: "income", label: "Employment contract", priority: "recommended", value: "employment_contract" },
-  { category: "income", label: "Tax return", priority: "recommended", value: "tax_return" },
-  { category: "income", label: "Accountant letter", priority: "recommended", value: "accountant_letter" },
-  { category: "income", label: "Freelance income proof", priority: "recommended", value: "freelance_income" },
-  { category: "income", label: "Relocation contract", priority: "recommended", value: "relocation_contract" },
-  { category: "financial", label: "Bank statements", priority: "recommended", value: "bank_statement" },
-  { category: "financial", label: "Proof of savings", priority: "recommended", value: "proof_of_savings" },
-  { category: "rental_history", label: "Previous landlord reference", priority: "recommended", value: "landlord_reference" },
-  { category: "rental_history", label: "Previous lease agreement", priority: "recommended", value: "previous_lease_agreement" },
-  { category: "optional", label: "Guarantor documents", priority: "optional", value: "guarantor_documents" },
-  { category: "optional", label: "Visa documents", priority: "optional", value: "visa_documents" },
-  { category: "optional", label: "Pet documentation", priority: "optional", value: "pet_documentation" },
-];
-
-const BASIC_REQUIRED_DOCUMENTS = ["national_id", "bank_statement"] as const;
-
-const PRO_REQUIRED_DOCUMENTS = [
-  "national_id",
-  "passport",
-  "payslips",
-  "employment_contract",
-  "bank_statement",
-  "landlord_reference",
-] as const;
+export const TRUST_DOCUMENT_CATEGORIES = SAFEKEY_DOCUMENT_CATEGORIES;
+export const TRUST_DOCUMENT_DEFINITIONS = SAFEKEY_DOCUMENT_DEFINITIONS;
 
 export function getRequiredDocumentsForExperience(experience: TrustWorkflowExperience) {
-  return experience === "basic" ? [...BASIC_REQUIRED_DOCUMENTS] : [...PRO_REQUIRED_DOCUMENTS];
+  return experience === "basic"
+    ? ["national_id", "bank_statement", "payslips"]
+    : getDefaultRecommendedDocuments();
 }
 
 export function getDefaultRequestedDocumentsForPlan(planKey: "basic" | "pro" | "premium" | null | undefined) {
@@ -64,11 +29,11 @@ export function getDefaultRequestedDocumentsForPlan(planKey: "basic" | "pro" | "
 }
 
 export function getDocumentDefinition(value: string) {
-  return TRUST_DOCUMENT_DEFINITIONS.find((item) => item.value === value) ?? null;
+  return getCatalogDocumentDefinition(value);
 }
 
 export function getDocumentLabel(value: string) {
-  return getDocumentDefinition(value)?.label ?? value.replaceAll("_", " ");
+  return getCatalogDocumentLabel(value);
 }
 
 export function buildTrustWorkflowReport(params: {
@@ -88,24 +53,23 @@ export function buildTrustWorkflowReport(params: {
   const missingDocuments = params.requestedDocuments.filter((value) => !uploadedSet.has(value));
   const byCategory = (category: TrustDocumentCategoryKey) =>
     params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.category === category);
-  const byPriority = (priority: TrustDocumentDefinition["priority"]) =>
-    params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.priority === priority);
+  const byCatalogTier = (tier: SafeKeyDocumentDefinition["catalogTier"]) =>
+    params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.catalogTier === tier);
   const hasIdentityProof = params.uploadedDocuments.some(
     (value) => getDocumentDefinition(value)?.category === "identity",
   );
   const trustIndicatorDocs = new Set([
     "bank_statement",
     "payslips",
-    "proof_of_savings",
-    "guarantor_documents",
-    "freelance_income",
-    "relocation_contract",
+    "employer_letter",
+    "guarantor",
     "employment_contract",
     "tax_return",
-    "accountant_letter",
+    "utility_bill",
+    "recommendation_letter",
   ]);
   const trustIndicatorsUploaded = params.uploadedDocuments.filter((value) => trustIndicatorDocs.has(value)).length;
-  const referencesUploaded = params.uploadedDocuments.filter((value) => value === "landlord_reference" || value === "previous_lease_agreement").length;
+  const referencesUploaded = params.uploadedDocuments.filter((value) => value === "landlord_reference").length;
   const highRiskDetected =
     (params.score != null && params.score < 45) ||
     (params.riskFlags ?? []).length > 0 ||
@@ -152,16 +116,13 @@ export function buildTrustWorkflowReport(params: {
 
   const identitySection = [
     hasIdentityProof ? "Government ID received" : "Government ID missing",
-    params.uploadedDocuments.includes("residency_permit")
+    params.uploadedDocuments.includes("residence_permit")
       ? "Residency documentation received"
       : "Residency documentation not provided",
     highRiskDetected ? "Information consistency requires manual review" : "Name consistency appears stable",
   ];
   const financialSection = [
     trustIndicatorsUploaded >= 2 ? "Stable recurring income indicators detected" : "Partial financial visibility",
-    params.uploadedDocuments.includes("proof_of_savings")
-      ? "Savings evidence provided"
-      : "Savings evidence not provided",
     params.uploadedDocuments.includes("bank_statement")
       ? "Bank history available"
       : "Limited banking history available",
@@ -188,25 +149,19 @@ export function buildTrustWorkflowReport(params: {
     },
   ] as const;
   const rentalRiskIndicators = [
-    params.uploadedDocuments.includes("relocation_contract")
-      ? "International relocation case"
-      : null,
-    params.uploadedDocuments.includes("freelance_income")
-      ? "Freelancer/self-employed profile"
-      : null,
+    params.uploadedDocuments.includes("residence_permit") ? "International relocation case" : null,
+    params.uploadedDocuments.includes("employer_letter") ? "Employer verification available" : null,
     referencesUploaded === 0 ? "No previous landlord references" : null,
-    params.uploadedDocuments.includes("guarantor_documents") ? "Guarantor provided" : null,
+    params.uploadedDocuments.includes("guarantor") ? "Guarantor provided" : null,
   ].filter((item): item is string => Boolean(item));
   const missingItemsGuidance =
-    byPriority("recommended").filter((value) => !uploadedSet.has(value)).length > 0
+    byCatalogTier("core").filter((value) => !uploadedSet.has(value)).length > 0
       ? "To improve confidence, additional bank statements, income continuity evidence, or landlord references are recommended."
       : "Current evidence set is sufficient for a confidence-led landlord decision.";
   const protectionSuggestions = [
     confidenceScore < 65 ? "Additional deposit recommended" : null,
-    !params.uploadedDocuments.includes("guarantor_documents") && confidenceScore < 55
-      ? "Guarantor recommended"
-      : null,
-    byPriority("recommended").filter((value) => !uploadedSet.has(value)).length > 0
+    !params.uploadedDocuments.includes("guarantor") && confidenceScore < 55 ? "Guarantor recommended" : null,
+    byCatalogTier("core").filter((value) => !uploadedSet.has(value)).length > 0
       ? "Additional income verification recommended"
       : null,
   ].filter((item): item is string => Boolean(item));
@@ -271,11 +226,13 @@ export function buildTrustWorkflowReport(params: {
     identitySection,
     minimumEvidenceMet: hasIdentityProof && trustIndicatorsUploaded >= 1,
     missingItemsGuidance,
-    optionalReceived: byCategory("optional").filter((value) => uploadedSet.has(value)),
-    optionalRequested: byPriority("optional"),
+    optionalReceived: [...byCategory("trust_boost"), ...byCategory("advanced")].filter((value) =>
+      uploadedSet.has(value),
+    ),
+    optionalRequested: [...byCatalogTier("trust_boost"), ...byCatalogTier("advanced")],
     protectionSuggestions,
-    recommendedMissing: byPriority("recommended").filter((value) => !uploadedSet.has(value)),
-    requiredMissing: byPriority("required").filter((value) => !uploadedSet.has(value)),
+    recommendedMissing: byCatalogTier("core").filter((value) => !uploadedSet.has(value)),
+    requiredMissing: byCatalogTier("core").filter((value) => !uploadedSet.has(value)),
     rentalRiskIndicators,
     missingDocuments,
     rentalHistoryReceived: byCategory("rental_history").filter((value) => uploadedSet.has(value)),
