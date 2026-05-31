@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { X } from "lucide-react";
 import { ScreeningCheckoutForm } from "@/components/screening-checkout-form";
-import { useLocale, useT } from "@/lib/i18n/context";
-import { withLocalePath } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/context";
 
 type UnlockWorkflowModalProps = {
   checkId: string;
@@ -14,7 +12,6 @@ type UnlockWorkflowModalProps = {
 };
 
 export function UnlockWorkflowModal({ checkId, onClose, open, trigger }: UnlockWorkflowModalProps) {
-  const { locale } = useLocale();
   const t = useT();
 
   if (!open) {
@@ -38,11 +35,11 @@ export function UnlockWorkflowModal({ checkId, onClose, open, trigger }: UnlockW
           </div>
           <button
             aria-label={t("workspace.close")}
-            className="workspace-cta-secondary workspace-cta-secondary--compact"
+            className="modal-close-button"
             onClick={onClose}
             type="button"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
 
@@ -61,12 +58,6 @@ export function UnlockWorkflowModal({ checkId, onClose, open, trigger }: UnlockW
             label={t("workspace.unlockCtaScreening")}
             pendingLabel={t("workspace.unlockCtaPending")}
           />
-          <Link
-            className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-[18px] px-5 py-3 text-sm font-semibold"
-            href={withLocalePath(locale, "/dashboard/billing")}
-          >
-            {t("workspace.unlockCtaPlans")}
-          </Link>
         </div>
 
         <p className="mt-4 text-xs leading-6 text-slate-500">{t("workspace.unlockFootnote")}</p>

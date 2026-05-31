@@ -13,12 +13,12 @@ export function LanguageSwitcher({ locale: localeProp }: LanguageSwitcherProps) 
 
   return (
     <div
-      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-1 py-1 text-xs font-semibold text-secondary"
+      className="language-switcher language-switcher--mobile-compact"
       data-testid="language-switcher"
     >
       <button
         aria-pressed={activeLocale === "el"}
-        className={`rounded-full px-2.5 py-1 transition ${
+        className={`language-switcher__option language-switcher__option--mobile-compact ${
           activeLocale === "el" ? "bg-slate-900 text-white" : "hover:bg-slate-100"
         } ${isSwitching ? "opacity-80" : ""}`}
         data-testid="language-switch-el"
@@ -27,10 +27,10 @@ export function LanguageSwitcher({ locale: localeProp }: LanguageSwitcherProps) 
       >
         {t("common.languageEl")}
       </button>
-      <span className="px-1 text-muted">|</span>
+      <span className="px-0.5 text-muted sm:px-1">|</span>
       <button
         aria-pressed={activeLocale === "en"}
-        className={`rounded-full px-2.5 py-1 transition ${
+        className={`language-switcher__option language-switcher__option--mobile-compact ${
           activeLocale === "en" ? "bg-slate-900 text-white" : "hover:bg-slate-100"
         } ${isSwitching ? "opacity-80" : ""}`}
         data-testid="language-switch-en"

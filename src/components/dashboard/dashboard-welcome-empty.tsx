@@ -1,36 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import { Lock, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { TrustSignalsStrip } from "@/components/trust-signals-strip";
-import { useLocale, useT } from "@/lib/i18n/context";
-import { withLocalePath } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/context";
 
 export function DashboardWelcomeEmpty({
-  billingNavEnabled = false,
-  needsPlan = false,
   onStartCheck,
 }: {
-  billingNavEnabled?: boolean;
-  needsPlan?: boolean;
   onStartCheck: () => void;
 }) {
   const t = useT();
-  const { locale } = useLocale();
 
-  const steps = needsPlan
-    ? [
-        t("dashboard.welcome.step1"),
-        t("dashboard.welcome.step2Plan"),
-        t("dashboard.welcome.step3"),
-        t("dashboard.welcome.step4"),
-      ]
-    : [
-        t("dashboard.welcome.step1"),
-        t("dashboard.welcome.step2"),
-        t("dashboard.welcome.step3"),
-        t("dashboard.welcome.step4"),
-      ];
+  const steps = [
+    t("dashboard.welcome.step1"),
+    t("dashboard.welcome.step2"),
+    t("dashboard.welcome.step3"),
+    t("dashboard.welcome.step4"),
+  ];
 
   return (
     <section className="space-y-5">
@@ -41,11 +27,12 @@ export function DashboardWelcomeEmpty({
           </div>
         </div>
 
-        {needsPlan ? (
-          <p className="mx-auto mt-5 max-w-md text-center text-sm leading-7 text-slate-600">
-            {t("dashboard.welcome.optionAIntro")}
-          </p>
-        ) : null}
+        <h1 className="mx-auto mt-5 max-w-md text-center text-xl font-semibold text-slate-950 sm:text-2xl">
+          {t("dashboard.welcome.title")}
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-center text-sm leading-7 text-slate-600">
+          {t("dashboard.welcome.subtitle")}
+        </p>
 
         <ol className="mx-auto mt-6 max-w-md space-y-3">
           {steps.map((step, index) => (
@@ -58,13 +45,6 @@ export function DashboardWelcomeEmpty({
           ))}
         </ol>
 
-        {needsPlan ? (
-          <div className="mx-auto mt-5 flex max-w-md items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-xs leading-5 text-slate-600">
-            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-            <p>{t("dashboard.welcome.lockedUntilPlan")}</p>
-          </div>
-        ) : null}
-
         <div className="mx-auto mt-8 flex max-w-md flex-col gap-3">
           <button
             className="workspace-cta min-h-[3.25rem] w-full justify-center rounded-2xl text-base font-semibold sm:min-h-14"
@@ -74,14 +54,6 @@ export function DashboardWelcomeEmpty({
           >
             {t("dashboard.welcome.cta")}
           </button>
-          {needsPlan && billingNavEnabled ? (
-            <Link
-              className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold"
-              href={withLocalePath(locale, "/dashboard/billing")}
-            >
-              {t("dashboard.planOnboarding.choosePlan")}
-            </Link>
-          ) : null}
         </div>
       </div>
 

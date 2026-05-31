@@ -43,7 +43,6 @@ export default async function DashboardAccountPage() {
           email={user.email ?? profile.email}
           fullName={profile.full_name}
           planStatusLabel={planStatusLabel}
-          showChoosePlan={billingNavEnabled && !access.hasActiveSubscription && access.screeningCredits === 0}
         />
         <section className="rounded-2xl border border-slate-200/90 bg-white px-5 py-5 shadow-sm sm:px-6">
           <AccountSignOutButton />

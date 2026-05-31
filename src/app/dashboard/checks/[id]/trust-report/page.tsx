@@ -4,6 +4,7 @@ import { SafeKeyTrustReport } from "@/components/safekey-trust-report";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { TrustReportPrintButton } from "@/components/trust-report-print-button";
 import { requireLandlord } from "@/lib/auth";
+import { resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { isDemoCheckId } from "@/lib/demo-data";
@@ -32,7 +33,19 @@ export default async function TrustReportExportPage({
 
   const isDemoCase = isDemoCheckId(id);
   const billingOverview = await getSafeBillingOverviewForUser(profile.id, { admin: true });
-  const workspaceAccess = resolveWorkspaceAccess(billingOverview);
+  const monetizationAccess = isDemoCase
+    ? null
+    : await resolveMonetizationAccessForCheck({
+        checkId: id,
+        landlordId: profile.id,
+        useAdmin: true,
+      });
+  const workspaceAccess = resolveWorkspaceAccess(
+    billingOverview,
+    monetizationAccess
+      ? { config: monetizationAccess.config, entitlements: monetizationAccess.entitlements }
+      : undefined,
+  );
   const billingEligibility = isDemoCase
     ? { hasBillingAccess: true }
     : await getBillingEligibilityForCheck({
@@ -46,7 +59,9 @@ export default async function TrustReportExportPage({
     checkId: id,
     status: detail.status,
     workflowActivatedAt: detail.workflow_activated_at ?? null,
-    hasCaseBillingAccess: billingEligibility.hasBillingAccess,
+    hasCaseBillingAccess:
+      monetizationAccess?.permissions.canViewFullReport ?? billingEligibility.hasBillingAccess,
+    caseGates: monetizationAccess?.gates,
   });
 
   if (!canUseCapability(caseAccess, "export_trust_report")) {

@@ -1,12 +1,38 @@
 import { NextResponse } from "next/server";
 import { getBillingPlanPriceId, type BillingPlanKey } from "@/lib/billing";
-import { env, hasStripeServerEnv } from "@/lib/env";
+import { env, hasStripeServerEnv, hasSupabaseServiceEnv } from "@/lib/env";
 import { formatStripeError, logStripeKeyMode } from "@/lib/stripe-errors";
 import { getStripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
 const PLANS: BillingPlanKey[] = ["basic", "pro", "premium"];
+const PRODUCTION_WEBHOOK_URL = "https://getsafekey.app/api/stripe/webhook";
+const STRIPE_WEBHOOK_EVENTS = [
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "checkout.session.async_payment_failed",
+  "checkout.session.expired",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.created",
+  "invoice.finalized",
+  "invoice.updated",
+  "invoice.payment_succeeded",
+  "invoice.payment_failed",
+  "invoice.voided",
+  "payment_intent.payment_failed",
+] as const;
+
+function authorizeServiceBootstrap(request: Request) {
+  if (!hasSupabaseServiceEnv()) {
+    return false;
+  }
+
+  const authorization = request.headers.get("authorization");
+  return authorization === `Bearer ${env.supabaseServiceRoleKey}`;
+}
 
 /** Server-side Stripe connectivity + price validation (no secrets exposed). */
 export async function GET() {
@@ -92,4 +118,61 @@ export async function GET() {
     ...result,
     ok: priceOk && checkoutOk,
   });
+}
+
+/** Service-role bootstrap: ensure live webhook endpoint exists (returns signing secret once). */
+export async function POST(request: Request) {
+  if (!authorizeServiceBootstrap(request)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  if (!hasStripeServerEnv()) {
+    return NextResponse.json({ error: "STRIPE_SECRET_KEY missing on server" }, { status: 500 });
+  }
+
+  const recreate = new URL(request.url).searchParams.get("recreate") === "1";
+  const stripe = getStripe();
+  const listed = await stripe.webhookEndpoints.list({ limit: 100 });
+  let endpoint = listed.data.find((item) => item.url === PRODUCTION_WEBHOOK_URL);
+
+  if (endpoint && recreate) {
+    await stripe.webhookEndpoints.del(endpoint.id);
+    endpoint = undefined;
+  }
+
+  if (endpoint) {
+    return NextResponse.json({
+      action: "exists",
+      id: endpoint.id,
+      status: endpoint.status,
+      url: endpoint.url,
+      message:
+        "Webhook already registered. Use ?recreate=1 to rotate signing secret, then set STRIPE_WEBHOOK_SECRET in Vercel.",
+    });
+  }
+
+  try {
+    const created = await stripe.webhookEndpoints.create({
+      url: PRODUCTION_WEBHOOK_URL,
+      description: "SafeKey production billing webhook",
+      enabled_events: [...STRIPE_WEBHOOK_EVENTS],
+    });
+
+    return NextResponse.json({
+      action: "created",
+      id: created.id,
+      url: created.url,
+      signingSecret: created.secret,
+      nextStep: "Add signingSecret to Vercel STRIPE_WEBHOOK_SECRET for Production and Preview, then redeploy.",
+    });
+  } catch (error) {
+    const formatted = formatStripeError(error);
+    return NextResponse.json(
+      {
+        error: formatted.message,
+        detail: formatted.detail,
+      },
+      { status: 500 },
+    );
+  }
 }

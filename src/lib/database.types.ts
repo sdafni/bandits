@@ -429,6 +429,22 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["stripe_webhook_events"]["Insert"]>;
         Relationships: [];
       };
+      platform_settings: {
+        Row: {
+          key: string;
+          updated_at: string;
+          updated_by: string | null;
+          value: Json;
+        };
+        Insert: {
+          key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_settings"]["Insert"]>;
+        Relationships: [];
+      };
       tenant_checks: {
         Row: {
           created_at: string;

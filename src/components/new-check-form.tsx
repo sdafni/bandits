@@ -29,6 +29,7 @@ import {
   saveNewCheckDraft,
   type NewCheckDraft,
 } from "@/lib/new-check-draft";
+import type { MonetizationPermissionsSnapshot } from "@/lib/monetization";
 import { TenantCheckCreatedSuccess } from "@/components/tenant-check-created-success";
 
 const initialState: ActionState = {};
@@ -78,7 +79,7 @@ function currentValues(state: {
 }
 
 type NewCheckFormProps = {
-  billingNavEnabled?: boolean;
+  monetizationPermissions: MonetizationPermissionsSnapshot;
   initialDraft?: NewCheckDraft | null;
   onCancel?: () => void;
   onCreated?: () => void;
@@ -87,13 +88,13 @@ type NewCheckFormProps = {
 };
 
 export function NewCheckForm({
-  billingNavEnabled = false,
+  monetizationPermissions,
   initialDraft,
   onCancel,
   onCreated,
   onDiscardDraft,
   experience = "basic",
-}: NewCheckFormProps = {}) {
+}: NewCheckFormProps) {
   const { locale, t } = useLocale();
   const validationMessages = useMemo(() => getScreeningValidationMessages(locale), [locale]);
   const steps = useMemo(
@@ -287,9 +288,9 @@ export function NewCheckForm({
   if (state.kind === "check_created" && state.checkId) {
     return (
       <TenantCheckCreatedSuccess
-        billingNavEnabled={billingNavEnabled}
         checkId={state.checkId}
         checkStatus={state.checkStatus}
+        monetizationPermissions={monetizationPermissions}
         linkActive={Boolean(state.linkActive)}
         onDone={() => onCancel?.()}
         propertyName={state.propertyName ?? propertyName}

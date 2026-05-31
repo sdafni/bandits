@@ -17,6 +17,8 @@ import {
   getBillingOverviewForUser,
   isBillingSchemaReady,
 } from "@/lib/billing-queries";
+import { assertMonetizationGateForCheck, resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
+import { shouldAutoActivateUploadLinkOnCheckCreate } from "@/lib/monetization";
 import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
 import { isDemoUploadToken, isDemoCheckId } from "@/lib/demo-data";
 import { notifyLandlordDocumentsReceived, notifyLandlordReportReady, notifyTenantUploadInvitation } from "@/lib/notifications";
@@ -591,7 +593,7 @@ export async function createTenantCheckAction(
     return { error: "The tenant verification request could not be created." };
   }
 
-  const eligibility = await getBillingEligibilityForCheck({
+  const monetizationAccess = await resolveMonetizationAccessForCheck({
     checkId,
     landlordId: profile.id,
     useAdmin: true,
@@ -600,7 +602,7 @@ export async function createTenantCheckAction(
   let uploadUrl: string | undefined;
   let linkActive = false;
 
-  if (eligibility.hasBillingAccess) {
+  if (shouldAutoActivateUploadLinkOnCheckCreate(monetizationAccess.config, monetizationAccess.entitlements)) {
     try {
       const activation = await activateTenantWorkflowForCheck(checkId, { sendEmail: false });
       uploadUrl = activation.uploadUrl;
@@ -649,16 +651,17 @@ export async function activateCaseUploadLinkAction(
       return { error: "This check no longer exists." };
     }
 
-    const eligibility = await getBillingEligibilityForCheck({
+    const gateResult = await assertMonetizationGateForCheck({
       checkId,
+      gate: "create_upload_link",
       landlordId: profile.id,
       useAdmin: true,
     });
 
-    if (!eligibility.hasBillingAccess) {
+    if (!gateResult.allowed) {
       return {
         error: "Activate a plan to generate the secure upload link.",
-        kind: "unlock_required",
+        kind: gateResult.failure === "plan_required" ? "unlock_required" : "unlock_required",
       };
     }
 
@@ -751,13 +754,14 @@ export async function sendTenantUploadLinkAction(
       return { error: "This tenant check no longer exists." };
     }
 
-    const eligibility = await getBillingEligibilityForCheck({
+    const gateResult = await assertMonetizationGateForCheck({
       checkId,
+      gate: "create_upload_link",
       landlordId: profile.id,
       useAdmin: true,
     });
 
-    if (!eligibility.hasBillingAccess) {
+    if (!gateResult.allowed) {
       return {
         error: "Choose a plan to activate this secure upload link.",
         kind: "unlock_required",
@@ -806,13 +810,14 @@ export async function activateTenantWorkflowAction(
       return { error: "This tenant case no longer exists." };
     }
 
-    const eligibility = await getBillingEligibilityForCheck({
+    const gateResult = await assertMonetizationGateForCheck({
       checkId,
+      gate: "create_upload_link",
       landlordId: profile.id,
       useAdmin: true,
     });
 
-    if (!eligibility.hasBillingAccess) {
+    if (!gateResult.allowed) {
       return {
         error: "Unlock your SafeKey screening workflow to send the upload link.",
         kind: "unlock_required",
@@ -1010,15 +1015,16 @@ export async function uploadDocumentsAction(
       propertyName: check.properties?.name ?? "Property",
     }).catch(() => undefined);
 
-    const billingEligibility = await getBillingEligibilityForCheck({
+    const analysisGate = await assertMonetizationGateForCheck({
       checkId: check.id,
+      gate: "run_analysis",
       landlordId: check.landlord_id,
       useAdmin: true,
     });
 
     let reportGenerated = false;
 
-    if (billingEligibility.hasBillingAccess) {
+    if (analysisGate.allowed) {
       const reportSource = await loadTenantCheckReportSource(check.id);
 
       if (reportSource && reportSource.tenant_documents.length > 0) {
@@ -1110,16 +1116,17 @@ export async function generateReportAction(
     return { error: "At least one uploaded document is required before generating a report." };
   }
 
-  const billingEligibility = await getBillingEligibilityForCheck({
+  const analysisGate = await assertMonetizationGateForCheck({
     checkId: detail.id,
+    gate: "run_analysis",
     landlordId: detail.landlord_id,
     useAdmin: true,
   });
 
-  if (!billingEligibility.hasBillingAccess) {
+  if (!analysisGate.allowed) {
     return {
       error:
-        "This case requires an active subscription or a completed one-time screening payment before a report can be generated.",
+        "This case requires billing access before a report can be generated. Adjust funnel gates in admin settings or complete payment.",
     };
   }
 

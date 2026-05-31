@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { LandlordAppNav } from "@/components/landlord-app-nav";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
 
@@ -47,7 +46,6 @@ export default function DashboardError({
           </div>
         </div>
       </main>
-      <LandlordAppNav active="checks" />
     </div>
   );
 }

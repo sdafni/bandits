@@ -2,12 +2,14 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { AiScreeningReport } from "@/components/ai-screening-report";
+import { ProfessionalReportActions } from "@/components/professional-report-actions";
 import { AppHeader } from "@/components/app-header";
 import { Badge } from "@/components/badge";
 import { RecoveryNavigationActions } from "@/components/recovery-navigation-actions";
 import { CaseTrustReportSection } from "@/components/case-trust-report-section";
 import { CaseWorkflowPanel } from "@/components/case-workflow-panel";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
+import { resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { translate } from "@/lib/i18n/messages";
 import { getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
@@ -70,7 +72,19 @@ export default async function LandlordCheckDetailPage({
   const protectionSnapshot = await getProtectionSnapshot(id);
   const isDemoCase = isDemoCheckId(id);
   const billingOverview = await getSafeBillingOverviewForUser(profile.id, { admin: true });
-  const workspaceAccess = resolveWorkspaceAccess(billingOverview);
+  const monetizationAccess = isDemoCase
+    ? null
+    : await resolveMonetizationAccessForCheck({
+        checkId: id,
+        landlordId: profile.id,
+        useAdmin: true,
+      });
+  const workspaceAccess = resolveWorkspaceAccess(
+    billingOverview,
+    monetizationAccess
+      ? { config: monetizationAccess.config, entitlements: monetizationAccess.entitlements }
+      : undefined,
+  );
   const billingEligibility = isDemoCase
     ? { activeSubscription: null, customer: null, hasBillingAccess: true, screeningPayment: null }
     : await getBillingEligibilityForCheck({
@@ -83,7 +97,9 @@ export default async function LandlordCheckDetailPage({
     checkId: id,
     status: detail.status,
     workflowActivatedAt: detail.workflow_activated_at ?? null,
-    hasCaseBillingAccess: billingEligibility.hasBillingAccess,
+    hasCaseBillingAccess:
+      monetizationAccess?.permissions.canCreateUploadLink ?? billingEligibility.hasBillingAccess,
+    caseGates: monetizationAccess?.gates,
   });
 
   const documents = isDemoCase
@@ -251,7 +267,12 @@ export default async function LandlordCheckDetailPage({
             </div>
           </div>
 
-          <div className="card space-y-5">
+          <div className="card space-y-5" id="safekey-report">
+            <ProfessionalReportActions
+              checkId={id}
+              hasAiReport={Boolean(detail.ai_reports)}
+              hasPdf={Boolean(detail.ai_reports?.pdf_storage_path)}
+            />
             <CaseTrustReportSection
               caseAccess={caseAccess}
               caseId={id}
@@ -270,6 +291,10 @@ export default async function LandlordCheckDetailPage({
                 report={detail.ai_reports}
                 tenantMonthlyIncome={detail.tenant_public_profiles?.monthly_income ?? null}
               />
+            ) : detail.status === "under_review" ? (
+              <div className="rounded-3xl border border-[#e9dfc5] bg-[#fcfaf4] px-5 py-10 text-sm leading-7 text-[#5d4e31]">
+                {t("caseDetail.reportGenerating")}
+              </div>
             ) : (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-sm text-slate-500">
                 {t("caseDetail.reportPending")}

@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { activateTenantWorkflowAction, type ActionState } from "@/app/actions";
 import { Badge } from "@/components/badge";
+import { CreateUploadLinkButton } from "@/components/create-upload-link-button";
 import { FormStatusMessage } from "@/components/form-status-message";
+import { PlanRequiredModal } from "@/components/plan-required-modal";
 import { SubmitButton } from "@/components/submit-button";
 import { UnlockWorkflowModal } from "@/components/unlock-workflow-modal";
 import { useLocale, useT } from "@/lib/i18n/context";
@@ -33,23 +35,21 @@ export function CaseWorkflowPanel({
   const { locale } = useLocale();
   const t = useT();
   const [unlockOpen, setUnlockOpen] = useState(false);
-  const [unlockTrigger, setUnlockTrigger] = useState<"upload_link" | "trust_report">("upload_link");
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const activateAction = activateTenantWorkflowAction.bind(null, checkId);
   const [activateState, activateFormAction] = useActionState(activateAction, initialState);
 
   useEffect(() => {
     if (activateState.kind === "unlock_required") {
-      setUnlockTrigger("upload_link");
-      setUnlockOpen(true);
+      setPlanModalOpen(true);
     }
-  }, [activateState]);
+  }, [activateState.kind]);
 
   const canSendLink = canUseCapability(caseAccess, "send_upload_link");
   const canViewLink = canUseCapability(caseAccess, "view_live_upload_link");
   const canExportReport = canUseCapability(caseAccess, "export_trust_report");
 
-  function openUnlock(trigger: "upload_link" | "trust_report") {
-    setUnlockTrigger(trigger);
+  function openTrustReportUnlock() {
     setUnlockOpen(true);
   }
 
@@ -76,36 +76,31 @@ export function CaseWorkflowPanel({
 
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
           {canViewLink && secureUploadUrl ? (
-            <p className="break-all text-sm text-slate-700">{secureUploadUrl}</p>
+            <p className="break-all text-sm font-medium text-slate-800">{secureUploadUrl}</p>
           ) : (
-            <p className="text-sm text-slate-500">{t("workspace.uploadLinkLocked")}</p>
+            <p className="text-sm text-slate-600">{t("workspace.uploadLinkLocked")}</p>
           )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-3xl bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-500">{t("auth.email")}</p>
+            <p className="text-sm font-medium text-slate-600">{t("auth.email")}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{tenantEmail ?? t("workspace.emailPending")}</p>
           </div>
           <div className="rounded-3xl bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-500">{t("workspace.linkExpiry")}</p>
+            <p className="text-sm font-medium text-slate-600">{t("workspace.linkExpiry")}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{expiryLabel}</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           {caseAccess.isDraft ? (
-            canSendLink ? (
-              <form action={activateFormAction} className="w-full sm:w-auto">
-                <SubmitButton className="workspace-cta w-full sm:w-auto" pendingLabel={t("workspace.activatePending")}>
-                  {t("workspace.sendUploadLink")}
-                </SubmitButton>
-              </form>
-            ) : (
-              <button className="workspace-cta w-full sm:w-auto" onClick={() => openUnlock("upload_link")} type="button">
-                {t("workspace.sendUploadLink")}
-              </button>
-            )
+            <CreateUploadLinkButton
+              canActivate={canSendLink}
+              formAction={activateFormAction}
+              labelKey="workspace.activateWorkflow"
+              pendingLabel={t("workspace.activatePending")}
+            />
           ) : canSendLink ? (
             <form action={activateFormAction} className="w-full sm:w-auto">
               <SubmitButton className="workspace-cta-secondary w-full sm:w-auto" pendingLabel={t("workspace.resendPending")} variant="secondary">
@@ -113,22 +108,24 @@ export function CaseWorkflowPanel({
               </SubmitButton>
             </form>
           ) : (
-            <button className="workspace-cta w-full sm:w-auto" onClick={() => openUnlock("upload_link")} type="button">
-              {t("workspace.sendUploadLink")}
-            </button>
+            <CreateUploadLinkButton
+              canActivate={false}
+              labelKey="workspace.activateWorkflow"
+              pendingLabel={t("workspace.activatePending")}
+            />
           )}
 
           {canExportReport ? (
             <Link
-              className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-[18px] px-5 py-3 text-sm font-semibold sm:w-auto"
+              className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-[18px] px-5 py-3 text-sm font-semibold text-slate-800 sm:w-auto"
               href={`/dashboard/checks/${checkId}/trust-report`}
             >
               {t("workspace.exportTrustReport")}
             </Link>
           ) : (
             <button
-              className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-[18px] px-5 py-3 text-sm font-semibold sm:w-auto"
-              onClick={() => openUnlock("trust_report")}
+              className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-[18px] px-5 py-3 text-sm font-semibold text-slate-800 sm:w-auto"
+              onClick={openTrustReportUnlock}
               type="button"
             >
               {t("workspace.exportTrustReport")}
@@ -139,7 +136,8 @@ export function CaseWorkflowPanel({
         <FormStatusMessage state={activateState} />
       </div>
 
-      <UnlockWorkflowModal checkId={checkId} onClose={() => setUnlockOpen(false)} open={unlockOpen} trigger={unlockTrigger} />
+      <PlanRequiredModal onClose={() => setPlanModalOpen(false)} open={planModalOpen} />
+      <UnlockWorkflowModal checkId={checkId} onClose={() => setUnlockOpen(false)} open={unlockOpen} trigger="trust_report" />
     </>
   );
 }

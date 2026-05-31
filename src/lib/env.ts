@@ -1,3 +1,19 @@
+import type { MonetizationMode } from "@/lib/monetization";
+
+function parseMonetizationModeEnv(raw: string | undefined): MonetizationMode | null {
+  const normalized = raw?.trim().toUpperCase();
+  if (normalized === "PREPAY" || normalized === "REPORT_UNLOCK") {
+    return normalized;
+  }
+  if (raw?.trim() === "plan_first") {
+    return "PREPAY";
+  }
+  if (raw?.trim() === "report_unlock") {
+    return "REPORT_UNLOCK";
+  }
+  return null;
+}
+
 export const env = {
   appUrl:
     process.env.NEXT_PUBLIC_APP_URL ??
@@ -32,6 +48,7 @@ export const env = {
   legalEmail: process.env.LEGAL_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
   billingEmail: process.env.BILLING_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
   helloEmail: process.env.HELLO_EMAIL ?? process.env.SUPPORT_EMAIL ?? "blonje@gmail.com",
+  monetizationMode: parseMonetizationModeEnv(process.env.MONETIZATION_MODE),
 };
 
 function resolveEmailFromAddress() {

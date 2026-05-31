@@ -4,6 +4,13 @@ import {
   type BillingPlanKey,
   type BillingPlanLimits,
 } from "@/lib/billing";
+import type { GateEvaluationMap } from "@/lib/monetization";
+import {
+  DEFAULT_MONETIZATION_CONFIG,
+  evaluateAllMonetizationGates,
+  type MonetizationConfig,
+  type MonetizationEntitlements,
+} from "@/lib/monetization";
 import type { BillingOverview } from "@/lib/billing-queries";
 
 export type WorkspaceMode = "preview" | "subscribed";
@@ -26,29 +33,13 @@ export type WorkspaceCapability =
   | "generate_ai_report"
   | "finalize_screening";
 
-export const PLAN_CAPABILITY_MATRIX: Record<WorkspaceMode, Record<WorkspaceCapability, boolean>> = {
-  preview: {
-    explore_dashboard: true,
-    create_draft_screening: true,
-    edit_draft_screening: true,
-    send_upload_link: false,
-    receive_tenant_uploads: false,
-    view_live_upload_link: false,
-    export_trust_report: false,
-    generate_ai_report: false,
-    finalize_screening: false,
-  },
-  subscribed: {
-    explore_dashboard: true,
-    create_draft_screening: true,
-    edit_draft_screening: true,
-    send_upload_link: true,
-    receive_tenant_uploads: true,
-    view_live_upload_link: true,
-    export_trust_report: true,
-    generate_ai_report: true,
-    finalize_screening: true,
-  },
+const CAPABILITY_GATE_MAP: Partial<Record<WorkspaceCapability, keyof GateEvaluationMap>> = {
+  send_upload_link: "create_upload_link",
+  receive_tenant_uploads: "tenant_upload",
+  view_live_upload_link: "create_upload_link",
+  export_trust_report: "view_report",
+  generate_ai_report: "run_analysis",
+  finalize_screening: "view_report",
 };
 
 export type WorkspaceAccessContext = {
@@ -57,22 +48,40 @@ export type WorkspaceAccessContext = {
   limits: BillingPlanLimits;
   hasActiveSubscription: boolean;
   screeningCredits: number;
+  /** Resolved billing gates for this workspace (landlord-level, no check id). */
+  gates: GateEvaluationMap;
 };
 
 export type CaseAccessContext = WorkspaceAccessContext & {
   checkId: string;
   status: TenantCheckStatus;
   workflowActivatedAt: string | null;
+  /** @deprecated Use gates — kept for transitional call sites. */
   hasCaseBillingAccess: boolean;
   isDraft: boolean;
   isWorkflowActive: boolean;
 };
 
-export function resolveWorkspaceAccess(overview: Pick<BillingOverview, "activeSubscription" | "screeningCredits">): WorkspaceAccessContext {
+export function resolveWorkspaceAccess(
+  overview: Pick<BillingOverview, "activeSubscription" | "screeningCredits">,
+  funnel?: {
+    config: MonetizationConfig;
+    entitlements: MonetizationEntitlements;
+  },
+): WorkspaceAccessContext {
   const planKey = (overview.activeSubscription?.plan_key as BillingPlanKey | null) ?? null;
   const hasActiveSubscription = Boolean(
     overview.activeSubscription && isEntitledSubscriptionStatus(overview.activeSubscription.status),
   );
+
+  const gates =
+    funnel != null
+      ? evaluateAllMonetizationGates(funnel.config, funnel.entitlements)
+      : evaluateAllMonetizationGates(DEFAULT_MONETIZATION_CONFIG, {
+          hasActiveSubscription,
+          hasPerCheckPayment: overview.screeningCredits > 0,
+          hasReportUnlockPayment: overview.screeningCredits > 0,
+        });
 
   return {
     hasActiveSubscription,
@@ -80,6 +89,7 @@ export function resolveWorkspaceAccess(overview: Pick<BillingOverview, "activeSu
     mode: hasActiveSubscription ? "subscribed" : "preview",
     planKey,
     screeningCredits: overview.screeningCredits,
+    gates,
   };
 }
 
@@ -89,15 +99,17 @@ export function resolveCaseAccess(params: {
   status: string;
   workflowActivatedAt: string | null;
   hasCaseBillingAccess: boolean;
+  caseGates?: GateEvaluationMap;
 }): CaseAccessContext {
   const status = params.status as TenantCheckStatus;
   const isDraft = status === "draft" || !params.workflowActivatedAt;
   const isWorkflowActive = !isDraft && Boolean(params.workflowActivatedAt);
-  const entitled = params.workspace.mode === "subscribed" || params.hasCaseBillingAccess;
+  const gates = params.caseGates ?? params.workspace.gates;
 
   return {
     ...params.workspace,
     checkId: params.checkId,
+    gates,
     hasCaseBillingAccess: params.hasCaseBillingAccess,
     isDraft,
     isWorkflowActive,
@@ -106,30 +118,37 @@ export function resolveCaseAccess(params: {
   };
 }
 
+function isGateOpenForCapability(access: WorkspaceAccessContext | CaseAccessContext, capability: WorkspaceCapability) {
+  const gateKey = CAPABILITY_GATE_MAP[capability];
+  if (!gateKey) {
+    return true;
+  }
+
+  return access.gates[gateKey];
+}
+
 export function canUseCapability(
   access: WorkspaceAccessContext | CaseAccessContext,
   capability: WorkspaceCapability,
 ): boolean {
-  const matrix = PLAN_CAPABILITY_MATRIX[access.mode];
-  if (!matrix[capability]) {
+  if (!isGateOpenForCapability(access, capability)) {
     return false;
   }
 
   if ("isDraft" in access) {
     const caseAccess = access as CaseAccessContext;
-    const entitled = caseAccess.mode === "subscribed" || caseAccess.hasCaseBillingAccess;
 
     switch (capability) {
       case "send_upload_link":
-        return entitled;
+        return true;
       case "view_live_upload_link":
-        return entitled && caseAccess.isWorkflowActive;
+        return caseAccess.isWorkflowActive;
       case "receive_tenant_uploads":
-        return entitled && caseAccess.isWorkflowActive;
+        return caseAccess.isWorkflowActive;
       case "export_trust_report":
       case "generate_ai_report":
       case "finalize_screening":
-        return entitled && caseAccess.isWorkflowActive;
+        return caseAccess.isWorkflowActive;
       default:
         return true;
     }

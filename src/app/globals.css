@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@source "../../src/**/*.{js,ts,jsx,tsx,mdx}";
+@source not "../../qa-output/**";
+@source not "../../node_modules/**";
+@source not "../../scripts/**";
+
 :root {
   color-scheme: light;
   --sk-text-primary: #0c1222;
@@ -393,9 +398,10 @@ a {
 
   .workspace-cta:disabled {
     cursor: not-allowed;
-    border-color: #e2e8f0;
-    background: #f1f5f9;
-    color: #94a3b8;
+    border-color: #cbd5e1;
+    background: #e2e8f0;
+    color: #475569 !important;
+    -webkit-text-fill-color: #475569;
     box-shadow: none;
   }
 
@@ -403,6 +409,12 @@ a {
   a.workspace-cta-secondary {
     @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition duration-200 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    color: var(--sk-text-primary) !important;
+  }
+
+  .workspace-cta-secondary *,
+  a.workspace-cta-secondary * {
+    color: inherit;
   }
 
   .workspace-disclosure {
@@ -558,6 +570,31 @@ a {
     @apply min-h-9 rounded-md px-3 py-1.5 text-xs;
   }
 
+  .modal-close-button {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2;
+  }
+
+  .dashboard-header-brand {
+    @apply h-11 w-auto max-w-[min(55vw,11.5rem)] shrink-0 sm:h-10 sm:max-w-[10rem];
+  }
+
+  .language-switcher {
+    @apply inline-flex items-center rounded-full border border-slate-200 bg-white font-semibold;
+    color: var(--sk-text-secondary);
+  }
+
+  .language-switcher--mobile-compact {
+    @apply px-0.5 py-0.5 text-[0.625rem] leading-none sm:px-1 sm:py-1 sm:text-xs;
+  }
+
+  .language-switcher__option {
+    @apply rounded-full transition;
+  }
+
+  .language-switcher__option--mobile-compact {
+    @apply px-1.5 py-0.5 sm:px-2.5 sm:py-1;
+  }
+
   .tab-action {
     @apply inline-flex items-center justify-center rounded-[16px] px-3 py-2.5 text-sm font-semibold transition sm:rounded-[18px] sm:px-4 sm:py-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0f2343]/10;
   }
@@ -670,7 +707,15 @@ a {
   }
 
   .landlord-bottom-nav__pill--active {
-    background-color: var(--sk-navy);
+    background-color: #0a2342;
+    color: #ffffff;
+  }
+
+  .landlord-bottom-nav__pill--active svg {
+    color: #ffffff;
+  }
+
+  .landlord-bottom-nav__pill--active .landlord-bottom-nav__label {
     color: #ffffff;
   }
 
@@ -687,6 +732,15 @@ a {
     white-space: normal;
     word-break: normal;
     overflow-wrap: normal;
+    color: var(--sk-text-secondary);
+  }
+
+  .landlord-bottom-nav__pill:not(.landlord-bottom-nav__pill--active) .landlord-bottom-nav__label {
+    color: var(--sk-text-secondary);
+  }
+
+  .landlord-bottom-nav__pill:not(.landlord-bottom-nav__pill--active) svg {
+    color: var(--sk-text-secondary);
   }
 
   @media (min-width: 640px) {

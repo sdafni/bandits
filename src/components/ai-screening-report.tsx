@@ -1,5 +1,11 @@
 import type { Database, Recommendation } from "@/lib/database.types";
 import { Badge } from "@/components/badge";
+import {
+  getRecommendationLabel,
+  getRiskLevelFromScore,
+  getRiskLevelLabel,
+  resolveRiskLevelFromReport,
+} from "@/lib/risk-report";
 import { cn, formatCurrency } from "@/lib/utils";
 
 type AiReport = Database["public"]["Tables"]["ai_reports"]["Row"];
@@ -17,7 +23,6 @@ const RECOMMENDATION_META: Record<
     badgeTone: "success" | "warning" | "danger";
     finalRecommendation: string;
     helper: string;
-    level: string;
     title: string;
   }
 > = {
@@ -26,7 +31,6 @@ const RECOMMENDATION_META: Record<
     finalRecommendation:
       "Proceed with the tenancy decision. The current file shows strong affordability coverage, a credible document pack, and no material risk signals that require escalation.",
     helper: "Fit to proceed subject to standard tenancy completion steps.",
-    level: "Recommended",
     title: "Recommended profile",
   },
   conditional: {
@@ -34,7 +38,6 @@ const RECOMMENDATION_META: Record<
     finalRecommendation:
       "Proceed only after the outstanding items are resolved. The case is workable, but the file should not move to a final approval until the missing evidence and highlighted review points are closed.",
     helper: "Additional evidence and a short manual review are still required.",
-    level: "Recommended with caution",
     title: "Caution-led recommendation",
   },
   decline: {
@@ -42,26 +45,28 @@ const RECOMMENDATION_META: Record<
     finalRecommendation:
       "Do not proceed on the current file. The application presents material affordability or consistency concerns that should be escalated before any tenancy commitment is considered.",
     helper: "Escalation recommended before any further progression.",
-    level: "High risk profile",
     title: "Material risk visibility",
   },
 };
 
 function getScoreBand(score: number) {
-  if (score >= 80) {
+  const riskLevel = getRiskLevelFromScore(score);
+  const label = `${getRiskLevelLabel(riskLevel)} risk`;
+
+  if (riskLevel === "low") {
     return {
       accent: "#0f766e",
-      label: "Low risk",
+      label,
       ringTrack: "rgba(15, 118, 110, 0.12)",
       surface: "bg-[linear-gradient(180deg,rgba(240,253,250,0.94),rgba(255,255,255,1))]",
       text: "Signals are within the present check tolerance.",
     };
   }
 
-  if (score >= 60) {
+  if (riskLevel === "medium") {
     return {
       accent: "#8b6b17",
-      label: "Moderate risk",
+      label,
       ringTrack: "rgba(139, 107, 23, 0.12)",
       surface: "bg-[linear-gradient(180deg,rgba(255,251,235,0.92),rgba(255,255,255,1))]",
       text: "The case remains workable but requires conditions.",
@@ -70,7 +75,7 @@ function getScoreBand(score: number) {
 
   return {
     accent: "#be123c",
-    label: "Elevated risk",
+    label,
     ringTrack: "rgba(190, 18, 60, 0.12)",
     surface: "bg-[linear-gradient(180deg,rgba(255,241,242,0.9),rgba(255,255,255,1))]",
     text: "Material adverse signals are present in the file.",
@@ -254,6 +259,9 @@ export function AiScreeningReport({
   tenantMonthlyIncome,
 }: AiScreeningReportProps) {
   const recommendationMeta = RECOMMENDATION_META[report.recommendation];
+  const recommendationLabel = getRecommendationLabel(report.recommendation);
+  const riskLevel = resolveRiskLevelFromReport(report.score, report.reasoning);
+  const riskLevelLabel = getRiskLevelLabel(riskLevel);
   const scoreBand = getScoreBand(report.score);
   const ratio = report.reasoning.debtToIncomeRatio;
   const ratioTone = ratio == null ? "info" : ratio <= 0.33 ? "success" : ratio <= 0.45 ? "warning" : "danger";
@@ -298,9 +306,9 @@ export function AiScreeningReport({
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-3">
-              <Badge tone="info">SafeKey Report summary</Badge>
+              <Badge tone="info">SafeKey Report</Badge>
               <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                Underwriting summary
+                AI tenant risk analysis
               </span>
             </div>
 
@@ -309,13 +317,16 @@ export function AiScreeningReport({
                 <h3 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
                   {recommendationMeta.title}
                 </h3>
-                <Badge tone={recommendationMeta.badgeTone}>{recommendationMeta.level}</Badge>
+                <Badge tone={recommendationMeta.badgeTone}>{recommendationLabel}</Badge>
+                <Badge tone={riskLevel === "low" ? "success" : riskLevel === "medium" ? "warning" : "danger"}>
+                  {riskLevelLabel} risk
+                </Badge>
               </div>
               <p className="max-w-3xl text-sm leading-7 text-slate-700 sm:text-[15px]">
-                {report.summary}
+                {report.reasoning.explanation ?? report.summary}
               </p>
               <p className="text-sm font-medium text-slate-600">
-                {applicantName} is currently assessed as <span className="text-slate-950">{scoreBand.label.toLowerCase()}</span>.{" "}
+                {applicantName} is currently assessed as <span className="text-slate-950">{riskLevelLabel.toLowerCase()} risk</span>.{" "}
                 {recommendationMeta.helper}
               </p>
             </div>
@@ -323,13 +334,23 @@ export function AiScreeningReport({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-[26px] border border-slate-200/80 bg-white/80 p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Recommendation level
+                  Recommendation
                 </p>
-                <p className="mt-3 text-xl font-semibold text-slate-950">{recommendationMeta.level}</p>
+                <p className="mt-3 text-xl font-semibold text-slate-950">{recommendationLabel}</p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">{scoreBand.text}</p>
               </div>
 
               <div className="rounded-[26px] border border-slate-200/80 bg-white/80 p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Risk level
+                </p>
+                <p className="mt-3 text-xl font-semibold text-slate-950">{riskLevelLabel}</p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  Derived from the SafeKey Score and document analysis signals.
+                </p>
+              </div>
+
+              <div className="rounded-[26px] border border-slate-200/80 bg-white/80 p-5 sm:col-span-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -350,12 +371,12 @@ export function AiScreeningReport({
           <div className="rounded-[28px] border border-slate-200/80 bg-white/90 p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Tenant risk score</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">SafeKey Score</p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
                   Composite assessment across affordability, identity, file coverage, and extracted risk terms.
                 </p>
               </div>
-              <Badge tone={recommendationMeta.badgeTone}>{scoreBand.label}</Badge>
+              <Badge tone={recommendationMeta.badgeTone}>{riskLevelLabel}</Badge>
             </div>
 
             <div className="mt-6 flex items-center gap-5">
@@ -375,15 +396,16 @@ export function AiScreeningReport({
 
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Score interpretation</p>
-                  <p className="mt-2 text-base font-semibold text-slate-950">{scoreBand.label}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Risk level</p>
+                  <p className="mt-2 text-base font-semibold text-slate-950">{riskLevelLabel}</p>
                 </div>
                 <p className="text-sm leading-7 text-slate-600">{scoreBand.text}</p>
               </div>
             </div>
 
             <div className="mt-6 rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Final recommendation</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Recommendation</p>
+              <p className="mt-2 text-sm font-semibold text-slate-950">{recommendationLabel}</p>
               <p className="mt-2 text-sm leading-7 text-slate-700">{recommendationMeta.finalRecommendation}</p>
             </div>
           </div>

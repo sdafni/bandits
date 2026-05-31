@@ -1,24 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Mail, MessageCircle, Share2 } from "lucide-react";
 import {
   activateCaseUploadLinkAction,
   sendTenantUploadLinkAction,
   type ActionState,
 } from "@/app/actions";
+import { CreateUploadLinkButton } from "@/components/create-upload-link-button";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { LandlordWorkflowStrip } from "@/components/landlord-workflow-strip";
+import { PlanRequiredModal } from "@/components/plan-required-modal";
 import { SubmitButton } from "@/components/submit-button";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
+import type { MonetizationPermissionsSnapshot } from "@/lib/monetization";
 
 const actionInitialState: ActionState = {};
 
 type TenantCheckCreatedSuccessProps = {
-  billingNavEnabled?: boolean;
   checkId: string;
+  monetizationPermissions: MonetizationPermissionsSnapshot;
   linkActive: boolean;
   checkStatus?: string;
   propertyName: string;
@@ -29,8 +32,8 @@ type TenantCheckCreatedSuccessProps = {
 };
 
 export function TenantCheckCreatedSuccess({
-  billingNavEnabled = true,
   checkId,
+  monetizationPermissions,
   linkActive: initialLinkActive,
   checkStatus: initialCheckStatus,
   onDone,
@@ -39,9 +42,11 @@ export function TenantCheckCreatedSuccess({
   tenantName,
   uploadUrl: initialUploadUrl,
 }: TenantCheckCreatedSuccessProps) {
-  const { locale, t } = useLocale();
+  const { locale } = useLocale();
+  const t = useT();
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [shareState, setShareState] = useState<"idle" | "shared" | "unsupported">("idle");
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const activateAction = activateCaseUploadLinkAction.bind(null, checkId);
   const sendEmailAction = sendTenantUploadLinkAction.bind(null, checkId);
   const [activateState, activateFormAction] = useActionState(activateAction, actionInitialState);
@@ -50,10 +55,14 @@ export function TenantCheckCreatedSuccess({
   const linkActive = initialLinkActive || Boolean(activateState.linkActive);
   const activeUploadUrl = activateState.uploadUrl ?? emailState.uploadUrl ?? initialUploadUrl;
   const isLinkReady = linkActive && Boolean(activeUploadUrl);
-  const isWaitingOnTenant =
-    isLinkReady ||
-    initialCheckStatus === "pending_upload" ||
-    activateState.checkStatus === "pending_upload";
+
+  const canActivateLink = monetizationPermissions.canCreateUploadLink;
+
+  useEffect(() => {
+    if (activateState.kind === "unlock_required" && monetizationPermissions.billingNavEnabled) {
+      setPlanModalOpen(true);
+    }
+  }, [activateState.kind, monetizationPermissions.billingNavEnabled]);
 
   async function handleCopy() {
     if (!activeUploadUrl) {
@@ -206,50 +215,33 @@ export function TenantCheckCreatedSuccess({
           <FormStatusMessage state={emailState} />
         </div>
       ) : (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-7 text-amber-950">
-          <p className="font-semibold">{t("checkCreated.planRequiredTitle")}</p>
-          <p className="mt-1">{t("checkCreated.planRequiredBody")}</p>
-          <p className="mt-2 text-xs leading-6">{t("checkCreated.planRequiredWorkflow")}</p>
-          <div className="mt-4 flex flex-col gap-2">
-            {billingNavEnabled ? (
-              <>
-                <form action={activateFormAction}>
-                  <SubmitButton
-                    className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold"
-                    pendingLabel={t("checkCreated.activatingLink")}
-                    variant="workspace"
-                  >
-                    {t("checkCreated.activateLink")}
-                  </SubmitButton>
-                </form>
-                <Link
-                  className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold"
-                  href={withLocalePath(locale, "/dashboard/billing")}
-                >
-                  {t("checkCreated.choosePlan")}
-                </Link>
-              </>
-            ) : (
-              <p className="text-xs leading-6">{t("checkCreated.billingUnavailable")}</p>
-            )}
-          </div>
+        <div className="space-y-4">
+          {monetizationPermissions.billingNavEnabled ? (
+            <CreateUploadLinkButton canActivate={canActivateLink} formAction={activateFormAction} />
+          ) : (
+            <p className="text-sm leading-6 text-slate-600">{t("checkCreated.billingUnavailable")}</p>
+          )}
           <FormStatusMessage state={activateState} />
         </div>
       )}
 
-      <LandlordWorkflowStrip highlightStep={isWaitingOnTenant ? 3 : 2} />
+      {isLinkReady ? <LandlordWorkflowStrip highlightStep={3} /> : null}
 
       <div className="flex flex-col gap-2 border-t border-slate-100 pt-4">
-        <button className="workspace-cta min-h-12 w-full rounded-2xl px-5 py-3 text-sm font-semibold" onClick={onDone} type="button">
-          {t("checkCreated.done")}
-        </button>
+        {isLinkReady ? (
+          <button className="workspace-cta min-h-12 w-full rounded-2xl px-5 py-3 text-sm font-semibold" onClick={onDone} type="button">
+            {t("checkCreated.done")}
+          </button>
+        ) : null}
         <Link
-          className="workspace-cta-secondary inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold"
+          className="inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-slate-700 underline-offset-2 hover:text-slate-950 hover:underline"
           href={withLocalePath(locale, `/dashboard/checks/${checkId}`)}
         >
           {t("checkCreated.viewCheck")}
         </Link>
       </div>
+
+      <PlanRequiredModal onClose={() => setPlanModalOpen(false)} open={planModalOpen} />
     </div>
   );
 }

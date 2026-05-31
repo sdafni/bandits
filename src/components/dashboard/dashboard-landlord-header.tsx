@@ -23,12 +23,14 @@ export function DashboardLandlordHeader({
       <div className="px-4 pb-4 pt-4 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <SafeKeyBrand
-            className="h-9 w-auto max-w-[140px] sm:h-10 sm:max-w-[160px]"
+            className="dashboard-header-brand"
             href={withLocalePath(locale, "/dashboard")}
             priority
             variant="logo"
           />
-          <LanguageSwitcher />
+          <div className="shrink-0">
+            <LanguageSwitcher />
+          </div>
         </div>
 
         <div className="mt-4 hidden sm:block">

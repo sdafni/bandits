@@ -50,6 +50,9 @@ export default async function AdminReviewPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#5a6980]">
               Tenant Passport Greece
             </p>
+            <Link className="text-sm font-semibold text-[#0f2343] underline-offset-2 hover:underline" href="/admin/settings">
+              Billing funnel settings
+            </Link>
             <p className="max-w-2xl text-sm leading-7 text-slate-600">
               Review uploaded files, extracted metadata, and AI-ready signals in a polished SafeKey workflow
               designed for trust-heavy real estate decisions.

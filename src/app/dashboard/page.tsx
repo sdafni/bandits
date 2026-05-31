@@ -4,13 +4,14 @@ import { DashboardWorkspaceShell } from "@/components/dashboard-workspace-shell"
 import { mergeLandlordChecksWithDemo } from "@/lib/demo-data";
 import { buildDashboardStats } from "@/lib/dashboard-stats";
 import { resolveDashboardTier } from "@/lib/dashboard-tier";
+import { resolveMonetizationAccessForLandlord } from "@/lib/billing-entitlements";
+import type { MonetizationPermissionsSnapshot } from "@/lib/monetization";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { translate } from "@/lib/i18n/messages";
 import { requireLandlord } from "@/lib/auth";
 import { getLandlordChecks } from "@/lib/queries";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { resolveWorkspaceAccess } from "@/lib/workspace-access";
-import { getStripeProductionReadiness } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,11 @@ export default async function DashboardPage({
 
   const checks = mergeLandlordChecksWithDemo(liveChecks);
   const billingOverview = await getSafeBillingOverviewForUser(profile.id);
-  const stripeReadiness = getStripeProductionReadiness();
-  const billingNavEnabled = stripeReadiness.isCheckoutReady && billingOverview.schemaReady;
-  const workspaceAccess = resolveWorkspaceAccess(billingOverview);
+  const monetizationAccess = await resolveMonetizationAccessForLandlord(profile.id);
+  const workspaceAccess = resolveWorkspaceAccess(billingOverview, {
+    config: monetizationAccess.config,
+    entitlements: monetizationAccess.entitlements,
+  });
   const tier = resolveDashboardTier(workspaceAccess);
   const stats = buildDashboardStats(checks, workspaceAccess.limits);
 
@@ -51,7 +54,7 @@ export default async function DashboardPage({
       <DashboardWorkspaceShell
         access={workspaceAccess}
         autoStartCheck={autoStartCheck}
-        billingNavEnabled={billingNavEnabled}
+        monetizationPermissions={monetizationAccess.permissions}
         hasLiveChecks={liveChecks.length > 0}
       >
         <DashboardTierView checks={checks} stats={stats} tier={tier} />

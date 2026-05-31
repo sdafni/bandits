@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { getRiskLevelFromScore, getRiskLevelLabel } from "@/lib/risk-report";
 
 export function RiskChip({ score }: { score: number | null }) {
   if (score == null) {
@@ -10,9 +11,9 @@ export function RiskChip({ score }: { score: number | null }) {
     );
   }
 
-  const band =
-    score >= 80 ? "low" : score >= 60 ? "moderate" : "elevated";
-  const label = score >= 80 ? "Low" : score >= 60 ? "Moderate" : "Elevated";
+  const riskLevel = getRiskLevelFromScore(score);
+  const band = riskLevel === "low" ? "low" : riskLevel === "medium" ? "moderate" : "elevated";
+  const label = getRiskLevelLabel(riskLevel);
 
   return (
     <div className={cn("risk-chip", `risk-chip--${band}`)}>

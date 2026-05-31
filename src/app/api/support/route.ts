@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { sendEmail } from "@/lib/email/resend";
 import { env, hasEmailDeliveryEnv } from "@/lib/env";
 
 const supportMessageSchema = z.object({
@@ -72,24 +73,16 @@ export async function POST(request: Request) {
       `Sent: ${new Date(now).toISOString()}`,
     ].join("\n");
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: env.emailFrom,
-        to: [env.supportEmail],
-        subject: `Support request: ${parsed.data.subject}`,
-        reply_to: parsed.data.email,
-        text,
-      }),
+    const result = await sendEmail({
+      to: env.supportEmail,
+      subject: `Support request: ${parsed.data.subject}`,
+      replyTo: parsed.data.email,
+      text,
+      html: `<pre style="font-family:monospace;white-space:pre-wrap;">${text.replace(/</g, "&lt;")}</pre>`,
     });
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      console.error("[support-form] resend failed", { status: response.status, body });
+    if (!result.delivered) {
+      console.error("[support-form] resend failed", result);
       return NextResponse.json({ error: "provider_error" }, { status: 502 });
     }
 

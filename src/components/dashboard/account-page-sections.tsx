@@ -11,14 +11,12 @@ export function AccountPageSections({
   email,
   fullName,
   planStatusLabel,
-  showChoosePlan = false,
 }: {
   billingNavEnabled?: boolean;
   companyName?: string | null;
   email: string;
   fullName?: string | null;
   planStatusLabel: string;
-  showChoosePlan?: boolean;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -76,14 +74,6 @@ export function AccountPageSections({
             <dd className="mt-1 font-medium text-slate-900">{planStatusLabel}</dd>
           </div>
         </dl>
-        {showChoosePlan ? (
-          <Link
-            className="workspace-cta mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold sm:w-auto"
-            href={withLocalePath(locale, "/dashboard/billing")}
-          >
-            {t("dashboard.planOnboarding.choosePlan")}
-          </Link>
-        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200/90 bg-white shadow-sm sm:overflow-hidden">

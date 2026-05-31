@@ -54,13 +54,20 @@ export function AppHeader({
     <header className="border-b border-slate-200/90 bg-white">
       <div className="page-shell space-y-4 py-4 sm:py-5">
         <div className="flex items-center justify-between gap-3">
-          <SafeKeyBrand className="h-9 w-auto max-w-[140px] sm:h-10" href={withLocalePath(locale, homeHref)} priority variant="logo" />
-          <div className="flex items-center gap-2">
+          <SafeKeyBrand
+            className="dashboard-header-brand"
+            href={withLocalePath(locale, homeHref)}
+            priority
+            variant="logo"
+          />
+          <div className="flex shrink-0 items-center gap-2">
             <LanguageSwitcher />
             {actions}
           </div>
         </div>
-        <LandlordAppNav active={landlordNav} variant="compact" />
+        <div className="hidden sm:block">
+          <LandlordAppNav active={landlordNav} variant="compact" />
+        </div>
         <div className="space-y-1">
           <h1 className="text-balance text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
           <p className="max-w-3xl text-sm leading-6 text-slate-600 sm:text-[0.9375rem]">{subtitle}</p>
