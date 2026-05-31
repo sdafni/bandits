@@ -51,6 +51,17 @@ export type TenantRiskReasoning = {
   extractedSignals: string[];
   rentAffordability?: number | null;
   reviewNotes: string[];
+  riskLevel?: "low" | "medium" | "high" | null;
+  explanation?: string | null;
+  aiUsage?: {
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    estimatedCostUsd: number;
+    responseId: string | null;
+    generatedAt: string;
+  } | null;
 };
 
 export type Database = {
@@ -62,6 +73,9 @@ export type Database = {
           generated_by: string;
           id: string;
           missing_documents: string[];
+          pdf_generated_at: string | null;
+          pdf_storage_path: string | null;
+          pdf_version: string | null;
           recommendation: Recommendation;
           reasoning: TenantRiskReasoning;
           red_flags: string[];
@@ -76,6 +90,9 @@ export type Database = {
           generated_by?: string;
           id?: string;
           missing_documents?: string[];
+          pdf_generated_at?: string | null;
+          pdf_storage_path?: string | null;
+          pdf_version?: string | null;
           recommendation: Recommendation;
           reasoning?: TenantRiskReasoning;
           red_flags?: string[];
