@@ -45,11 +45,19 @@ import { createSecureToken, hashToken } from "@/lib/security";
 import {
   countReceivedDocuments,
   getDocumentUploadFieldName,
+  getPendingUploadTypesForPlan,
   getUploadedDocumentTypes,
-  isDocumentSubmissionComplete,
+  isCheckDocumentPlanSubmissionComplete,
 } from "@/lib/document-submission";
 import { getDefaultRequestedDocumentsForPlan, getDocumentLabel } from "@/lib/trust-workflows";
-import { getPendingUploadDocumentTypes } from "@/lib/safekey-document-catalog";
+import {
+  migrateRequestedDocumentsToRequirements,
+  normalizeRequestedDocuments,
+} from "@/lib/safekey-document-catalog";
+import {
+  resolveCheckDocumentPlan,
+  persistCheckDocumentRequirements,
+} from "@/lib/safekey-document-plan";
 import { activateTenantWorkflowForCheck } from "@/lib/workflow-activation";
 import { canLandlordRemoveCheck } from "@/lib/check-removal";
 import { isDraftCheck } from "@/lib/workspace-access";
@@ -519,7 +527,7 @@ export async function createTenantCheckAction(
     return { error: parsed.error, fieldErrors: parsed.fieldErrors };
   }
 
-  const requestedDocuments = parsed.data.requestedDocuments;
+  const requestedDocuments = normalizeRequestedDocuments(parsed.data.requestedDocuments);
 
   const billingOverview = await getBillingOverviewForUser(profile.id);
   const planKey = (billingOverview.activeSubscription?.plan_key as BillingPlanKey | null) ?? null;
@@ -595,6 +603,31 @@ export async function createTenantCheckAction(
 
   if (!checkId) {
     return { error: "The tenant verification request could not be created." };
+  }
+
+  const selectedDocuments =
+    requestedDocuments.length > 0 ? requestedDocuments : getDefaultRequestedDocumentsForPlan(planKey);
+  const documentRequirements = migrateRequestedDocumentsToRequirements(selectedDocuments);
+
+  const requirementsPersistError = await persistCheckDocumentRequirements(
+    createAdminClient(),
+    checkId,
+    documentRequirements,
+  );
+
+  if (requirementsPersistError.error) {
+    return {
+      error: sanitizeUserFacingError(
+        requirementsPersistError.error,
+        "The screening was saved, but document requirements could not be stored.",
+      ),
+      checkId,
+      kind: "check_created",
+      linkActive: false,
+      propertyName: parsed.data.propertyName,
+      tenantName: parsed.data.tenantFullName,
+      email: normalizeOptionalString(parsed.data.tenantEmail)?.toLowerCase(),
+    };
   }
 
   const monetizationAccess = await resolveMonetizationAccessForCheck({
@@ -951,11 +984,9 @@ async function uploadDocumentsActionInternal(token: string, formData: FormData):
       return { error: profileError.message };
     }
 
+    const documentPlan = resolveCheckDocumentPlan(check);
     const alreadyUploaded = getUploadedDocumentTypes(check.tenant_documents);
-    const pendingDocumentTypes = getPendingUploadDocumentTypes(
-      check.requested_documents,
-      check.tenant_documents,
-    );
+    const pendingDocumentTypes = getPendingUploadTypesForPlan(documentPlan, check.tenant_documents);
 
     if (pendingDocumentTypes.length === 0) {
       return { error: "All requested documents have already been submitted." };
@@ -1046,15 +1077,15 @@ async function uploadDocumentsActionInternal(token: string, formData: FormData):
       finalUploadedTypes.add(batch.documentType);
     }
 
-    if (!isDocumentSubmissionComplete(check.requested_documents, finalUploadedTypes)) {
+    if (!isCheckDocumentPlanSubmissionComplete(documentPlan, finalUploadedTypes)) {
       revalidatePath(`/upload/${token}`);
       revalidatePath("/dashboard");
       revalidatePath(`/dashboard/checks/${check.id}`);
 
-      const receivedCount = countReceivedDocuments(check.requested_documents, finalUploadedTypes);
+      const receivedCount = countReceivedDocuments(documentPlan.requestedDocuments, finalUploadedTypes);
 
       return {
-        success: `Progress saved. ${receivedCount} of ${check.requested_documents.length} requested document categories received. Return anytime to finish your application.`,
+        success: `Progress saved. ${receivedCount} of ${documentPlan.requirements.length} document categories received. Return anytime to finish your application.`,
       };
     }
 
@@ -1064,7 +1095,7 @@ async function uploadDocumentsActionInternal(token: string, formData: FormData):
       revalidatePath(`/dashboard/checks/${check.id}`);
 
       return {
-        success: `Progress saved. All ${check.requested_documents.length} requested document categories are ready. Submit your complete application when you are ready for review.`,
+        success: `Progress saved. All required documents are ready. Submit your application when you are ready for review.`,
       };
     }
 

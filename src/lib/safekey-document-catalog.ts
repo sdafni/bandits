@@ -1,3 +1,12 @@
+import {
+  getAcceptedDocumentTypes,
+  getPendingUploadDocumentTypesForReview,
+  resolveSlotReviewStatus,
+  slotReviewStatusCountsAsComplete,
+  slotReviewStatusCountsAsTenantSubmitted,
+  type TenantDocumentReviewRow,
+} from "@/lib/document-review";
+
 export type SafeKeyDocumentCategoryKey =
   | "identity"
   | "income"
@@ -86,26 +95,96 @@ export const IDENTITY_PRIMARY_REQUIREMENT_GROUP = {
   label: "Passport or National ID",
 };
 
+export type DocumentPriority = "required" | "recommended" | "optional";
+
+export type DocumentRequirement = {
+  documentType: string;
+  priority: DocumentPriority;
+  /** Reviewer waived this required category — counts as complete for submission. */
+  waived?: boolean;
+};
+
+export type DocumentPlanEvaluation = {
+  completionPercent: number;
+  missing: number;
+  missingDocumentTypes: string[];
+  missingRecommended: number;
+  missingRequired: number;
+  optionalReceived: number;
+  optionalTotal: number;
+  received: number;
+  receivedDocumentTypes: string[];
+  recommendedReceived: number;
+  recommendedTotal: number;
+  requiredReceived: number;
+  requiredTotal: number;
+  slots: SafeKeyRequiredSlot[];
+  submissionComplete: boolean;
+  total: number;
+  trustCompletionPercent: number;
+  uploadedTypes: Set<string>;
+};
+
 export type SafeKeyRequiredSlot =
-  | { documentType: string; kind: "document" }
-  | { documentTypes: string[]; groupId: string; kind: "any_of"; label: string };
+  | { documentType: string; kind: "document"; priority: DocumentPriority }
+  | { documentTypes: string[]; groupId: string; kind: "any_of"; label: string; priority: DocumentPriority };
+
+const PRIORITY_RANK: Record<DocumentPriority, number> = {
+  required: 3,
+  recommended: 2,
+  optional: 1,
+};
+
+/** Greece rental defaults — landlords can override per check after link creation. */
+export const DEFAULT_DOCUMENT_PRIORITIES: Record<string, DocumentPriority> = {
+  afm: "required",
+  bank_guarantee: "optional",
+  bank_statement: "required",
+  employer_letter: "recommended",
+  employment_contract: "recommended",
+  guarantor: "optional",
+  landlord_reference: "recommended",
+  national_id: "required",
+  passport: "required",
+  payslips: "required",
+  recommendation_letter: "optional",
+  residence_permit: "recommended",
+  tax_return: "optional",
+  utility_bill: "optional",
+};
 
 export function normalizeDocumentType(documentType: string) {
   return LEGACY_DOCUMENT_TYPE_ALIASES[documentType] ?? documentType;
 }
 
 export function normalizeRequestedDocuments(requestedDocuments: string[]) {
-  return requestedDocuments.map(normalizeDocumentType);
+  const normalized: string[] = [];
+
+  for (const documentType of requestedDocuments) {
+    const value = normalizeDocumentType(documentType);
+    if (!normalized.includes(value)) {
+      normalized.push(value);
+    }
+  }
+
+  return normalized;
 }
 
 export function normalizeUploadedDocumentTypes(
   documents: Array<{ document_type: string; upload_status?: string | null }>,
 ) {
-  return new Set(
-    documents
-      .filter((document) => document.upload_status !== "rejected")
-      .map((document) => normalizeDocumentType(document.document_type)),
+  return getAcceptedDocumentTypes(documents);
+}
+
+function isRequirementWaivedForSlot(
+  slot: SafeKeyRequiredSlot,
+  requirements: DocumentRequirement[],
+) {
+  const waivedTypes = new Set(
+    requirements.filter((requirement) => requirement.waived).map((requirement) => requirement.documentType),
   );
+
+  return getSlotDocumentTypes(slot).some((documentType) => waivedTypes.has(normalizeDocumentType(documentType)));
 }
 
 export function getCatalogDocumentDefinition(value: string) {
@@ -122,9 +201,65 @@ export function getDefaultRecommendedDocuments() {
   return ["national_id", "afm", "payslips", "employer_letter", "bank_statement", "landlord_reference"];
 }
 
+export function getDefaultDocumentRequirementPriority(documentType: string): DocumentPriority {
+  const normalized = normalizeDocumentType(documentType);
+  return DEFAULT_DOCUMENT_PRIORITIES[normalized] ?? "recommended";
+}
+
+export function getDefaultDocumentRequirements(): DocumentRequirement[] {
+  return getDefaultRecommendedDocuments().map((documentType) => ({
+    documentType,
+    priority: getDefaultDocumentRequirementPriority(documentType),
+  }));
+}
+
+export function migrateRequestedDocumentsToRequirements(requestedDocuments: string[]): DocumentRequirement[] {
+  return dedupeDocumentRequirements(
+    requestedDocuments.map((documentType) => ({
+      documentType: normalizeDocumentType(documentType),
+      priority: getDefaultDocumentRequirementPriority(documentType),
+    })),
+  );
+}
+
+export function resolveHighestPriority(priorities: DocumentPriority[]): DocumentPriority {
+  return priorities.reduce<DocumentPriority>(
+    (current, priority) => (PRIORITY_RANK[priority] > PRIORITY_RANK[current] ? priority : current),
+    "optional",
+  );
+}
+
+export function dedupeDocumentRequirements(requirements: DocumentRequirement[]): DocumentRequirement[] {
+  const byType = new Map<string, DocumentRequirement>();
+
+  for (const requirement of requirements) {
+    const documentType = normalizeDocumentType(requirement.documentType);
+    const existing = byType.get(documentType);
+
+    if (!existing || PRIORITY_RANK[requirement.priority] > PRIORITY_RANK[existing.priority]) {
+      byType.set(documentType, {
+        documentType,
+        priority: requirement.priority,
+        waived: requirement.waived ?? existing?.waived,
+      });
+    } else if (requirement.waived) {
+      byType.set(documentType, { ...existing, waived: true });
+    }
+  }
+
+  return [...byType.values()];
+}
+
 export function buildRequiredSlots(requestedDocuments: string[]): SafeKeyRequiredSlot[] {
-  const normalized = normalizeRequestedDocuments(requestedDocuments);
-  const requestedSet = new Set(normalized);
+  return buildRequiredSlotsFromRequirements(migrateRequestedDocumentsToRequirements(requestedDocuments));
+}
+
+export function buildRequiredSlotsFromRequirements(requirements: DocumentRequirement[]): SafeKeyRequiredSlot[] {
+  const normalizedRequirements = dedupeDocumentRequirements(requirements);
+  const priorityByType = new Map(
+    normalizedRequirements.map((requirement) => [requirement.documentType, requirement.priority]),
+  );
+  const requestedSet = new Set(priorityByType.keys());
   const slots: SafeKeyRequiredSlot[] = [];
   const consumed = new Set<string>();
 
@@ -141,17 +276,26 @@ export function buildRequiredSlots(requestedDocuments: string[]): SafeKeyRequire
         identityRequested.length === 1
           ? getCatalogDocumentLabel(identityRequested[0])
           : IDENTITY_PRIMARY_REQUIREMENT_GROUP.label,
+      priority: resolveHighestPriority(
+        identityRequested.map((documentType) => priorityByType.get(documentType) ?? "required"),
+      ),
     });
+
     for (const documentType of identityRequested) {
       consumed.add(documentType);
     }
   }
 
-  for (const documentType of normalized) {
-    if (consumed.has(documentType)) {
+  for (const requirement of normalizedRequirements) {
+    if (consumed.has(requirement.documentType)) {
       continue;
     }
-    slots.push({ documentType, kind: "document" });
+
+    slots.push({
+      documentType: requirement.documentType,
+      kind: "document",
+      priority: requirement.priority,
+    });
   }
 
   return slots;
@@ -169,23 +313,120 @@ export function isRequiredSlotReceived(slot: SafeKeyRequiredSlot, uploadedTypes:
   return slot.documentTypes.some((documentType) => uploadedTypes.has(documentType));
 }
 
+export function isSlotReviewComplete(
+  slot: SafeKeyRequiredSlot,
+  documents: TenantDocumentReviewRow[],
+  requirements: DocumentRequirement[],
+) {
+  return slotReviewStatusCountsAsComplete(
+    resolveSlotReviewStatus(slot, documents, { waived: isRequirementWaivedForSlot(slot, requirements) }),
+  );
+}
+
+export function isSlotReadyForTenantSubmission(
+  slot: SafeKeyRequiredSlot,
+  documents: TenantDocumentReviewRow[],
+  requirements: DocumentRequirement[],
+) {
+  return slotReviewStatusCountsAsTenantSubmitted(
+    resolveSlotReviewStatus(slot, documents, { waived: isRequirementWaivedForSlot(slot, requirements) }),
+  );
+}
+
 export function getReceivedTypesForSlot(slot: SafeKeyRequiredSlot, uploadedTypes: Set<string>) {
   return getSlotDocumentTypes(slot).filter((documentType) => uploadedTypes.has(documentType));
 }
 
+export function getAcceptedTypesForSlot(
+  slot: SafeKeyRequiredSlot,
+  documents: TenantDocumentReviewRow[],
+) {
+  const accepted = getAcceptedDocumentTypes(documents);
+  return getSlotDocumentTypes(slot).filter((documentType) => accepted.has(normalizeDocumentType(documentType)));
+}
+
 export function evaluateRequiredDocumentSlots(params: {
   requested_documents: string[];
-  tenant_documents: Array<{ document_type: string }>;
+  tenant_documents: Array<{ document_type: string; upload_status?: string | null }>;
 }) {
-  const uploadedTypes = normalizeUploadedDocumentTypes(params.tenant_documents);
-  const slots = buildRequiredSlots(params.requested_documents);
+  return evaluateDocumentPlan({
+    requirements: migrateRequestedDocumentsToRequirements(params.requested_documents),
+    tenant_documents: params.tenant_documents,
+  });
+}
+
+function countCompleteSlots(
+  slots: SafeKeyRequiredSlot[],
+  documents: TenantDocumentReviewRow[],
+  requirements: DocumentRequirement[],
+) {
+  return slots.filter((slot) => isSlotReviewComplete(slot, documents, requirements)).length;
+}
+
+function countTenantSubmittedSlots(
+  slots: SafeKeyRequiredSlot[],
+  documents: TenantDocumentReviewRow[],
+  requirements: DocumentRequirement[],
+) {
+  return slots.filter((slot) => isSlotReadyForTenantSubmission(slot, documents, requirements)).length;
+}
+
+function countAcceptedSlots(
+  slots: SafeKeyRequiredSlot[],
+  documents: TenantDocumentReviewRow[],
+) {
+  return slots.filter((slot) => getAcceptedTypesForSlot(slot, documents).length > 0).length;
+}
+
+function computeTrustCompletionPercent(params: {
+  optionalReceived: number;
+  optionalTotal: number;
+  recommendedReceived: number;
+  recommendedTotal: number;
+  requiredReceived: number;
+  requiredTotal: number;
+}) {
+  const tiers = [
+    { received: params.requiredReceived, total: params.requiredTotal, weight: 0.6 },
+    { received: params.recommendedReceived, total: params.recommendedTotal, weight: 0.3 },
+    { received: params.optionalReceived, total: params.optionalTotal, weight: 0.1 },
+  ].filter((tier) => tier.total > 0);
+
+  if (tiers.length === 0) {
+    return 0;
+  }
+
+  const totalWeight = tiers.reduce((sum, tier) => sum + tier.weight, 0);
+
+  return Math.round(
+    tiers.reduce((sum, tier) => {
+      const tierPercent = tier.total > 0 ? tier.received / tier.total : 0;
+      return sum + tierPercent * (tier.weight / totalWeight) * 100;
+    }, 0),
+  );
+}
+
+export function evaluateDocumentPlan(params: {
+  requirements: DocumentRequirement[];
+  tenant_documents: Array<{ document_type: string; upload_status?: string | null }>;
+}): DocumentPlanEvaluation {
+  const documents = params.tenant_documents as TenantDocumentReviewRow[];
+  const acceptedTypes = getAcceptedDocumentTypes(documents);
+  const slots = buildRequiredSlotsFromRequirements(params.requirements);
+  const requiredSlots = slots.filter((slot) => slot.priority === "required");
+  const recommendedSlots = slots.filter((slot) => slot.priority === "recommended");
+  const optionalSlots = slots.filter((slot) => slot.priority === "optional");
   const receivedDocumentTypes: string[] = [];
   const missingDocumentTypes: string[] = [];
 
   for (const slot of slots) {
-    const receivedForSlot = getReceivedTypesForSlot(slot, uploadedTypes);
-    if (receivedForSlot.length > 0) {
-      receivedDocumentTypes.push(...receivedForSlot);
+    const acceptedForSlot = getAcceptedTypesForSlot(slot, documents);
+    if (acceptedForSlot.length > 0) {
+      receivedDocumentTypes.push(...acceptedForSlot);
+      continue;
+    }
+
+    if (isSlotReviewComplete(slot, documents, params.requirements)) {
       continue;
     }
 
@@ -196,52 +437,95 @@ export function evaluateRequiredDocumentSlots(params: {
     }
   }
 
-  const receivedCount = slots.filter((slot) => isRequiredSlotReceived(slot, uploadedTypes)).length;
+  const receivedCount = countCompleteSlots(slots, documents, params.requirements);
   const totalCount = slots.length;
   const missingCount = totalCount - receivedCount;
-  const completionPercent = totalCount > 0 ? Math.round((receivedCount / totalCount) * 100) : 0;
+  const requiredReceived = countCompleteSlots(requiredSlots, documents, params.requirements);
+  const requiredTotal = requiredSlots.length;
+  const requiredSubmitted = countTenantSubmittedSlots(requiredSlots, documents, params.requirements);
+  const recommendedReceived = countCompleteSlots(recommendedSlots, documents, params.requirements);
+  const recommendedTotal = recommendedSlots.length;
+  const optionalReceived = countCompleteSlots(optionalSlots, documents, params.requirements);
+  const optionalTotal = optionalSlots.length;
+  const missingRequired = requiredTotal - requiredSubmitted;
+  const missingRecommended = recommendedTotal - recommendedReceived;
+  const trustCompletionPercent = computeTrustCompletionPercent({
+    optionalReceived: countAcceptedSlots(optionalSlots, documents),
+    optionalTotal,
+    recommendedReceived: countAcceptedSlots(recommendedSlots, documents),
+    recommendedTotal,
+    requiredReceived: countAcceptedSlots(requiredSlots, documents),
+    requiredTotal,
+  });
 
   return {
-    completionPercent,
+    completionPercent: totalCount > 0 ? Math.round((receivedCount / totalCount) * 100) : 0,
     missing: missingCount,
     missingDocumentTypes,
+    missingRecommended,
+    missingRequired,
+    optionalReceived,
+    optionalTotal,
     received: receivedCount,
     receivedDocumentTypes: [...new Set(receivedDocumentTypes)],
+    recommendedReceived,
+    recommendedTotal,
+    requiredReceived,
+    requiredTotal,
     slots,
+    submissionComplete: requiredTotal > 0 && requiredSubmitted === requiredTotal,
     total: totalCount,
-    uploadedTypes,
+    trustCompletionPercent,
+    uploadedTypes: acceptedTypes,
   };
 }
 
 export function isRequiredDocumentSubmissionComplete(
   requestedDocuments: string[],
-  tenantDocuments: Array<{ document_type: string }>,
+  tenantDocuments: Array<{ document_type: string; upload_status?: string | null }>,
 ) {
-  const evaluation = evaluateRequiredDocumentSlots({
-    requested_documents: requestedDocuments,
+  return evaluateDocumentPlan({
+    requirements: migrateRequestedDocumentsToRequirements(requestedDocuments),
     tenant_documents: tenantDocuments,
-  });
+  }).submissionComplete;
+}
 
-  return evaluation.total > 0 && evaluation.missing === 0;
+export function isDocumentPlanSubmissionComplete(
+  requirements: DocumentRequirement[],
+  tenantDocuments: Array<{ document_type: string; upload_status?: string | null }>,
+) {
+  return evaluateDocumentPlan({ requirements, tenant_documents: tenantDocuments }).submissionComplete;
 }
 
 export function getPendingUploadDocumentTypes(
   requestedDocuments: string[],
-  tenantDocuments: Array<{ document_type: string }>,
+  tenantDocuments: Array<{ document_type: string; upload_status?: string | null }>,
 ) {
-  const uploadedTypes = normalizeUploadedDocumentTypes(tenantDocuments);
-  const slots = buildRequiredSlots(requestedDocuments);
-  const pending = new Set<string>();
+  return getPendingUploadDocumentTypesFromRequirements(
+    migrateRequestedDocumentsToRequirements(requestedDocuments),
+    tenantDocuments,
+  );
+}
 
-  for (const slot of slots) {
-    if (isRequiredSlotReceived(slot, uploadedTypes)) {
-      continue;
-    }
+export function getPendingUploadDocumentTypesFromRequirements(
+  requirements: DocumentRequirement[],
+  tenantDocuments: Array<{ document_type: string; upload_status?: string | null }>,
+) {
+  const slots = buildRequiredSlotsFromRequirements(requirements);
+  return getPendingUploadDocumentTypesForReview({
+    documents: tenantDocuments as TenantDocumentReviewRow[],
+    requirements,
+    slots,
+  });
+}
 
-    for (const documentType of getSlotDocumentTypes(slot)) {
-      pending.add(documentType);
-    }
-  }
+export function getUploadRowsFromRequirements(requirements: DocumentRequirement[]) {
+  const slots = buildRequiredSlotsFromRequirements(requirements);
 
-  return [...pending];
+  return slots.map((slot) => ({
+    documentTypes: getSlotDocumentTypes(slot),
+    label: slot.kind === "any_of" ? slot.label : getCatalogDocumentLabel(slot.documentType),
+    priority: slot.priority,
+    slot,
+  }));
 }

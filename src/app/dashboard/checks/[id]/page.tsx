@@ -225,6 +225,7 @@ export default async function LandlordCheckDetailPage({
     locale,
   );
   const documentScoreboard = buildSafeKeyScoreboard({
+    document_requirements: detail.document_requirements,
     requested_documents: detail.requested_documents,
     status: detail.status,
     tenant_documents: detail.tenant_documents,
@@ -291,9 +292,10 @@ export default async function LandlordCheckDetailPage({
             <SafeKeyCoreWorkflowPanel
               checkId={id}
               context={coreContext}
+              documentRequirements={detail.document_requirements}
               documents={detail.tenant_documents}
-              missingDocumentTypes={documentScoreboard.missingDocumentTypes}
               notes={reviewerNotes}
+              requestedDocuments={detail.requested_documents}
               summary={tenantSummary}
             />
           </div>

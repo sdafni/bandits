@@ -11,18 +11,41 @@ import { WorkspaceRibbon } from "@/components/workspace-ribbon";
 import type { Database } from "@/lib/database.types";
 import { hasSupabaseServiceEnv } from "@/lib/env";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { resolveCheckDocumentPlan } from "@/lib/safekey-document-plan";
 import { getComplianceIndicators, getTenantUploadOperationalState, getVerificationChecklist } from "@/lib/operations";
 import { getPublicCheckByToken } from "@/lib/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken } from "@/lib/security";
 import { SafeKeyScoreboardPanel } from "@/components/safekey-scoreboard";
-import {
-  getUploadedDocumentTypes,
-  resolveDocumentCollectionPhase,
-} from "@/lib/document-submission";
+import { TenantDocumentStatusBadge } from "@/components/tenant-document-status";
+import { resolveDocumentCollectionPhase } from "@/lib/document-submission";
+import { normalizeDocumentReviewStatus } from "@/lib/document-review";
 import { translate } from "@/lib/i18n/messages";
+import type { TenantUploadProfileDraft } from "@/lib/tenant-upload-draft";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
+
+function profileDraftFromDatabase(
+  profile: Database["public"]["Tables"]["tenant_public_profiles"]["Row"] | null,
+  tenantName: string,
+): TenantUploadProfileDraft | null {
+  if (!profile) {
+    return null;
+  }
+
+  return {
+    consentConfirmed: profile.consent_confirmed,
+    currentAddress: profile.current_address ?? "",
+    email: profile.email ?? "",
+    employerName: profile.employer_name ?? "",
+    employmentStatus: profile.employment_status ?? "",
+    fullName: profile.full_name ?? tenantName,
+    monthlyIncome: profile.monthly_income != null ? String(profile.monthly_income) : "",
+    moveInDate: profile.move_in_date ?? "",
+    notes: profile.notes ?? "",
+    phone: profile.phone ?? "",
+  };
+}
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -108,20 +131,22 @@ export default async function TenantUploadPage({
         signedUrl: null,
       }))
     : await createLiveSignedDocuments(detail.tenant_documents);
-  const uploadedDocumentTypes = getUploadedDocumentTypes(documents);
+  const documentPlan = resolveCheckDocumentPlan(detail);
   const collectionPhase = resolveDocumentCollectionPhase({
-    requested_documents: detail.requested_documents,
+    document_requirements: documentPlan.requirements,
+    requested_documents: documentPlan.requestedDocuments,
     status: detail.status,
     tenant_documents: documents,
   });
   const operationalState = getTenantUploadOperationalState({
-    requested_documents: detail.requested_documents,
+    document_requirements: documentPlan.requirements,
+    requested_documents: documentPlan.requestedDocuments,
     status: detail.status,
     tenant_documents: documents,
   });
-  const alreadyUploadedTypes = [...uploadedDocumentTypes];
   const scoreboard = buildSafeKeyScoreboard({
-    requested_documents: detail.requested_documents,
+    document_requirements: documentPlan.requirements,
+    requested_documents: documentPlan.requestedDocuments,
     status: detail.status,
     tenant_documents: documents,
   });
@@ -206,7 +231,7 @@ export default async function TenantUploadPage({
               <div className="rounded-3xl border border-[#dbe2eb] bg-white p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5a6980]">{t("tenantUpload.checksTitle")}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {getVerificationChecklist(detail.requested_documents).map((item) => (
+                  {getVerificationChecklist(documentPlan.requestedDocuments).map((item) => (
                     <span
                       className="rounded-full border border-[#dbe2eb] bg-[#fbfcfe] px-3 py-1.5 text-xs font-medium text-[#42526b]"
                       key={item}
@@ -266,8 +291,10 @@ export default async function TenantUploadPage({
               </div>
             ) : (
               <TenantUploadForm
-                alreadyUploadedTypes={alreadyUploadedTypes}
-                requestedDocuments={detail.requested_documents}
+                checkStatus={detail.status}
+                documentPlan={documentPlan}
+                initialTenantDocuments={documents}
+                savedProfile={profileDraftFromDatabase(detail.tenant_public_profiles, detail.tenant_full_name)}
                 tenantName={detail.tenant_full_name}
                 token={token}
               />
@@ -296,7 +323,10 @@ export default async function TenantUploadPage({
                         {document.document_type.replaceAll("_", " ")} • Uploaded {formatDate(document.created_at)}
                       </p>
                     </div>
-                    <Badge tone="info">{t("tenantUpload.storedForReview")}</Badge>
+                    <TenantDocumentStatusBadge
+                      locale={locale}
+                      status={normalizeDocumentReviewStatus(document.upload_status)}
+                    />
                     {document.signedUrl ? (
                       <Link
                         className="inline-flex items-center gap-2 text-sm font-medium text-[#0f2343]"
@@ -347,14 +377,35 @@ async function createLiveSignedDocuments(
 
   return Promise.all(
     documents.map(async (document: Database["public"]["Tables"]["tenant_documents"]["Row"]) => {
-      const { data } = await admin.storage
-        .from("tenant-documents")
-        .createSignedUrl(document.storage_path, 60 * 60);
+      try {
+        const { data, error } = await admin.storage
+          .from("tenant-documents")
+          .createSignedUrl(document.storage_path, 60 * 60);
 
-      return {
-        ...document,
-        signedUrl: data?.signedUrl ?? null,
-      };
+        if (error) {
+          console.error("[safekey-upload:signed-url]", {
+            documentId: document.id,
+            message: error.message,
+            storagePath: document.storage_path,
+          });
+        }
+
+        return {
+          ...document,
+          signedUrl: data?.signedUrl ?? null,
+        };
+      } catch (error) {
+        console.error("[safekey-upload:signed-url]", {
+          documentId: document.id,
+          message: error instanceof Error ? error.message : String(error),
+          storagePath: document.storage_path,
+        });
+
+        return {
+          ...document,
+          signedUrl: null,
+        };
+      }
     }),
   );
 }

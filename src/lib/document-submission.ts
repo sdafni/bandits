@@ -1,14 +1,20 @@
 import {
-  evaluateRequiredDocumentSlots,
-  isRequiredDocumentSubmissionComplete,
-  normalizeUploadedDocumentTypes,
+  evaluateDocumentPlan,
+  getPendingUploadDocumentTypesFromRequirements,
+  isDocumentPlanSubmissionComplete,
+  migrateRequestedDocumentsToRequirements,
+  type DocumentRequirement,
 } from "@/lib/safekey-document-catalog";
+import { resolveCheckDocumentPlan, type CheckDocumentPlan } from "@/lib/safekey-document-plan";
+import { normalizeUploadedDocumentTypes } from "@/lib/safekey-document-catalog";
 
 export function getDocumentUploadFieldName(documentType: string) {
   return `documents_${documentType}`;
 }
 
-export function getUploadedDocumentTypes(documents: Array<{ document_type: string }>) {
+export function getUploadedDocumentTypes(
+  documents: Array<{ document_type: string; upload_status?: string | null }>,
+) {
   return normalizeUploadedDocumentTypes(documents);
 }
 
@@ -16,8 +22,8 @@ export function getMissingRequestedDocumentTypes(
   requestedDocuments: string[],
   uploadedTypes: Set<string>,
 ) {
-  const evaluation = evaluateRequiredDocumentSlots({
-    requested_documents: requestedDocuments,
+  const evaluation = evaluateDocumentPlan({
+    requirements: migrateRequestedDocumentsToRequirements(requestedDocuments),
     tenant_documents: [...uploadedTypes].map((document_type) => ({ document_type })),
   });
 
@@ -29,8 +35,8 @@ export function countReceivedDocuments(requestedDocuments: string[], uploadedTyp
     return 0;
   }
 
-  return evaluateRequiredDocumentSlots({
-    requested_documents: requestedDocuments,
+  return evaluateDocumentPlan({
+    requirements: migrateRequestedDocumentsToRequirements(requestedDocuments),
     tenant_documents: [...uploadedTypes].map((document_type) => ({ document_type })),
   }).received;
 }
@@ -39,10 +45,29 @@ export function isDocumentSubmissionComplete(
   requestedDocuments: string[],
   uploadedTypes: Set<string>,
 ) {
-  return isRequiredDocumentSubmissionComplete(
-    requestedDocuments,
+  return isDocumentPlanSubmissionComplete(
+    migrateRequestedDocumentsToRequirements(requestedDocuments),
     [...uploadedTypes].map((document_type) => ({ document_type })),
   );
+}
+
+export function isCheckDocumentPlanSubmissionComplete(
+  plan: CheckDocumentPlan,
+  tenantDocuments: Array<{ document_type: string; upload_status?: string | null }> | Set<string>,
+) {
+  const documents =
+    tenantDocuments instanceof Set
+      ? [...tenantDocuments].map((document_type) => ({ document_type, upload_status: "accepted" as const }))
+      : tenantDocuments;
+
+  return isDocumentPlanSubmissionComplete(plan.requirements, documents);
+}
+
+export function getPendingUploadTypesForPlan(
+  plan: CheckDocumentPlan,
+  tenantDocuments: Array<{ document_type: string; upload_status?: string | null }>,
+) {
+  return getPendingUploadDocumentTypesFromRequirements(plan.requirements, tenantDocuments);
 }
 
 export type DocumentCollectionPhase =
@@ -53,17 +78,20 @@ export type DocumentCollectionPhase =
   | "report_ready";
 
 export function resolveDocumentCollectionPhase(params: {
+  document_requirements?: unknown | null;
   requested_documents: string[];
   status: string;
-  tenant_documents: Array<{ document_type: string }>;
+  tenant_documents: Array<{ document_type: string; upload_status?: string | null }>;
 }): {
   missing: number;
+  missingRequired: number;
   phase: DocumentCollectionPhase;
   received: number;
   total: number;
 } {
-  const evaluation = evaluateRequiredDocumentSlots({
-    requested_documents: params.requested_documents,
+  const plan = resolveCheckDocumentPlan(params);
+  const evaluation = evaluateDocumentPlan({
+    requirements: plan.requirements,
     tenant_documents: params.tenant_documents,
   });
 
@@ -73,6 +101,7 @@ export function resolveDocumentCollectionPhase(params: {
       received: evaluation.received,
       total: evaluation.total,
       missing: evaluation.missing,
+      missingRequired: evaluation.missingRequired,
     };
   }
 
@@ -82,15 +111,17 @@ export function resolveDocumentCollectionPhase(params: {
       received: evaluation.received,
       total: evaluation.total,
       missing: evaluation.missing,
+      missingRequired: evaluation.missingRequired,
     };
   }
 
-  if (isRequiredDocumentSubmissionComplete(params.requested_documents, params.tenant_documents)) {
+  if (isDocumentPlanSubmissionComplete(plan.requirements, params.tenant_documents)) {
     return {
       phase: "documents_complete",
       received: evaluation.received,
       total: evaluation.total,
-      missing: 0,
+      missing: evaluation.missing,
+      missingRequired: 0,
     };
   }
 
@@ -100,6 +131,7 @@ export function resolveDocumentCollectionPhase(params: {
       received: evaluation.received,
       total: evaluation.total,
       missing: evaluation.missing,
+      missingRequired: evaluation.missingRequired,
     };
   }
 
@@ -108,5 +140,22 @@ export function resolveDocumentCollectionPhase(params: {
     received: evaluation.received,
     total: evaluation.total,
     missing: evaluation.total,
+    missingRequired: evaluation.missingRequired,
   };
+}
+
+export function resolveDocumentCollectionPhaseFromRequirements(params: {
+  requirements: DocumentRequirement[];
+  status: string;
+  tenant_documents: Array<{ document_type: string; upload_status?: string | null }>;
+}) {
+  return resolveDocumentCollectionPhase({
+    document_requirements: params.requirements.map((requirement) => ({
+      documentType: requirement.documentType,
+      priority: requirement.priority,
+    })),
+    requested_documents: params.requirements.map((requirement) => requirement.documentType),
+    status: params.status,
+    tenant_documents: params.tenant_documents,
+  });
 }

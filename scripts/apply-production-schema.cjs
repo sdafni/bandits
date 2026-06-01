@@ -17,6 +17,9 @@ const MIGRATIONS = [
   "202605280000_drop_legacy_create_tenant_check.sql",
   "202605280001_add_draft_workflow.sql",
   "202605300001_professional_report_pdf.sql",
+  "202605310003_safekey_core_workflow.sql",
+  "202605310004_document_requirements.sql",
+  "202605310005_normalize_document_catalog.sql",
 ];
 
 const POOLER_HOSTS = [
@@ -28,7 +31,7 @@ const POOLER_HOSTS = [
 
 function readEnv() {
   const env = { ...process.env };
-  for (const file of [".env.local", ".env"]) {
+  for (const file of [".env.local", ".env.vercel.production", ".env.vercel.pulled", ".env"]) {
     const envPath = path.join(process.cwd(), file);
     if (!fs.existsSync(envPath)) continue;
     for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {

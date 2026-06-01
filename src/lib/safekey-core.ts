@@ -40,6 +40,7 @@ export type SafeKeyCoreContext = {
   canManageDocuments: boolean;
   canRecordDecision: boolean;
   canRejectDocuments: boolean;
+  canReviewDocuments: boolean;
   canWriteReviewerNotes: boolean;
   isAdmin: boolean;
 };
@@ -52,7 +53,8 @@ export function resolveSafeKeyCoreContext(params: {
   return {
     canManageDocuments: params.isAdmin || params.status !== "draft",
     canRecordDecision: params.hasReport && params.status === "report_ready",
-    canRejectDocuments: params.isAdmin && params.status !== "draft" && params.status !== "pending_upload",
+    canRejectDocuments: params.status !== "draft" && params.status !== "pending_upload",
+    canReviewDocuments: params.status !== "draft" && params.status !== "pending_upload",
     canWriteReviewerNotes: true,
     isAdmin: params.isAdmin,
   };
@@ -62,6 +64,7 @@ export function buildTenantSummaryCard(params: {
   aiReport?: AiReportRow;
   check: Pick<
     TenantCheckRow,
+    | "document_requirements"
     | "landlord_decision"
     | "requested_documents"
     | "status"
@@ -74,13 +77,14 @@ export function buildTenantSummaryCard(params: {
   tenantDocuments: TenantDocumentRow[];
 }): TenantSummaryCard {
   const scoreboard = buildSafeKeyScoreboard({
+    document_requirements: params.check.document_requirements,
     requested_documents: params.check.requested_documents,
     status: params.check.status,
     tenant_documents: params.tenantDocuments,
   });
 
   return {
-    completionPercent: scoreboard.completionPercent,
+    completionPercent: scoreboard.trustCompletionPercent,
     employmentStatus: params.profile?.employment_status ?? null,
     landlordDecision: (params.check.landlord_decision as LandlordDecision | undefined) ?? "pending",
     missingCategories: scoreboard.missingDocumentTypes.map(getCatalogDocumentLabel),

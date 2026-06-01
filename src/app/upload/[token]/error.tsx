@@ -1,0 +1,59 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect } from "react";
+import { readTenantUploadDraft } from "@/lib/tenant-upload-draft";
+
+export default function TenantUploadError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const token = typeof window !== "undefined" ? window.location.pathname.split("/").pop() ?? "" : "";
+  const draft = token ? readTenantUploadDraft(token) : null;
+
+  useEffect(() => {
+    console.error("[safekey-upload:error]", error);
+  }, [error]);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center px-6 py-10">
+      <div className="card max-w-2xl space-y-5">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Secure upload</p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold text-slate-950">Something interrupted your upload</h1>
+          <p className="text-sm leading-7 text-slate-600">
+            Your saved draft is still available on this device. Retry to continue where you left off, or return to
+            your upload link.
+          </p>
+          {draft?.fullName || draft?.email ? (
+            <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              Draft found for {draft.fullName || "your application"}
+              {draft.email ? ` (${draft.email})` : ""}.
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button className="primary-action rounded-full px-5 py-3" onClick={reset} type="button">
+            Try again
+          </button>
+          {token ? (
+            <Link className="rounded-full border border-[#d8c490] px-5 py-3 text-sm font-semibold text-[#0f2343]" href={`/upload/${token}`}>
+              Return to saved upload
+            </Link>
+          ) : (
+            <button
+              className="rounded-full border border-[#d8c490] px-5 py-3 text-sm font-semibold text-[#0f2343]"
+              onClick={() => window.history.back()}
+              type="button"
+            >
+              Go back
+            </button>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}

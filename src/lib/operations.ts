@@ -1,5 +1,6 @@
 import type { Database } from "@/lib/database.types";
 import { resolveDocumentCollectionPhase } from "@/lib/document-submission";
+import { normalizeDocumentType } from "@/lib/safekey-document-catalog";
 import { formatDate } from "@/lib/utils";
 
 type TenantCheckRow = Database["public"]["Tables"]["tenant_checks"]["Row"];
@@ -23,9 +24,10 @@ const DOCUMENT_LABELS: Record<string, string> = {
 };
 
 export function getTenantUploadOperationalState(params: {
+  document_requirements?: unknown | null;
   requested_documents: string[];
   status: TenantCheckStatus;
-  tenant_documents: Array<{ document_type: string }>;
+  tenant_documents: Array<{ document_type: string; upload_status?: string | null }>;
 }) {
   const collection = resolveDocumentCollectionPhase(params);
 
@@ -34,21 +36,24 @@ export function getTenantUploadOperationalState(params: {
       return {
         analystState: "Waiting for your documents",
         complianceState: "Upload link is open",
-        humanState: "Please upload every requested document",
-        nextStep: "Add one file for each requested category, then submit",
+        humanState: "Please upload required documents first",
+        nextStep: "Add required documents, then submit when ready",
       };
     case "partial_submission":
       return {
         analystState: "Application incomplete",
         complianceState: "Some documents received",
         humanState: `${collection.received} of ${collection.total} documents received`,
-        nextStep: "Upload the remaining requested documents to finish",
+        nextStep:
+          collection.missingRequired > 0
+            ? "Upload the remaining required documents to submit"
+            : "Add recommended documents to strengthen your profile, then submit",
       };
     case "documents_complete":
       return {
-        analystState: "Documents complete",
-        complianceState: "All requested documents received",
-        humanState: "Documents complete — thank you",
+        analystState: "Required documents complete",
+        complianceState: "Ready for review",
+        humanState: "Required documents complete — thank you",
         nextStep: "SafeKey will begin review shortly",
       };
     case "under_review":
@@ -79,36 +84,38 @@ export function getOperationalState(status: TenantCheckStatus) {
       };
     case "pending_upload":
       return {
-        analystState: "Waiting for your documents",
-        complianceState: "Upload link is open",
+        analystState: "Awaiting tenant documents",
+        complianceState: "Upload link active",
         humanState: "Please upload your documents",
-        nextStep: "Use the form on this page",
+        nextStep: "Upload required documents, then submit when ready",
       };
     case "documents_received":
       return {
         analystState: "Documents received",
-        complianceState: "Documents saved securely",
-        humanState: "Documents received — thank you",
-        nextStep: "Your landlord will be notified",
+        complianceState: "Queued for review",
+        humanState: "Documents received",
+        nextStep: "SafeKey review in progress",
       };
     case "under_review":
       return {
         analystState: "Under review",
-        complianceState: "Being reviewed",
-        humanState: "Being reviewed",
-        nextStep: "You will hear back from your landlord",
+        complianceState: "In review",
+        humanState: "Under review",
+        nextStep: "Report will be ready soon",
       };
     case "report_ready":
       return {
-        analystState: "Recommendation ready",
+        analystState: "Report ready",
         complianceState: "Complete",
-        humanState: "Complete",
-        nextStep: "Your landlord has the recommendation",
+        humanState: "Recommendation ready",
+        nextStep: "Review the SafeKey report",
       };
   }
 }
 
-export function getOperationalTimestamp(check: Pick<TenantCheckRow, "created_at" | "review_requested_at" | "review_completed_at" | "status">) {
+export function getOperationalTimestamp(
+  check: Pick<TenantCheckRow, "created_at" | "review_completed_at" | "review_requested_at" | "status">,
+) {
   if (check.status === "report_ready" && check.review_completed_at) {
     return `Completed ${formatDate(check.review_completed_at)}`;
   }
@@ -127,7 +134,7 @@ export function getOperationalTimestamp(check: Pick<TenantCheckRow, "created_at"
 export function getVerificationChecklist(requestedDocuments: string[]) {
   const seen = new Set<string>();
   const items = requestedDocuments
-    .map((item) => DOCUMENT_LABELS[item] ?? item.replaceAll("_", " "))
+    .map((item) => DOCUMENT_LABELS[normalizeDocumentType(item)] ?? item.replaceAll("_", " "))
     .filter((item) => {
       if (seen.has(item)) {
         return false;

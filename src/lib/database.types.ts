@@ -454,6 +454,7 @@ export type Database = {
           landlord_decision_notes: string | null;
           landlord_id: string;
           property_id: string;
+          document_requirements: unknown;
           requested_documents: string[];
           review_completed_at: string | null;
           review_requested_at: string | null;
@@ -475,6 +476,7 @@ export type Database = {
           landlord_decision_notes?: string | null;
           landlord_id: string;
           property_id: string;
+          document_requirements?: unknown;
           requested_documents?: string[];
           review_completed_at?: string | null;
           review_requested_at?: string | null;
@@ -543,6 +545,7 @@ export type Database = {
           rejected_at: string | null;
           rejected_by: string | null;
           rejection_reason: string | null;
+          review_note: string | null;
           storage_path: string;
           tenant_check_id: string;
           updated_at: string;
@@ -560,6 +563,7 @@ export type Database = {
           rejected_at?: string | null;
           rejected_by?: string | null;
           rejection_reason?: string | null;
+          review_note?: string | null;
           storage_path: string;
           tenant_check_id: string;
           updated_at?: string;

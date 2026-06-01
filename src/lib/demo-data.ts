@@ -756,6 +756,7 @@ function buildDemoCase(input: {
     landlord_id: demoLandlords[0].id,
     properties: property,
     property_id: propertyId,
+    document_requirements: [],
     requested_documents: [
       "government_id",
       "proof_of_income",
@@ -1015,10 +1016,11 @@ function buildDemoDocument(input: {
     rejected_at: null,
     rejected_by: null,
     rejection_reason: null,
+    review_note: null,
     storage_path: `demo/${input.caseId}/${input.fileName}`,
     tenant_check_id: input.caseId,
     updated_at: input.createdAt,
-    upload_status: "reviewed",
+    upload_status: "pending_review",
     uploaded_by_email: "demo-upload@safekey.gr",
   };
 }
