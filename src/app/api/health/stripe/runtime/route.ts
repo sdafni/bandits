@@ -87,6 +87,10 @@ export async function GET() {
       billing_address_collection: "auto",
       cancel_url: "https://getsafekey.app/dashboard/billing?checkout=cancelled&plan=pro",
       customer: customer.id,
+      customer_update: {
+        address: "auto",
+        name: "auto",
+      },
       line_items: [{ price: getBillingPlanPriceId("pro"), quantity: 1 }],
       mode: "subscription",
       success_url: "https://getsafekey.app/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}",
