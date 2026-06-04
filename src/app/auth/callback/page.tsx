@@ -1,16 +1,9 @@
-import type { EmailOtpType } from "@supabase/supabase-js";
-import { redirect } from "next/navigation";
 import { resendConfirmationEmailAction } from "@/app/actions";
 import { AuthCallbackClient } from "@/components/auth-callback-client";
 import { AuthCallbackView } from "@/components/auth-callback-view";
 import { notifyWelcomeEmail } from "@/lib/notifications";
-import { getAuthCallbackNextPath } from "@/lib/auth-callback-path";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { translate } from "@/lib/i18n/messages";
-import { withLocalePath } from "@/lib/i18n";
-import { createClient } from "@/lib/supabase/server";
-
-type CallbackStatus = "success" | "error" | "pending";
 
 export default async function AuthCallbackPage({
   searchParams,
@@ -27,11 +20,8 @@ export default async function AuthCallbackPage({
   const t = (key: string) => translate(locale, key);
   const params = await searchParams;
   const tokenHash = params.token_hash ?? null;
-  const type = (params.type ?? null) as EmailOtpType | null;
   const code = params.code ?? null;
-  const nextPath = getAuthCallbackNextPath(params.next ?? null, type);
   const email = params.email ?? "";
-  const supabase = await createClient();
 
   const labels = {
     successTitle: t("auth.callback.successTitle"),
@@ -47,36 +37,6 @@ export default async function AuthCallbackPage({
     verifying: t("auth.callback.verifying"),
   };
 
-  let status: CallbackStatus = "pending";
-
-  if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type,
-    });
-    status = error ? "error" : "success";
-  } else if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
-      status = "error";
-    } else {
-      if (type === "signup" && email) {
-        await notifyWelcomeEmail({ recipientEmail: email }).catch(() => {});
-      }
-      redirect(withLocalePath(locale, nextPath));
-    }
-  } else {
-    status = "pending";
-  }
-
-  if (status === "success" && type === "signup" && email) {
-    await notifyWelcomeEmail({ recipientEmail: email }).catch(() => {});
-  }
-
-  if (status === "success") {
-    redirect(withLocalePath(locale, nextPath));
-  }
-
   async function resendAction(formData: FormData) {
     "use server";
     await resendConfirmationEmailAction({} as never, formData);
@@ -87,7 +47,7 @@ export default async function AuthCallbackPage({
     await notifyWelcomeEmail({ recipientEmail: welcomeEmail }).catch(() => {});
   }
 
-  if (status === "pending") {
+  if (tokenHash || code) {
     return (
       <AuthCallbackClient
         completeSignupWelcomeAction={completeSignupWelcomeAction}
@@ -105,9 +65,9 @@ export default async function AuthCallbackPage({
       email={email}
       labels={labels}
       locale={locale}
-      nextPath={nextPath}
+      nextPath="/login"
       resendAction={resendAction}
-      status={status}
+      status="error"
     />
   );
 }

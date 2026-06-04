@@ -25,7 +25,7 @@ export function SampleReportPageContent() {
   const pdfPath = "/api/sample-report/pdf";
 
   return (
-    <div className="page-shell flex flex-col gap-8 py-6 sm:gap-10 sm:py-10">
+    <div className="page-shell flex max-w-full flex-col gap-8 overflow-x-hidden py-6 sm:gap-10 sm:py-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <Link
@@ -115,9 +115,9 @@ export function SampleReportPageContent() {
                 {t("landing.sampleReport.downloadPdf")}
               </a>
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+            <div className="mt-4 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
               <iframe
-                className="h-[min(72vh,640px)] w-full bg-white"
+                className="h-[min(72vh,640px)] max-w-full w-full bg-white"
                 src={pdfPath}
                 title={t("landing.sampleReport.pdfPreviewTitle")}
               />

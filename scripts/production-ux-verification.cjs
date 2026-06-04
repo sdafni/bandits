@@ -62,8 +62,9 @@ async function main() {
 
   try {
     // 1. Login page + form at #auth
-    await page.goto(`${appUrl}/login#auth`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    const loginFormVisible = await page.getByTestId("auth-tab-signin").isVisible().catch(() => false);
+    await page.goto(`${appUrl}/login`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.getByTestId("auth-panels").waitFor({ state: "visible", timeout: 30000 });
+    const loginFormVisible = await page.getByTestId("auth-tab-signin").isVisible();
     const headerCount = await page.locator("header").count();
     record(
       "Login page loads with single header and auth form",
@@ -84,17 +85,27 @@ async function main() {
     const signupOk = /\/dashboard/.test(page.url());
     record("Create account reaches dashboard", signupOk ? "PASS" : "FAIL", page.url());
 
-    // 1b. Login with same account (sign out first if needed)
+    // 1b. Login with same account (fresh session)
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
     await page.context().clearCookies();
-    await page.goto(`${appUrl}/login#auth`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`${appUrl}/login`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.getByTestId("auth-panels").waitFor({ state: "visible", timeout: 30000 });
     await page.getByTestId("auth-tab-signin").click();
+    await page.getByTestId("auth-signin-form").waitFor({ state: "visible", timeout: 15000 });
     await page.getByTestId("auth-email-input").fill(landlordEmail);
     await page.getByTestId("auth-password-input").fill(PASSWORD);
-    await page.getByTestId("auth-signin-submit").click();
+    await page.getByTestId("auth-signin-form").locator('button[type="submit"]').click();
     await page.waitForURL(/\/dashboard/, { timeout: 30000 }).catch(() => null);
     record("Login with new account", /\/dashboard/.test(page.url()) ? "PASS" : "FAIL", page.url());
 
     // 3. Password reset end-to-end
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
     await page.context().clearCookies();
     const recoveryEmail = `sk.ux.recovery.${runId}@mailinator.com`;
     const created = await admin.auth.admin.createUser({
@@ -119,17 +130,18 @@ async function main() {
     await page.waitForURL(/\/login\/reset-password/, { timeout: 20000 }).catch(() => null);
     const onResetPage = /\/login\/reset-password/.test(page.url());
     if (onResetPage) {
-      await page.locator('input[name="password"]').first().fill(NEW_PASSWORD);
-      await page.locator('input[name="confirm_password"]').fill(NEW_PASSWORD);
+      await page.getByTestId("reset-password-input").fill(NEW_PASSWORD);
       await page.getByTestId("reset-password-submit").click();
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(3500);
     }
     await page.context().clearCookies();
-    await page.goto(`${appUrl}/login#auth`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`${appUrl}/login`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.getByTestId("auth-panels").waitFor({ state: "visible", timeout: 30000 });
     await page.getByTestId("auth-tab-signin").click();
+    await page.getByTestId("auth-signin-form").waitFor({ state: "visible", timeout: 15000 });
     await page.getByTestId("auth-email-input").fill(recoveryEmail);
     await page.getByTestId("auth-password-input").fill(NEW_PASSWORD);
-    await page.getByTestId("auth-signin-submit").click();
+    await page.getByTestId("auth-signin-form").locator('button[type="submit"]').click();
     await page.waitForURL(/\/dashboard/, { timeout: 30000 }).catch(() => null);
     record(
       "Password reset completes and new password signs in",
