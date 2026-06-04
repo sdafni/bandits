@@ -14,6 +14,7 @@ type SubmitButtonProps = {
   type?: "button" | "submit";
   value?: string;
   variant?: "primary" | "secondary" | "billing" | "workspace";
+  "data-testid"?: string;
 };
 
 export function SubmitButton({
@@ -27,6 +28,7 @@ export function SubmitButton({
   type = "submit",
   value,
   variant = "primary",
+  "data-testid": dataTestId,
 }: SubmitButtonProps) {
   const { pending: formPending } = useFormStatus();
   const pending = forcePending || formPending;
@@ -34,6 +36,7 @@ export function SubmitButton({
 
   return (
     <button
+      data-testid={dataTestId}
       className={cn(
         variant === "billing" && "workspace-cta-secondary w-full min-h-10",
         variant === "workspace" && "workspace-cta w-full sm:w-auto",

@@ -127,13 +127,12 @@ async function main() {
       `${appUrl}/auth/callback?token_hash=${token}&type=recovery&next=/login/reset-password`,
       { waitUntil: "domcontentloaded", timeout: 60000 },
     );
-    await page.waitForURL(/\/login\/reset-password/, { timeout: 20000 }).catch(() => null);
+    await page.waitForURL(/\/login\/reset-password/, { timeout: 45000 });
+    await page.getByTestId("reset-password-form").waitFor({ state: "visible", timeout: 30000 });
+    await page.getByTestId("reset-password-input").fill(NEW_PASSWORD);
+    await page.getByTestId("reset-password-submit").click();
+    await page.waitForTimeout(4000);
     const onResetPage = /\/login\/reset-password/.test(page.url());
-    if (onResetPage) {
-      await page.getByTestId("reset-password-input").fill(NEW_PASSWORD);
-      await page.getByTestId("reset-password-submit").click();
-      await page.waitForTimeout(3500);
-    }
     await page.context().clearCookies();
     await page.goto(`${appUrl}/login`, { waitUntil: "networkidle", timeout: 60000 });
     await page.getByTestId("auth-panels").waitFor({ state: "visible", timeout: 30000 });
