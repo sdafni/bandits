@@ -7,8 +7,15 @@ import { sendEmail } from "@/lib/email/resend";
 import type { Recommendation } from "@/lib/database.types";
 import { getRecommendationLabel, getRiskLevelFromScore, getRiskLevelLabel } from "@/lib/risk-report";
 
+type RequestedDocumentLine = {
+  documentType: string;
+  label: string;
+  priority: "required" | "recommended" | "optional";
+};
+
 type TenantUploadInvitationInput = {
   propertyName: string;
+  requestedDocuments?: RequestedDocumentLine[];
   tenantEmail: string;
   tenantName: string;
   uploadUrl: string;
@@ -64,14 +71,37 @@ async function getLandlordRecipient(landlordId: string) {
   };
 }
 
+function formatRequestedDocumentsForEmail(documents: RequestedDocumentLine[] | undefined) {
+  if (!documents?.length) {
+    return { html: "", text: "" };
+  }
+
+  const lines = documents.map((document) => {
+    const priority =
+      document.priority === "required"
+        ? "Required"
+        : document.priority === "recommended"
+          ? "Recommended"
+          : "Optional";
+    return `<li style="margin:0 0 6px;color:#334155;line-height:1.5;">${escapeHtml(document.label)} <span style="color:#64748b;">(${priority})</span></li>`;
+  });
+
+  return {
+    html: `<p style="margin:16px 0 8px;color:#0f2343;font-weight:600;">Requested documents</p><ul style="margin:0 0 16px;padding-left:20px;">${lines.join("")}</ul>`,
+    text: documents.map((document) => `• ${document.label} (${document.priority})`).join("\n"),
+  };
+}
+
 export async function notifyTenantUploadInvitation(input: TenantUploadInvitationInput) {
   const subject = `SafeKey secure upload invitation · ${input.propertyName}`;
+  const requested = formatRequestedDocumentsForEmail(input.requestedDocuments);
   const text = [
     `Hello ${input.tenantName},`,
     "",
     "You received a secure SafeKey invitation to submit tenant screening documents.",
     "",
     `Property: ${input.propertyName}`,
+    requested.text ? ["", "Requested documents:", requested.text, ""].join("\n") : "",
     `Secure upload link: ${input.uploadUrl}`,
     "",
     "Expected review time: 24-48 hours after all requested documents are uploaded.",
@@ -85,6 +115,7 @@ export async function notifyTenantUploadInvitation(input: TenantUploadInvitation
     bodyHtml: `
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;">Hello ${escapeHtml(input.tenantName)}, your landlord invited you to submit requested screening documents securely.</p>
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Property:</strong> ${escapeHtml(input.propertyName)}</p>
+      ${requested.html}
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Expected review time:</strong> 24-48 hours after all requested documents are uploaded.</p>
       <p style="margin:16px 0 0;font-size:13px;color:#475569;line-height:1.5;">This link is private and time-limited. If anything looks unexpected, contact your landlord before sharing documents.</p>
     `,

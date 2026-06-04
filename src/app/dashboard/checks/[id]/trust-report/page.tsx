@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { SafeKeyTrustReport } from "@/components/safekey-trust-report";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { TrustReportPrintButton } from "@/components/trust-report-print-button";
+import { applyAdminWorkspaceOverrides, isAdminProfile } from "@/lib/admin-access";
 import { requireLandlord } from "@/lib/auth";
 import { resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
@@ -40,12 +41,15 @@ export default async function TrustReportExportPage({
         landlordId: profile.id,
         useAdmin: true,
       });
-  const workspaceAccess = resolveWorkspaceAccess(
+  let workspaceAccess = resolveWorkspaceAccess(
     billingOverview,
     monetizationAccess
       ? { config: monetizationAccess.config, entitlements: monetizationAccess.entitlements }
       : undefined,
   );
+  if (isAdminProfile(profile)) {
+    workspaceAccess = applyAdminWorkspaceOverrides(workspaceAccess);
+  }
   const billingEligibility = isDemoCase
     ? { hasBillingAccess: true }
     : await getBillingEligibilityForCheck({

@@ -2,6 +2,7 @@
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LandlordAppNav, type LandlordNavKey } from "@/components/landlord-app-nav";
+import { SiteAuthNav } from "@/components/site-auth-nav";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
@@ -60,9 +61,9 @@ export function AppHeader({
             priority
             variant="logo"
           />
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
             <LanguageSwitcher />
-            {actions}
+            {actions ?? <SiteAuthNav auth={{ isAuthenticated: true }} variant="toolbar" />}
           </div>
         </div>
         <div className="hidden sm:block">

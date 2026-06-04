@@ -16,7 +16,12 @@ export default function DashboardError({
   const { locale } = useLocale();
 
   useEffect(() => {
-    console.error("[dashboard]", error);
+    console.error("[dashboard] render failure", {
+      digest: error.digest,
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
   }, [error]);
 
   return (

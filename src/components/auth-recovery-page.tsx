@@ -36,7 +36,7 @@ export function AuthRecoveryPage({
           {children}
           <p className="text-sm text-slate-600">
             {t("auth.rememberedPassword")}{" "}
-            <Link className="font-medium text-[#0f2343] underline-offset-2 hover:underline" href={withLocalePath(locale, "/login")}>
+            <Link className="font-medium text-[#0f2343] underline-offset-2 hover:underline" href={withLocalePath(locale, "/login#auth")}>
               {t("auth.backToSignIn")}
             </Link>
           </p>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   saveTenantUploadProfileAction,
@@ -23,6 +24,7 @@ import {
   type DocumentPriority,
 } from "@/lib/safekey-document-catalog";
 import { TenantDocumentStatusBadge } from "@/components/tenant-document-status";
+import { getDocumentDisplayStatus, mapSlotStatusToDisplay } from "@/lib/document-display-status";
 import {
   getDocumentReviewNote,
   getLatestDocumentsByType,
@@ -34,6 +36,7 @@ import {
 import { buildSafeKeyScoreboard } from "@/lib/safekey-scoreboard";
 import type { CheckDocumentPlan } from "@/lib/safekey-document-plan";
 import {
+  clearTenantUploadDraft,
   mergeTenantUploadProfileDraft,
   readTenantUploadDraft,
   writeTenantUploadDraft,
@@ -171,18 +174,7 @@ function DocumentUploadRow({
         <span className="text-xs font-medium text-slate-700">{getLocalizedDocumentLabel(locale, documentType)}</span>
       ) : null}
       {showStatus && slotStatus !== "missing" && slotStatus !== "waived" ? (
-        <TenantDocumentStatusBadge
-          locale={locale}
-          status={
-            slotStatus === "needs_replacement"
-              ? "needs_replacement"
-              : slotStatus === "accepted"
-                ? "accepted"
-                : slotStatus === "not_requested"
-                  ? "not_requested"
-                  : "pending_review"
-          }
-        />
+        <TenantDocumentStatusBadge displayStatus={mapSlotStatusToDisplay(slotStatus)} locale={locale} />
       ) : null}
       {(slotStatus === "needs_replacement") && reviewNote ? (
         <p className="text-xs leading-5 text-rose-900">{reviewNote}</p>
@@ -258,6 +250,7 @@ export function TenantUploadForm({
 }) {
   const { locale } = useLocale();
   const t = useT();
+  const router = useRouter();
   const formatMessage = (key: string, vars?: Record<string, string | number>) => {
     let value = translate(locale, key);
     if (vars) {
@@ -407,6 +400,29 @@ export function TenantUploadForm({
   useEffect(() => {
     writeTenantUploadDraft(token, profile);
   }, [profile, token]);
+
+  useEffect(() => {
+    function handlePageHide() {
+      writeTenantUploadDraft(token, profile);
+      if (profileSaveTimerRef.current) {
+        clearTimeout(profileSaveTimerRef.current);
+        profileSaveTimerRef.current = null;
+      }
+      void persistProfileDraft(profile);
+    }
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, [persistProfileDraft, profile, token]);
+
+  useEffect(() => {
+    if (!submitState.success) {
+      return;
+    }
+
+    clearTenantUploadDraft(token);
+    router.refresh();
+  }, [router, submitState.success, token]);
 
   useEffect(() => {
     return () => {

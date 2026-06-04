@@ -32,13 +32,7 @@ export async function requireAuthenticatedUser() {
 }
 
 export async function requireLandlord() {
-  const context = await requireAuthenticatedUser();
-
-  if (isAdminContext(context.profile.email, context.profile.role)) {
-    redirect("/admin/review");
-  }
-
-  return context;
+  return requireAuthenticatedUser();
 }
 
 /** For API routes: return null instead of redirecting when unauthenticated. */
@@ -46,10 +40,6 @@ export async function getLandlordContextForApi() {
   const context = await getCurrentUserContext();
 
   if (!context.user || !context.profile) {
-    return null;
-  }
-
-  if (isAdminContext(context.profile.email, context.profile.role)) {
     return null;
   }
 

@@ -34,7 +34,7 @@ const requestMissingSchema = z.object({
 const reviewDocumentSchema = z.object({
   documentId: z.string().uuid(),
   note: z.string().trim().max(1000).optional(),
-  reviewStatus: z.enum(["accepted", "rejected", "needs_replacement", "not_requested"]),
+  reviewStatus: z.enum(["accepted", "rejected", "needs_replacement"]),
 });
 
 const waiveRequirementSchema = z.object({
@@ -335,11 +335,7 @@ export async function reviewDocumentAction(
     const parsed = parseFormSchema(reviewDocumentSchema, {
       documentId: formEntry(formData.get("document_id")),
       note: formEntry(formData.get("note")) || undefined,
-      reviewStatus: formEntry(formData.get("review_status")) as
-        | "accepted"
-        | "rejected"
-        | "needs_replacement"
-        | "not_requested",
+      reviewStatus: formEntry(formData.get("review_status")) as "accepted" | "rejected" | "needs_replacement",
     });
 
     if (!parsed.success) {

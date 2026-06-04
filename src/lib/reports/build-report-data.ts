@@ -4,6 +4,7 @@ import {
   getRecommendationLabel,
   getRiskLevelLabel,
   resolveRiskLevelFromReport,
+  type RiskLevel,
 } from "@/lib/risk-report";
 import { PARTNER_REPORT_SCHEMA_VERSION, PROFESSIONAL_REPORT_VERSION } from "@/lib/reports/constants";
 import type { ProfessionalReportData } from "@/lib/reports/types";
@@ -72,17 +73,30 @@ function buildSuggestedActions(
   return actions;
 }
 
+function normalizeReportReasoning(reasoning: AiReportRow["reasoning"]) {
+  if (reasoning && typeof reasoning === "object" && !Array.isArray(reasoning)) {
+    return reasoning as {
+      debtToIncomeRatio?: number | null;
+      riskLevel?: RiskLevel | null;
+      explanation?: string | null;
+    };
+  }
+
+  return {};
+}
+
 export function buildProfessionalReportData(input: BuildReportInput): ProfessionalReportData {
-  const riskLevel = resolveRiskLevelFromReport(input.aiReport.score, input.aiReport.reasoning);
+  const reasoning = normalizeReportReasoning(input.aiReport.reasoning);
+  const riskLevel = resolveRiskLevelFromReport(input.aiReport.score, reasoning);
   const income = input.tenantProfile?.monthly_income ?? null;
   const rent = input.propertyMonthlyRent;
-  const incomeToRentRatio = income && rent ? rent / income : input.aiReport.reasoning.debtToIncomeRatio ?? null;
+  const incomeToRentRatio = income && rent ? rent / income : reasoning.debtToIncomeRatio ?? null;
 
   const uploadedDocuments = input.uploadedDocumentTypes.map(formatDocumentLabel);
   const missingDocuments = input.aiReport.missing_documents.map(formatDocumentLabel);
 
   const explanationText =
-    input.aiReport.reasoning.explanation?.trim() ||
+    reasoning.explanation?.trim() ||
     input.aiReport.summary ||
     "SafeKey assigned this score based on document completeness, affordability, and extracted risk signals.";
 

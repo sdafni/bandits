@@ -14,11 +14,16 @@ import { getBillingEligibilityForCheck } from "@/lib/billing-queries";
 import { resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { translate } from "@/lib/i18n/messages";
-import { getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
+import { getCatalogDocumentDefinition } from "@/lib/safekey-document-catalog";
+import { getLocalizedDocumentCategoryLabel, getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
+import { getDocumentDisplayStatus } from "@/lib/document-display-status";
+import { TenantDocumentStatusBadge } from "@/components/tenant-document-status";
 import { resolveCaseAccess, resolveWorkspaceAccess } from "@/lib/workspace-access";
 import { CaseRemovePanel } from "@/components/case-remove-panel";
 import { canLandlordRemoveCheck } from "@/lib/check-removal";
 import { getCaseOriginBadgeLabel, isDemoCheckId } from "@/lib/demo-data";
+import { assertLandlordOwnsCheck, resolveReportSurfaceState } from "@/lib/check-persistence";
+import { applyAdminWorkspaceOverrides, isAdminProfile } from "@/lib/admin-access";
 import { requireLandlord } from "@/lib/auth";
 import { getRequestLocale } from "@/lib/i18n-server";
 import type { Database } from "@/lib/database.types";
@@ -52,9 +57,36 @@ export default async function LandlordCheckDetailPage({
   const locale = await getRequestLocale();
   const t = (key: string) => translate(locale, key);
   const { profile } = await requireLandlord();
+  const landlordId = profile.id;
   const { id } = await params;
   const query = await searchParams;
-  const detail = await getLandlordCheckDetail(id);
+  let detail: Awaited<ReturnType<typeof getLandlordCheckDetail>> = null;
+  let detailLoadError: string | null = null;
+  try {
+    detail = await getLandlordCheckDetail(id);
+  } catch (error) {
+    detailLoadError = error instanceof Error ? error.message : "Could not load tenant check.";
+    console.error("[dashboard/check] getLandlordCheckDetail failed", {
+      checkId: id,
+      message: detailLoadError,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+  }
+
+  if (detailLoadError) {
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto max-w-2xl">
+          <section className="card space-y-4 text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Case access</p>
+            <h1 className="text-3xl font-semibold text-slate-950">{t("dashboard.systemError.title")}</h1>
+            <p className="text-sm leading-7 text-slate-600">{detailLoadError}</p>
+            <RecoveryNavigationActions showResume />
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   if (!detail) {
     return (
@@ -62,9 +94,9 @@ export default async function LandlordCheckDetailPage({
         <div className="mx-auto max-w-2xl">
           <section className="card space-y-4 text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Case access</p>
-            <h1 className="text-3xl font-semibold text-slate-950">Your session has expired</h1>
+            <h1 className="text-3xl font-semibold text-slate-950">This tenant check is unavailable</h1>
             <p className="text-sm leading-7 text-slate-600">
-              For security reasons, your SafeKey session expired after inactivity. Your data is safe. Please continue below.
+              The check may not exist, may belong to another account, or your session may have expired. Your data is safe.
             </p>
             <RecoveryNavigationActions showResume />
           </section>
@@ -74,8 +106,37 @@ export default async function LandlordCheckDetailPage({
   }
 
   const supabase = await createClient();
+  try {
+    assertLandlordOwnsCheck(detail, landlordId);
+  } catch (error) {
+    console.error("[dashboard/check] ownership denied", {
+      checkId: id,
+      landlordId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto max-w-2xl">
+          <section className="card space-y-4 text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#8b6b17]">Case access</p>
+            <h1 className="text-3xl font-semibold text-slate-950">{t("dashboard.systemError.title")}</h1>
+            <p className="text-sm leading-7 text-slate-600">
+              {error instanceof Error ? error.message : "You do not have access to this tenant check."}
+            </p>
+            <RecoveryNavigationActions showResume />
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   const protectionSnapshot = await getProtectionSnapshot(id);
   const isDemoCase = isDemoCheckId(id);
+  const reportSurface = resolveReportSurfaceState({
+    aiReport: detail.ai_reports,
+    status: detail.status,
+  });
   const billingOverview = await getSafeBillingOverviewForUser(profile.id, { admin: true });
   const monetizationAccess = isDemoCase
     ? null
@@ -84,12 +145,15 @@ export default async function LandlordCheckDetailPage({
         landlordId: profile.id,
         useAdmin: true,
       });
-  const workspaceAccess = resolveWorkspaceAccess(
+  let workspaceAccess = resolveWorkspaceAccess(
     billingOverview,
     monetizationAccess
       ? { config: monetizationAccess.config, entitlements: monetizationAccess.entitlements }
       : undefined,
   );
+  if (isAdminProfile(profile)) {
+    workspaceAccess = applyAdminWorkspaceOverrides(workspaceAccess);
+  }
   const billingEligibility = isDemoCase
     ? { activeSubscription: null, customer: null, hasBillingAccess: true, screeningPayment: null }
     : await getBillingEligibilityForCheck({
@@ -317,13 +381,20 @@ export default async function LandlordCheckDetailPage({
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">{t("caseDetail.reportTitle")}</h2>
             </div>
 
-            {detail.ai_reports ? (
-              <AiScreeningReport
-                applicantName={detail.tenant_full_name}
-                propertyMonthlyRent={detail.properties?.monthly_rent ?? null}
-                report={detail.ai_reports}
-                tenantMonthlyIncome={detail.tenant_public_profiles?.monthly_income ?? null}
-              />
+            {reportSurface.hasAnalysis ? (
+              <>
+                {reportSurface.analysisAwaitingStatus ? (
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                    {t("caseDetail.reportGenerating")}
+                  </div>
+                ) : null}
+                <AiScreeningReport
+                  applicantName={detail.tenant_full_name}
+                  propertyMonthlyRent={detail.properties?.monthly_rent ?? null}
+                  report={detail.ai_reports!}
+                  tenantMonthlyIncome={detail.tenant_public_profiles?.monthly_income ?? null}
+                />
+              </>
             ) : detail.status === "under_review" ? (
               <div className="rounded-3xl border border-[#e9dfc5] bg-[#fcfaf4] px-5 py-10 text-sm leading-7 text-[#5d4e31]">
                 {t("caseDetail.reportGenerating")}
@@ -527,11 +598,22 @@ export default async function LandlordCheckDetailPage({
                   <article className="rounded-3xl border border-slate-200 bg-slate-50 p-5" key={document.id}>
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <h3 className="text-base font-semibold text-slate-950">{document.file_name}</h3>
+                        <h3 className="text-base font-semibold text-slate-950">
+                          {getLocalizedDocumentLabel(locale, document.document_type)}
+                        </h3>
                         <p className="mt-1 text-sm text-slate-600">
-                          {document.document_type.replaceAll("_", " ")} • Uploaded {formatDate(document.created_at)}
+                          {document.file_name} •{" "}
+                          {getLocalizedDocumentCategoryLabel(
+                            locale,
+                            getCatalogDocumentDefinition(document.document_type)?.category ?? "advanced",
+                          )}{" "}
+                          • Uploaded {formatDate(document.created_at)}
                         </p>
                       </div>
+                      <TenantDocumentStatusBadge
+                        displayStatus={getDocumentDisplayStatus(document)}
+                        locale={locale}
+                      />
                       {document.signedUrl ? (
                         <Link
                           className="inline-flex items-center gap-2 text-sm font-medium text-[#0f2343]"

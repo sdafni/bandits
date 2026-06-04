@@ -1,10 +1,20 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
+import { runDeferredUploadAnalysis } from "@/app/actions";
 import { z } from "zod";
 import type { ActionState } from "@/app/actions";
 import { isDemoUploadToken } from "@/lib/demo-data";
-import { formEntry, optionalFormEntry, parseFormSchema, preprocessFormNumber, preprocessFormString, preprocessOptionalFormString } from "@/lib/form-validation";
+import {
+  formEntry,
+  optionalFormEntry,
+  parseFormSchema,
+  preprocessFormNumber,
+  preprocessFormString,
+  preprocessOptionalFormString,
+} from "@/lib/form-validation";
+import { listTenantDocumentsForCheck } from "@/lib/check-persistence";
 import { hasSupabaseServiceEnv } from "@/lib/env";
 import { notifyLandlordDocumentsReceived } from "@/lib/notifications";
 import { getDocumentUploadFieldName } from "@/lib/document-submission";
@@ -21,23 +31,31 @@ import { resolveCheckDocumentPlan } from "@/lib/safekey-document-plan";
 import { getUploadedDocumentTypes } from "@/lib/document-submission";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const optionalDraftEmailSchema = z.preprocess(
+  preprocessFormString,
+  z
+    .string()
+    .trim()
+    .max(240)
+    .refine((value) => value.length === 0 || z.string().email().safeParse(value).success, {
+      message: "A valid email is required.",
+    }),
+);
+
 const profileDraftSchema = z.object({
   consentConfirmed: z.preprocess(
     (value) => value === true || value === "on" || value === "true",
     z.boolean().optional(),
   ),
-  currentAddress: z.preprocess(preprocessOptionalFormString, z.string().trim().max(240).optional()),
-  email: z.preprocess(preprocessOptionalFormString, z.string().trim().email("A valid email is required.").optional()),
-  employerName: z.preprocess(preprocessOptionalFormString, z.string().trim().max(120).optional()),
-  employmentStatus: z.preprocess(preprocessOptionalFormString, z.string().trim().max(80).optional()),
-  fullName: z.preprocess(preprocessOptionalFormString, z.string().trim().min(2, "Full name is required.").optional()),
-  monthlyIncome: z.preprocess(
-    preprocessFormNumber,
-    z.number({ error: "Monthly income must be a number." }).positive("Monthly income must be positive.").optional(),
-  ),
-  moveInDate: z.preprocess(preprocessOptionalFormString, z.string().trim().max(40).optional()),
-  notes: z.preprocess(preprocessOptionalFormString, z.string().trim().max(2000).optional()),
-  phone: z.preprocess(preprocessOptionalFormString, z.string().trim().min(6, "Phone number is required.").optional()),
+  currentAddress: z.preprocess(preprocessFormString, z.string().trim().max(240)),
+  email: optionalDraftEmailSchema,
+  employerName: z.preprocess(preprocessFormString, z.string().trim().max(120)),
+  employmentStatus: z.preprocess(preprocessFormString, z.string().trim().max(80)),
+  fullName: z.preprocess(preprocessFormString, z.string().trim().max(120)),
+  monthlyIncome: z.preprocess(preprocessFormString, z.string().trim().max(40)),
+  moveInDate: z.preprocess(preprocessFormString, z.string().trim().max(40)),
+  notes: z.preprocess(preprocessFormString, z.string().trim().max(2000)),
+  phone: z.preprocess(preprocessFormString, z.string().trim().max(40)),
 });
 
 const submitApplicationSchema = profileDraftSchema.extend({
@@ -84,19 +102,36 @@ export type TenantUploadActionState = ActionState & {
 function parseProfileDraft(formData: FormData) {
   return parseFormSchema(profileDraftSchema, {
     consentConfirmed: formData.get("consent_confirmed") === "on",
-    currentAddress: optionalFormEntry(formData.get("current_address")),
-    email: optionalFormEntry(formData.get("email")),
-    employerName: optionalFormEntry(formData.get("employer_name")),
-    employmentStatus: optionalFormEntry(formData.get("employment_status")),
-    fullName: optionalFormEntry(formData.get("full_name")),
-    monthlyIncome: optionalFormEntry(formData.get("monthly_income")),
-    moveInDate: optionalFormEntry(formData.get("move_in_date")),
-    notes: optionalFormEntry(formData.get("notes")),
-    phone: optionalFormEntry(formData.get("phone")),
+    currentAddress: formEntry(formData.get("current_address")),
+    email: formEntry(formData.get("email")),
+    employerName: formEntry(formData.get("employer_name")),
+    employmentStatus: formEntry(formData.get("employment_status")),
+    fullName: formEntry(formData.get("full_name")),
+    monthlyIncome: formEntry(formData.get("monthly_income")),
+    moveInDate: formEntry(formData.get("move_in_date")),
+    notes: formEntry(formData.get("notes")),
+    phone: formEntry(formData.get("phone")),
   });
 }
 
-function toProfileInput(data: z.infer<typeof profileDraftSchema>): TenantUploadProfileInput {
+function parseDraftMonthlyIncome(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toProfileInput(
+  data: z.infer<typeof profileDraftSchema> | z.infer<typeof submitApplicationSchema>,
+): TenantUploadProfileInput {
+  const monthlyIncome =
+    typeof data.monthlyIncome === "number"
+      ? data.monthlyIncome
+      : parseDraftMonthlyIncome(String(data.monthlyIncome ?? ""));
+
   return {
     consentConfirmed: data.consentConfirmed,
     currentAddress: data.currentAddress,
@@ -104,7 +139,7 @@ function toProfileInput(data: z.infer<typeof profileDraftSchema>): TenantUploadP
     employerName: data.employerName,
     employmentStatus: data.employmentStatus,
     fullName: data.fullName,
-    monthlyIncome: data.monthlyIncome,
+    monthlyIncome,
     moveInDate: data.moveInDate,
     notes: data.notes,
     phone: data.phone,
@@ -190,6 +225,9 @@ export async function uploadTenantDocumentAction(
       profile: toProfileInput(parsed.data),
     });
 
+    revalidateTenantUploadPage(token);
+    revalidateCaseReviewPaths(check.id);
+
     return {
       success: `${getDocumentLabel(result.documentType)} uploaded successfully.`,
       documentType: result.documentType,
@@ -245,7 +283,8 @@ export async function submitTenantApplicationAction(
     await upsertTenantUploadProfile(check, { ...profile, consentConfirmed: true });
 
     const documentPlan = resolveCheckDocumentPlan(check);
-    if (!isCheckDocumentPlanSubmissionComplete(documentPlan, check.tenant_documents)) {
+    const tenantDocuments = await listTenantDocumentsForCheck(check.id);
+    if (!isCheckDocumentPlanSubmissionComplete(documentPlan, tenantDocuments)) {
       return {
         error: "Upload all required documents before submitting your application.",
       };
@@ -277,6 +316,28 @@ export async function submitTenantApplicationAction(
       tenantName: check.tenant_full_name,
       propertyName: check.properties?.name ?? "Property",
     }).catch(() => undefined);
+
+    const analysisContext = {
+      checkId: check.id,
+      landlordId: check.landlord_id,
+      propertyName: check.properties?.name ?? "Property",
+      tenantName: check.tenant_full_name,
+      token,
+    };
+
+    after(async () => {
+      try {
+        await runDeferredUploadAnalysis(analysisContext);
+      } catch (error) {
+        console.error(
+          "[safekey-upload:deferred-analysis]",
+          JSON.stringify({
+            checkId: analysisContext.checkId,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      }
+    });
 
     revalidateTenantUploadPage(token);
     revalidateCaseReviewPaths(check.id);

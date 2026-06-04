@@ -84,7 +84,7 @@ export function buildTenantSummaryCard(params: {
   });
 
   return {
-    completionPercent: scoreboard.trustCompletionPercent,
+    completionPercent: scoreboard.uploadCompletionPercent,
     employmentStatus: params.profile?.employment_status ?? null,
     landlordDecision: (params.check.landlord_decision as LandlordDecision | undefined) ?? "pending",
     missingCategories: scoreboard.missingDocumentTypes.map(getCatalogDocumentLabel),

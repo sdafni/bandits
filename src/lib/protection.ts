@@ -1,4 +1,5 @@
 import type { Database, DepositProtectionQuoteStatus, InsuranceEligibilityStatus } from "@/lib/database.types";
+import { normalizeDocumentType, normalizeRequestedDocuments } from "@/lib/safekey-document-catalog";
 
 type AiReportRow = Database["public"]["Tables"]["ai_reports"]["Row"];
 type TenantProfileRow = Database["public"]["Tables"]["tenant_public_profiles"]["Row"];
@@ -132,11 +133,14 @@ export function buildProtectionAssessment(
 
   const aiReport = input.aiReport;
 
-  const providedTypes = new Set(input.documents.map((document) => document.document_type));
+  const providedTypes = new Set(
+    input.documents.map((document) => normalizeDocumentType(document.document_type)),
+  );
+  const requestedDocuments = normalizeRequestedDocuments(input.requestedDocuments);
   const missingDocuments =
     aiReport.missing_documents.length > 0
-      ? aiReport.missing_documents
-      : input.requestedDocuments.filter((document) => !providedTypes.has(document));
+      ? aiReport.missing_documents.map((document) => normalizeDocumentType(document))
+      : requestedDocuments.filter((document) => !providedTypes.has(document));
 
   const redFlags = aiReport.red_flags.map((flag) => flag.toLowerCase());
   const extractedSignals = aiReport.reasoning.extractedSignals.map((signal) => signal.toLowerCase());

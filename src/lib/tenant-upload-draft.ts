@@ -59,6 +59,26 @@ export function clearTenantUploadDraft(token: string) {
   }
 }
 
+function hasMeaningfulDraftValue(value: string | undefined) {
+  return Boolean(value?.trim());
+}
+
+function pickDraftField(
+  saved: string | undefined,
+  local: string | undefined,
+  fallback = "",
+) {
+  if (hasMeaningfulDraftValue(saved)) {
+    return saved!.trim();
+  }
+
+  if (hasMeaningfulDraftValue(local)) {
+    return local!.trim();
+  }
+
+  return fallback;
+}
+
 export function mergeTenantUploadProfileDraft(params: {
   fallbackName: string;
   localDraft: TenantUploadProfileDraft | null;
@@ -66,14 +86,14 @@ export function mergeTenantUploadProfileDraft(params: {
 }): TenantUploadProfileDraft {
   return {
     consentConfirmed: params.savedProfile?.consentConfirmed ?? params.localDraft?.consentConfirmed ?? false,
-    currentAddress: params.savedProfile?.currentAddress ?? params.localDraft?.currentAddress ?? "",
-    email: params.savedProfile?.email ?? params.localDraft?.email ?? "",
-    employerName: params.savedProfile?.employerName ?? params.localDraft?.employerName ?? "",
-    employmentStatus: params.savedProfile?.employmentStatus ?? params.localDraft?.employmentStatus ?? "",
-    fullName: params.savedProfile?.fullName ?? params.localDraft?.fullName ?? params.fallbackName,
-    monthlyIncome: params.savedProfile?.monthlyIncome ?? params.localDraft?.monthlyIncome ?? "",
-    moveInDate: params.savedProfile?.moveInDate ?? params.localDraft?.moveInDate ?? "",
-    notes: params.savedProfile?.notes ?? params.localDraft?.notes ?? "",
-    phone: params.savedProfile?.phone ?? params.localDraft?.phone ?? "",
+    currentAddress: pickDraftField(params.savedProfile?.currentAddress, params.localDraft?.currentAddress),
+    email: pickDraftField(params.savedProfile?.email, params.localDraft?.email),
+    employerName: pickDraftField(params.savedProfile?.employerName, params.localDraft?.employerName),
+    employmentStatus: pickDraftField(params.savedProfile?.employmentStatus, params.localDraft?.employmentStatus),
+    fullName: pickDraftField(params.savedProfile?.fullName, params.localDraft?.fullName, params.fallbackName),
+    monthlyIncome: pickDraftField(params.savedProfile?.monthlyIncome, params.localDraft?.monthlyIncome),
+    moveInDate: pickDraftField(params.savedProfile?.moveInDate, params.localDraft?.moveInDate),
+    notes: pickDraftField(params.savedProfile?.notes, params.localDraft?.notes),
+    phone: pickDraftField(params.savedProfile?.phone, params.localDraft?.phone),
   };
 }

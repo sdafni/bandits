@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { PublicSiteFooter } from "@/components/public-site-footer";
-import { SafeKeyBrand } from "@/components/safekey-brand";
+import { PublicSiteHeaderServer } from "@/components/public-site-header-server";
 import { Badge } from "@/components/badge";
 import {
   getDemoCasePresentationCards,
@@ -24,7 +24,7 @@ const outcomeTone = {
   decline: "danger",
 } as const;
 
-export default function DemoPage() {
+export default async function DemoPage() {
   const steps = getDemoWalkthroughSteps();
   const cases = getDemoCasePresentationCards();
   const payments = getDemoPaymentHistory();
@@ -33,17 +33,7 @@ export default function DemoPage() {
   return (
     <main className="min-h-screen">
       <section className="mx-auto flex max-w-7xl flex-col gap-10 px-6 py-8 lg:gap-12 lg:py-12">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <SafeKeyBrand href="/" priority variant="logo" />
-          <div className="flex flex-wrap gap-3">
-            <Link className="secondary-action min-h-12 rounded-[18px] px-5 py-3" href="/login">
-              Sign in
-            </Link>
-            <Link className="primary-action min-h-12 rounded-[18px] px-5 py-3" href="/dashboard">
-              Open dashboard
-            </Link>
-          </div>
-        </div>
+        <PublicSiteHeaderServer />
 
         <section className="brand-hero space-y-6 p-7 sm:p-8">
           <div className="relative z-[1] space-y-4">

@@ -73,7 +73,7 @@ export const MONETIZATION_SETTINGS_KEY = "monetization";
 export const BILLING_FUNNEL_SETTINGS_KEY = "monetization";
 
 const PREPAY_GATES: Record<MonetizationGateKey, MonetizationGateRequirement> = {
-  create_upload_link: "subscription_or_per_check",
+  create_upload_link: "free",
   tenant_upload: "free",
   run_analysis: "subscription_or_per_check",
   view_report: "subscription_or_per_check",

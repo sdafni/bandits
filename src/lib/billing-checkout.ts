@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isAdminProfile } from "@/lib/admin-access";
 import { getLandlordContextForApi, requireLandlord } from "@/lib/auth";
 import { isEntitledSubscriptionStatus, type BillingPlanKey } from "@/lib/billing";
 import { getBillingOverviewForUser, isBillingSchemaReady } from "@/lib/billing-queries";
@@ -51,6 +52,13 @@ export async function startSubscriptionCheckoutForUser(
 
     const { profile } = landlordContext;
     console.info("[safekey-checkout] subscription:landlord", { userId: profile.id, source });
+
+    if (isAdminProfile(profile)) {
+      return {
+        ok: false,
+        error: "Admin accounts have unlimited access and do not use Stripe checkout.",
+      };
+    }
 
     const overview = await getBillingOverviewForUser(profile.id, { admin: true });
     const customer = overview.customer ?? (await getOrCreateStripeCustomer(profile));

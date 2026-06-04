@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireLandlord } from "@/lib/auth";
 import { createProfessionalReportDownloadUrl } from "@/lib/reports/generate-and-store";
+import { ensureProfessionalReportPdf } from "@/lib/reports/ensure-professional-report";
 import { buildProfessionalReportFileName } from "@/lib/reports/filename";
 import { getLandlordCheckDetail } from "@/lib/queries";
 
@@ -18,9 +19,13 @@ export async function GET(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const pdfPath = detail.ai_reports?.pdf_storage_path;
+  let pdfPath = detail.ai_reports?.pdf_storage_path;
   if (!pdfPath) {
-    return NextResponse.json({ error: "pdf_not_ready" }, { status: 404 });
+    const stored = await ensureProfessionalReportPdf(checkId);
+    if (!stored) {
+      return NextResponse.json({ error: "pdf_not_ready" }, { status: 404 });
+    }
+    pdfPath = stored.storagePath;
   }
 
   const signedUrl = await createProfessionalReportDownloadUrl(pdfPath);

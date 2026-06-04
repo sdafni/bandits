@@ -2,6 +2,12 @@ import { AlertTriangle, CheckCircle2, Clock3, XCircle } from "lucide-react";
 import type { AppLocale } from "@/lib/i18n";
 import { translate } from "@/lib/i18n/messages";
 import {
+  getDocumentDisplayStatus,
+  getDocumentDisplayStatusMessageKey,
+  mapReviewStatusToDisplay,
+  type DocumentDisplayStatus,
+} from "@/lib/document-display-status";
+import {
   getDocumentReviewNote,
   normalizeDocumentReviewStatus,
   type DocumentReviewStatus,
@@ -17,24 +23,26 @@ export type TenantDocumentStatusRow = {
   upload_status?: string | null;
 };
 
-const STATUS_TONE: Record<DocumentReviewStatus, string> = {
-  accepted: "bg-emerald-100 text-emerald-900",
+const DISPLAY_TONE: Record<DocumentDisplayStatus, string> = {
+  approved: "bg-emerald-100 text-emerald-900",
+  uploaded: "bg-sky-100 text-sky-900",
+  under_review: "bg-sky-100 text-sky-900",
+  replacement_requested: "bg-rose-100 text-rose-900",
   rejected: "bg-rose-100 text-rose-900",
-  needs_replacement: "bg-rose-100 text-rose-900",
-  not_requested: "bg-amber-100 text-amber-950",
-  pending_review: "bg-sky-100 text-sky-900",
+  waived: "bg-emerald-100 text-emerald-900",
+  missing: "bg-amber-100 text-amber-950",
 };
 
-function StatusIcon({ status }: { status: DocumentReviewStatus }) {
-  if (status === "accepted") {
+function StatusIcon({ status }: { status: DocumentDisplayStatus }) {
+  if (status === "approved" || status === "waived") {
     return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />;
   }
 
-  if (status === "pending_review") {
+  if (status === "uploaded" || status === "under_review") {
     return <Clock3 className="h-4 w-4 shrink-0 text-sky-600" aria-hidden />;
   }
 
-  if (status === "not_requested") {
+  if (status === "missing") {
     return <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />;
   }
 
@@ -42,19 +50,23 @@ function StatusIcon({ status }: { status: DocumentReviewStatus }) {
 }
 
 export function TenantDocumentStatusBadge({
+  displayStatus,
   locale,
   status,
 }: {
+  displayStatus?: DocumentDisplayStatus;
   locale: AppLocale;
-  status: DocumentReviewStatus;
+  status?: DocumentReviewStatus;
 }) {
-  const label = translate(locale, `tenantUpload.reviewStatus.${status}`);
+  const resolved =
+    displayStatus ?? (status ? mapReviewStatusToDisplay(status) : "missing");
+  const label = translate(locale, getDocumentDisplayStatusMessageKey(resolved));
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${STATUS_TONE[status]}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${DISPLAY_TONE[resolved]}`}
     >
-      <StatusIcon status={status} />
+      <StatusIcon status={resolved} />
       {label}
     </span>
   );
@@ -84,7 +96,8 @@ export function TenantDocumentStatusList({
   return (
     <ul className="space-y-3">
       {documents.map((document, index) => {
-        const status = normalizeDocumentReviewStatus(document.upload_status);
+        const reviewStatus = normalizeDocumentReviewStatus(document.upload_status);
+        const displayStatus = getDocumentDisplayStatus(document);
         const note = getDocumentReviewNote(document);
         const categoryLabel = getLocalizedDocumentLabel(locale, document.document_type);
 
@@ -98,9 +111,9 @@ export function TenantDocumentStatusList({
                 <p className="font-semibold text-slate-900">{document.file_name ?? categoryLabel}</p>
                 <p className="mt-0.5 text-xs text-slate-600">{categoryLabel}</p>
               </div>
-              <TenantDocumentStatusBadge locale={locale} status={status} />
+              <TenantDocumentStatusBadge displayStatus={displayStatus} locale={locale} />
             </div>
-            {status === "needs_replacement" || status === "rejected" ? (
+            {displayStatus === "replacement_requested" || displayStatus === "rejected" ? (
               <p className="mt-2 text-xs leading-5 text-rose-900">
                 {t("tenantUpload.replacementPrompt", { category: categoryLabel })}
               </p>

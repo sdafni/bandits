@@ -73,6 +73,10 @@ export default async function AuthCallbackPage({
     await notifyWelcomeEmail({ recipientEmail: email }).catch(() => {});
   }
 
+  if (status === "success") {
+    redirect(withLocalePath(locale, nextPath));
+  }
+
   async function resendAction(formData: FormData) {
     "use server";
     await resendConfirmationEmailAction({} as never, formData);

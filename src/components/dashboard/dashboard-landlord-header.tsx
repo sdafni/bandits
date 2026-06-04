@@ -2,6 +2,7 @@
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LandlordAppNav } from "@/components/landlord-app-nav";
+import { SiteAuthNav } from "@/components/site-auth-nav";
 import type { LandlordNavKey } from "@/components/landlord-app-nav";
 import { SafeKeyBrand } from "@/components/safekey-brand";
 import { useLocale, useT } from "@/lib/i18n/context";
@@ -28,8 +29,9 @@ export function DashboardLandlordHeader({
             priority
             variant="logo"
           />
-          <div className="shrink-0">
+          <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
             <LanguageSwitcher />
+            <SiteAuthNav auth={{ isAuthenticated: true }} variant="toolbar" />
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isAdminLandlordId } from "@/lib/admin-access";
 import { isEntitledSubscriptionStatus } from "@/lib/billing";
 import type { Database } from "@/lib/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -157,15 +158,17 @@ export async function getBillingEligibilityForCheck({
   landlordId: string;
   useAdmin?: boolean;
 }) {
-  const [overview, screeningPayment] = await Promise.all([
+  const [overview, screeningPayment, landlordIsAdmin] = await Promise.all([
     getBillingOverviewForUser(landlordId, { admin: useAdmin }),
     getScreeningPaymentForCheck(checkId, { admin: useAdmin }),
+    isAdminLandlordId(landlordId),
   ]);
 
   return {
     activeSubscription: overview.activeSubscription,
     customer: overview.customer,
     hasBillingAccess:
+      landlordIsAdmin ||
       Boolean(overview.activeSubscription && isEntitledSubscriptionStatus(overview.activeSubscription.status)) ||
       screeningPayment?.status === "paid",
     schemaReady: overview.schemaReady,

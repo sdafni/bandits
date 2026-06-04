@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AuthPanels } from "@/components/auth-panels";
 import { LoginPageMarketing } from "@/components/login-page-marketing";
+import { LandingSiteHeader } from "@/components/landing-site-header";
 import { PublicSiteFooterContent } from "@/components/public-site-footer-content";
 import { getCurrentUserContext, isAdminContext } from "@/lib/auth";
+import { resolveSiteAuthState } from "@/lib/site-auth-state";
 import { buildBillingPath, isSubscriptionPlanIntent, parseBillingPlanIntent } from "@/lib/billing-navigation";
 import { withLocalePath } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n-server";
@@ -39,20 +41,21 @@ export default async function LoginPage({
       redirect(buildBillingPath("screening"));
     }
 
-    redirect(withLocalePath(locale, sanitizeInternalPath(params.next)));
+    redirect(withLocalePath(locale, sanitizeInternalPath(params.next, "/dashboard")));
   }
 
+  const auth = await resolveSiteAuthState();
+
   return (
-    <main className="px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-      <div className="mx-auto max-w-[1500px]">
-        <section className="flex min-h-[calc(100vh-2rem)] items-center sm:min-h-[calc(100vh-3.5rem)]">
-          <div className="grid w-full gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(560px,0.86fr)] xl:items-center xl:gap-20 2xl:gap-24">
-            <LoginPageMarketing />
-            <div className="xl:justify-self-end xl:w-full xl:max-w-[700px] 2xl:max-w-[740px]">
-              <Suspense fallback={<div className="card auth-card h-[420px] animate-pulse rounded-[32px] bg-slate-100" />}>
-                <AuthPanels />
-              </Suspense>
-            </div>
+    <main className="min-h-screen">
+      <LandingSiteHeader auth={auth} />
+      <div className="page-shell flex flex-col gap-8 py-6 sm:gap-10 sm:py-10">
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(480px,0.9fr)] lg:items-start lg:gap-14 xl:gap-20">
+          <LoginPageMarketing />
+          <div className="scroll-mt-28 lg:justify-self-end lg:w-full lg:max-w-[640px]" id="auth">
+            <Suspense fallback={<div className="card auth-card h-[420px] animate-pulse rounded-[32px] bg-slate-100" />}>
+              <AuthPanels />
+            </Suspense>
           </div>
         </section>
 

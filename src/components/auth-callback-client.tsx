@@ -1,9 +1,11 @@
 "use client";
 
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthCallbackView } from "@/components/auth-callback-view";
 import { getAuthCallbackNextPath } from "@/lib/auth-callback-path";
+import { persistAuthSession } from "@/lib/persist-auth-session";
 import { withLocalePath, type AppLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -45,64 +47,125 @@ export function AuthCallbackClient({
   useEffect(() => {
     let cancelled = false;
 
-    async function completeHashCallback() {
+    async function completeCallback() {
       const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
       const hashParams = new URLSearchParams(hash);
       const queryParams = new URLSearchParams(window.location.search);
-      const callbackType = hashParams.get("type");
+      const callbackType = hashParams.get("type") ?? queryParams.get("type");
       const redirectPath = getAuthCallbackNextPath(queryParams.get("next") ?? nextFromQuery, callbackType);
-
-      if (hashParams.get("error")) {
-        if (!cancelled) {
-          setNextPath(redirectPath);
-          setStatus("error");
-        }
-        return;
-      }
-
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-
-      if (!accessToken || !refreshToken) {
-        if (!cancelled) {
-          setNextPath(redirectPath);
-          setStatus("error");
-        }
-        return;
-      }
 
       if (!cancelled) {
         setNextPath(redirectPath);
       }
 
+      if (hashParams.get("error") || queryParams.get("error")) {
+        if (!cancelled) {
+          setStatus("error");
+        }
+        return;
+      }
+
       const supabase = createClient();
-      const { error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
 
-      if (cancelled) {
-        return;
-      }
+      try {
+        const code = queryParams.get("code");
+        if (code) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (cancelled) {
+            return;
+          }
+          if (error || !data.session) {
+            setStatus("error");
+            return;
+          }
 
-      if (error) {
-        setStatus("error");
-        return;
-      }
+          await persistAuthSession(data.session.access_token, data.session.refresh_token);
 
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+          if (callbackType === "signup") {
+            const welcomeEmail = queryParams.get("email") ?? email;
+            if (welcomeEmail) {
+              await completeSignupWelcomeAction(welcomeEmail).catch(() => {});
+            }
+          }
 
-      if (callbackType === "signup") {
-        const welcomeEmail = queryParams.get("email") ?? email;
-        if (welcomeEmail) {
-          await completeSignupWelcomeAction(welcomeEmail).catch(() => {});
+          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+          router.replace(withLocalePath(locale, redirectPath));
+          return;
+        }
+
+        const tokenHash = queryParams.get("token_hash");
+        const otpType = queryParams.get("type") as EmailOtpType | null;
+        if (tokenHash && otpType) {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: otpType,
+          });
+          if (cancelled) {
+            return;
+          }
+          if (error || !data.session) {
+            setStatus("error");
+            return;
+          }
+
+          await persistAuthSession(data.session.access_token, data.session.refresh_token);
+
+          if (otpType === "signup") {
+            const welcomeEmail = queryParams.get("email") ?? email;
+            if (welcomeEmail) {
+              await completeSignupWelcomeAction(welcomeEmail).catch(() => {});
+            }
+          }
+
+          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+          router.replace(withLocalePath(locale, redirectPath));
+          return;
+        }
+
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        if (!accessToken || !refreshToken) {
+          if (!cancelled) {
+            setStatus("error");
+          }
+          return;
+        }
+
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (error) {
+          setStatus("error");
+          return;
+        }
+
+        await persistAuthSession(accessToken, refreshToken);
+
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+
+        if (callbackType === "signup") {
+          const welcomeEmail = queryParams.get("email") ?? email;
+          if (welcomeEmail) {
+            await completeSignupWelcomeAction(welcomeEmail).catch(() => {});
+          }
+        }
+
+        router.replace(withLocalePath(locale, redirectPath));
+      } catch {
+        if (!cancelled) {
+          setStatus("error");
         }
       }
-
-      router.replace(withLocalePath(locale, redirectPath));
     }
 
-    void completeHashCallback();
+    void completeCallback();
 
     return () => {
       cancelled = true;

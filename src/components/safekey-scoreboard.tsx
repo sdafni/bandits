@@ -1,6 +1,8 @@
-import { AlertTriangle, CheckCircle2, CircleDashed, Clock3, XCircle } from "lucide-react";
+import type { ReactNode } from "react";
+import { CheckCircle2, CircleDashed, Clock3, XCircle } from "lucide-react";
 import type { AppLocale } from "@/lib/i18n";
 import { translate } from "@/lib/i18n/messages";
+import { getDocumentDisplayStatusMessageKey, type DocumentDisplayStatus } from "@/lib/document-display-status";
 import {
   type SafeKeyScoreboard,
   getScoreboardSlotKey,
@@ -8,6 +10,40 @@ import {
 } from "@/lib/safekey-scoreboard";
 import { SAFEKEY_DOCUMENT_CATEGORIES } from "@/lib/safekey-document-catalog";
 import { getLocalizedDocumentCategoryLabel, getLocalizedDocumentLabel } from "@/lib/trust-document-i18n";
+
+const STATUS_TONE: Record<
+  DocumentDisplayStatus,
+  { badge: string; icon: ReactNode }
+> = {
+  approved: {
+    badge: "bg-emerald-100 text-emerald-800",
+    icon: <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />,
+  },
+  uploaded: {
+    badge: "bg-sky-100 text-sky-900",
+    icon: <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />,
+  },
+  under_review: {
+    badge: "bg-sky-100 text-sky-900",
+    icon: <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />,
+  },
+  replacement_requested: {
+    badge: "bg-rose-100 text-rose-900",
+    icon: <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden />,
+  },
+  rejected: {
+    badge: "bg-rose-100 text-rose-900",
+    icon: <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden />,
+  },
+  waived: {
+    badge: "bg-emerald-100 text-emerald-800",
+    icon: <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />,
+  },
+  missing: {
+    badge: "bg-amber-100 text-amber-900",
+    icon: <CircleDashed className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />,
+  },
+};
 
 const TRUST_LEVEL_TONE: Record<SafeKeyScoreboard["trustLevel"], string> = {
   incomplete: "bg-rose-100 text-rose-900",
@@ -52,13 +88,13 @@ export function SafeKeyScoreboardPanel({
             >
               {t(`scoreboard.trustLevel.${scoreboard.trustLevel}`)}
             </span>
-            <p className="font-semibold text-slate-700">{scoreboard.trustCompletionPercent}%</p>
+            <p className="font-semibold text-slate-700">{scoreboard.uploadCompletionPercent}%</p>
           </div>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
           <div
             className="h-full rounded-full bg-emerald-500 transition-all"
-            style={{ width: `${scoreboard.trustCompletionPercent}%` }}
+            style={{ width: `${scoreboard.uploadCompletionPercent}%` }}
           />
         </div>
         {scoreboard.missingRequired > 0 ? (
@@ -101,19 +137,11 @@ export function SafeKeyScoreboardPanel({
                     ? item.displayLabel
                     : getLocalizedDocumentLabel(locale, item.documentType);
 
+                const statusTone = STATUS_TONE[item.status];
+
                 return (
                   <li className="flex items-start gap-2 text-sm" key={getScoreboardSlotKey(item.slot)}>
-                    {item.status === "accepted" || item.status === "waived" ? (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-                    ) : item.status === "pending_review" ? (
-                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />
-                    ) : item.status === "needs_replacement" ? (
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden />
-                    ) : item.status === "not_requested" ? (
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-                    ) : (
-                      <CircleDashed className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-                    )}
+                    {statusTone.icon}
                     <span
                       className={
                         item.status === "missing" ? "text-slate-700" : "font-medium text-slate-900"
@@ -122,19 +150,9 @@ export function SafeKeyScoreboardPanel({
                       {label}
                     </span>
                     <span
-                      className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${
-                        item.status === "accepted" || item.status === "waived"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : item.status === "pending_review"
-                            ? "bg-sky-100 text-sky-900"
-                            : item.status === "needs_replacement"
-                              ? "bg-rose-100 text-rose-900"
-                              : item.status === "not_requested"
-                                ? "bg-amber-100 text-amber-950"
-                                : "bg-amber-100 text-amber-900"
-                      }`}
+                      className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${statusTone.badge}`}
                     >
-                      {t(`scoreboard.status.${item.status}`)}
+                      {t(getDocumentDisplayStatusMessageKey(item.status))}
                     </span>
                     <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-700">
                       {t(`documents.priority.${item.priority}`)}

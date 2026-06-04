@@ -8,6 +8,7 @@ import { resolveMonetizationAccessForLandlord } from "@/lib/billing-entitlements
 import type { MonetizationPermissionsSnapshot } from "@/lib/monetization";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { translate } from "@/lib/i18n/messages";
+import { applyAdminWorkspaceOverrides, isAdminProfile } from "@/lib/admin-access";
 import { requireLandlord } from "@/lib/auth";
 import { getLandlordChecks } from "@/lib/queries";
 import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
@@ -35,17 +36,24 @@ export default async function DashboardPage({
   let liveChecks: Awaited<ReturnType<typeof getLandlordChecks>> = [];
   try {
     liveChecks = await getLandlordChecks();
-  } catch {
+  } catch (error) {
+    console.error("[dashboard] getLandlordChecks failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     liveChecks = [];
   }
 
   const checks = mergeLandlordChecksWithDemo(liveChecks);
   const billingOverview = await getSafeBillingOverviewForUser(profile.id);
   const monetizationAccess = await resolveMonetizationAccessForLandlord(profile.id);
-  const workspaceAccess = resolveWorkspaceAccess(billingOverview, {
+  let workspaceAccess = resolveWorkspaceAccess(billingOverview, {
     config: monetizationAccess.config,
     entitlements: monetizationAccess.entitlements,
   });
+  if (isAdminProfile(profile)) {
+    workspaceAccess = applyAdminWorkspaceOverrides(workspaceAccess);
+  }
   const tier = resolveDashboardTier(workspaceAccess);
   const stats = buildDashboardStats(checks, workspaceAccess.limits);
 

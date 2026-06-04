@@ -7,6 +7,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { z } from "zod";
 import { generateTenantRiskReport } from "@/lib/ai";
 import { generateAndStoreProfessionalReport } from "@/lib/reports/generate-and-store";
+import { ensureProfessionalReportPdf } from "@/lib/reports/ensure-professional-report";
 import {
   generateAndPersistTenantRiskReport,
   loadTenantCheckReportSource,
@@ -18,6 +19,7 @@ import {
   getBillingOverviewForUser,
   isBillingSchemaReady,
 } from "@/lib/billing-queries";
+import { isAdminProfile } from "@/lib/admin-access";
 import { assertMonetizationGateForCheck, resolveMonetizationAccessForCheck } from "@/lib/billing-entitlements";
 import { shouldAutoActivateUploadLinkOnCheckCreate } from "@/lib/monetization";
 import { resolveAuthRedirectPath } from "@/lib/billing-navigation";
@@ -241,6 +243,32 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
 
     const supabase = await createClient();
     const nextPath = resolveAuthRedirectPath(formData.get("next"), formData.get("plan"));
+    const companyName = normalizeOptionalString(parsed.data.companyName);
+
+    if (hasSupabaseServiceEnv()) {
+      const adminRegistration = await registerLandlordAccountWithServiceRole({
+        supabase,
+        email,
+        password: parsed.data.password,
+        fullName: parsed.data.fullName,
+        companyName,
+      });
+
+      if (adminRegistration.ok) {
+        revalidatePath("/", "layout");
+        redirect(nextPath);
+      }
+
+      if (adminRegistration.hardError) {
+        return {
+          error: sanitizeUserFacingError(
+            adminRegistration.message,
+            "We could not create your account. Please try again.",
+          ),
+        };
+      }
+    }
+
     const callbackUrl = new URL("/auth/callback", env.appUrl);
     callbackUrl.searchParams.set("next", nextPath);
     callbackUrl.searchParams.set("email", email);
@@ -262,18 +290,27 @@ export async function signUpAction(_prevState: ActionState, formData: FormData):
       };
     }
 
-    const signInResult = await supabase.auth.signInWithPassword({
+    if (data.session) {
+      revalidatePath("/", "layout");
+      redirect(nextPath);
+    }
+
+    const sessionEstablished = await establishLandlordSessionAfterSignup({
+      supabase,
       email,
       password: parsed.data.password,
+      userId: data.user?.id,
+      fullName: parsed.data.fullName,
+      companyName,
     });
 
-    if (!signInResult.error) {
+    if (sessionEstablished.ok) {
       revalidatePath("/", "layout");
       redirect(nextPath);
     }
 
     return {
-      success: getPostSignupMessage(signInResult.error.message),
+      success: getPostSignupMessage(sessionEstablished.message ?? "Sign in failed after signup."),
       email,
       kind: "signup_success",
     };
@@ -348,6 +385,11 @@ export async function startSubscriptionCheckoutAction(
   console.info("[safekey-checkout] action:startSubscriptionCheckoutAction", { planKey });
 
   try {
+    const { profile } = await requireLandlord();
+    if (isAdminProfile(profile)) {
+      return { success: "Admin accounts have unlimited access — no subscription checkout required." };
+    }
+
     const { startSubscriptionCheckoutForUser } = await import("@/lib/billing-checkout");
     const result = await startSubscriptionCheckoutForUser(planKey, "action");
 
@@ -378,6 +420,11 @@ export async function openBillingPortalAction(
   _formData: FormData,
 ): Promise<ActionState> {
   try {
+    const { profile } = await requireLandlord();
+    if (isAdminProfile(profile)) {
+      return { success: "Admin accounts are not billed through Stripe." };
+    }
+
     if (!hasStripeServerEnv()) {
       return { error: "Billing is not configured yet. Add the Stripe server keys before enabling portal access." };
     }
@@ -388,7 +435,6 @@ export async function openBillingPortalAction(
       };
     }
 
-    const { profile } = await requireLandlord();
     const overview = await getBillingOverviewForUser(profile.id, { admin: true });
     const customer = overview.customer;
 
@@ -430,6 +476,11 @@ export async function startScreeningCheckoutAction(
     }
 
     const { profile } = await requireLandlord();
+
+    if (isAdminProfile(profile)) {
+      return { success: "Admin access covers this screening — no payment required." };
+    }
+
     const detail = await getLandlordCheckDetail(checkId);
 
     if (!detail) {
@@ -531,6 +582,9 @@ export async function createTenantCheckAction(
 
   const billingOverview = await getBillingOverviewForUser(profile.id);
   const planKey = (billingOverview.activeSubscription?.plan_key as BillingPlanKey | null) ?? null;
+  const adminUnlimited = isAdminProfile(profile);
+
+  if (!adminUnlimited) {
   const limits = getBillingPlanLimits(planKey);
   const monthStart = new Date();
   monthStart.setUTCDate(1);
@@ -576,6 +630,7 @@ export async function createTenantCheckAction(
     return {
       error: `Monthly completed screening limit reached (${limits.completedChecksPerMonth}). Upgrade plan for higher volume.`,
     };
+  }
   }
 
   const { data: checkId, error: checkError } = await supabase.rpc("create_tenant_check", {
@@ -1174,7 +1229,7 @@ async function uploadDocumentsActionInternal(token: string, formData: FormData):
   }
 }
 
-async function runDeferredUploadAnalysis(context: {
+export async function runDeferredUploadAnalysis(context: {
   checkId: string;
   landlordId: string;
   propertyName: string;
@@ -1218,6 +1273,16 @@ async function runDeferredUploadAnalysis(context: {
         throw error;
       }
     }
+
+    await ensureProfessionalReportPdf(context.checkId).catch((pdfError) => {
+      console.warn(
+        "[safekey-upload:pdf]",
+        JSON.stringify({
+          checkId: context.checkId,
+          error: pdfError instanceof Error ? pdfError.message : String(pdfError),
+        }),
+      );
+    });
 
     await notifyLandlordReportReady({
       landlordId: context.landlordId,
@@ -1371,18 +1436,22 @@ export async function regenerateProfessionalReportAction(
   _formData: FormData,
 ): Promise<ActionState> {
   try {
-    await requireLandlord();
+    const { profile } = await requireLandlord();
     const detail = await getLandlordCheckDetail(checkId);
 
     if (!detail) {
       return { error: "This tenant check no longer exists." };
     }
 
+    if (detail.landlord_id !== profile.id) {
+      return { error: "You do not have access to this tenant check." };
+    }
+
     if (!detail.ai_reports) {
       return { error: "Generate the SafeKey analysis before creating a PDF report." };
     }
 
-    const stored = await generateAndStoreProfessionalReport(checkId);
+    const stored = (await generateAndStoreProfessionalReport(checkId)) ?? (await ensureProfessionalReportPdf(checkId));
     if (!stored) {
       return { error: "The professional PDF could not be generated." };
     }
@@ -1571,6 +1640,143 @@ function formatAuthActionError(error: unknown, action: "sign in" | "sign up") {
     logData: { action, message },
     userMessage: message,
   };
+}
+
+async function registerLandlordAccountWithServiceRole({
+  supabase,
+  email,
+  password,
+  fullName,
+  companyName,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  email: string;
+  password: string;
+  fullName: string;
+  companyName: string | null;
+}) {
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      company_name: companyName,
+    },
+  });
+
+  if (error) {
+    const normalized = error.message.toLowerCase();
+    const alreadyRegistered =
+      normalized.includes("already been registered") ||
+      normalized.includes("already registered") ||
+      normalized.includes("user already exists");
+
+    return {
+      ok: false as const,
+      hardError: alreadyRegistered,
+      message: error.message,
+    };
+  }
+
+  const userId = data.user?.id;
+  if (!userId) {
+    return { ok: false as const, hardError: false, message: "User id missing after signup." };
+  }
+
+  await upsertLandlordProfileAfterSignup({ userId, email, fullName, companyName });
+
+  const signInResult = await supabase.auth.signInWithPassword({ email, password });
+  if (signInResult.error) {
+    return { ok: false as const, hardError: false, message: signInResult.error.message };
+  }
+
+  return { ok: true as const };
+}
+
+function isEmailConfirmationRequiredError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("email not confirmed") || normalized.includes("not confirmed");
+}
+
+async function establishLandlordSessionAfterSignup({
+  supabase,
+  email,
+  password,
+  userId,
+  fullName,
+  companyName,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  email: string;
+  password: string;
+  userId?: string;
+  fullName: string;
+  companyName: string | null;
+}) {
+  const attemptSignIn = () =>
+    supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+  let signInResult = await attemptSignIn();
+
+  if (!signInResult.error) {
+    await upsertLandlordProfileAfterSignup({ userId: signInResult.data.user?.id ?? userId, email, fullName, companyName });
+    return { ok: true as const };
+  }
+
+  if (!userId || !hasSupabaseServiceEnv() || !isEmailConfirmationRequiredError(signInResult.error.message)) {
+    return { ok: false as const, message: signInResult.error.message };
+  }
+
+  const admin = createAdminClient();
+  const { error: confirmError } = await admin.auth.admin.updateUserById(userId, {
+    email_confirm: true,
+  });
+
+  if (confirmError) {
+    return { ok: false as const, message: confirmError.message };
+  }
+
+  signInResult = await attemptSignIn();
+
+  if (signInResult.error) {
+    return { ok: false as const, message: signInResult.error.message };
+  }
+
+  await upsertLandlordProfileAfterSignup({ userId, email, fullName, companyName });
+  return { ok: true as const };
+}
+
+async function upsertLandlordProfileAfterSignup({
+  userId,
+  email,
+  fullName,
+  companyName,
+}: {
+  userId?: string;
+  email: string;
+  fullName: string;
+  companyName: string | null;
+}) {
+  if (!userId || !hasSupabaseServiceEnv()) {
+    return;
+  }
+
+  const admin = createAdminClient();
+  await admin.from("users").upsert(
+    {
+      id: userId,
+      email,
+      full_name: fullName,
+      company_name: companyName,
+      role: "landlord",
+    },
+    { onConflict: "id" },
+  );
 }
 
 function getPostSignupMessage(signInMessage: string) {

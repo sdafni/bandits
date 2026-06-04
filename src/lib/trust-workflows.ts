@@ -6,6 +6,8 @@ import {
   getCatalogDocumentDefinition,
   getCatalogDocumentLabel,
   getDefaultRecommendedDocuments,
+  normalizeDocumentType,
+  normalizeRequestedDocuments,
   type SafeKeyDocumentCategoryKey,
   type SafeKeyDocumentDefinition,
 } from "@/lib/safekey-document-catalog";
@@ -49,13 +51,15 @@ export function buildTrustWorkflowReport(params: {
   documentHistory?: Array<{ documentType: string; uploadedAt: string; fileName?: string | null }>;
   reviewCompletedAt?: string | null;
 }) {
-  const uploadedSet = new Set(params.uploadedDocuments);
-  const missingDocuments = params.requestedDocuments.filter((value) => !uploadedSet.has(value));
+  const requestedDocuments = normalizeRequestedDocuments(params.requestedDocuments);
+  const uploadedDocuments = params.uploadedDocuments.map((value) => normalizeDocumentType(value));
+  const uploadedSet = new Set(uploadedDocuments);
+  const missingDocuments = requestedDocuments.filter((value) => !uploadedSet.has(value));
   const byCategory = (category: TrustDocumentCategoryKey) =>
-    params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.category === category);
+    requestedDocuments.filter((value) => getDocumentDefinition(value)?.category === category);
   const byCatalogTier = (tier: SafeKeyDocumentDefinition["catalogTier"]) =>
-    params.requestedDocuments.filter((value) => getDocumentDefinition(value)?.catalogTier === tier);
-  const hasIdentityProof = params.uploadedDocuments.some(
+    requestedDocuments.filter((value) => getDocumentDefinition(value)?.catalogTier === tier);
+  const hasIdentityProof = uploadedDocuments.some(
     (value) => getDocumentDefinition(value)?.category === "identity",
   );
   const trustIndicatorDocs = new Set([
@@ -68,8 +72,8 @@ export function buildTrustWorkflowReport(params: {
     "utility_bill",
     "recommendation_letter",
   ]);
-  const trustIndicatorsUploaded = params.uploadedDocuments.filter((value) => trustIndicatorDocs.has(value)).length;
-  const referencesUploaded = params.uploadedDocuments.filter((value) => value === "landlord_reference").length;
+  const trustIndicatorsUploaded = uploadedDocuments.filter((value) => trustIndicatorDocs.has(value)).length;
+  const referencesUploaded = uploadedDocuments.filter((value) => value === "landlord_reference").length;
   const highRiskDetected =
     (params.score != null && params.score < 45) ||
     (params.riskFlags ?? []).length > 0 ||
@@ -87,13 +91,12 @@ export function buildTrustWorkflowReport(params: {
   const identityScore = hasIdentityProof ? 25 : 5;
   const financialScore = Math.min(25, trustIndicatorsUploaded * 8);
   const completenessRatio =
-    params.requestedDocuments.length > 0
-      ? params.uploadedDocuments.filter((value) => params.requestedDocuments.includes(value)).length /
-        params.requestedDocuments.length
+    requestedDocuments.length > 0
+      ? uploadedDocuments.filter((value) => requestedDocuments.includes(value)).length / requestedDocuments.length
       : 0;
   const completenessScore = Math.round(completenessRatio * 20);
   const consistencyPenalty = highRiskDetected ? -20 : 0;
-  const uploadQualityScore = Math.min(15, Math.max(0, params.uploadedDocuments.length * 2));
+  const uploadQualityScore = Math.min(15, Math.max(0, uploadedDocuments.length * 2));
   const analystAdjustment = params.recommendation === "approve" ? 10 : params.recommendation === "decline" ? -10 : 0;
   const confidenceScore = Math.max(
     0,
@@ -116,14 +119,14 @@ export function buildTrustWorkflowReport(params: {
 
   const identitySection = [
     hasIdentityProof ? "Government ID received" : "Government ID missing",
-    params.uploadedDocuments.includes("residence_permit")
+    uploadedDocuments.includes("residence_permit")
       ? "Residency documentation received"
       : "Residency documentation not provided",
     highRiskDetected ? "Information consistency requires manual review" : "Name consistency appears stable",
   ];
   const financialSection = [
     trustIndicatorsUploaded >= 2 ? "Stable recurring income indicators detected" : "Partial financial visibility",
-    params.uploadedDocuments.includes("bank_statement")
+    uploadedDocuments.includes("bank_statement")
       ? "Bank history available"
       : "Limited banking history available",
   ];
@@ -131,13 +134,13 @@ export function buildTrustWorkflowReport(params: {
     { label: "ID verified", state: hasIdentityProof ? "complete" : "missing" },
     {
       label: "Income evidence received",
-      state: params.uploadedDocuments.some((value) => getDocumentDefinition(value)?.category === "income")
+      state: uploadedDocuments.some((value) => getDocumentDefinition(value)?.category === "income")
         ? "complete"
         : "warning",
     },
     {
       label: "Financial evidence depth",
-      state: params.uploadedDocuments.includes("bank_statement") ? "complete" : "warning",
+      state: uploadedDocuments.includes("bank_statement") ? "complete" : "warning",
     },
     {
       label: "Landlord references",
@@ -145,14 +148,14 @@ export function buildTrustWorkflowReport(params: {
     },
     {
       label: "Tax documentation",
-      state: params.uploadedDocuments.includes("tax_return") ? "complete" : "missing",
+      state: uploadedDocuments.includes("tax_return") ? "complete" : "missing",
     },
   ] as const;
   const rentalRiskIndicators = [
-    params.uploadedDocuments.includes("residence_permit") ? "International relocation case" : null,
-    params.uploadedDocuments.includes("employer_letter") ? "Employer verification available" : null,
+    uploadedDocuments.includes("residence_permit") ? "International relocation case" : null,
+    uploadedDocuments.includes("employer_letter") ? "Employer verification available" : null,
     referencesUploaded === 0 ? "No previous landlord references" : null,
-    params.uploadedDocuments.includes("guarantor") ? "Guarantor provided" : null,
+    uploadedDocuments.includes("guarantor") ? "Guarantor provided" : null,
   ].filter((item): item is string => Boolean(item));
   const missingItemsGuidance =
     byCatalogTier("core").filter((value) => !uploadedSet.has(value)).length > 0
@@ -160,7 +163,7 @@ export function buildTrustWorkflowReport(params: {
       : "Current evidence set is sufficient for a confidence-led landlord decision.";
   const protectionSuggestions = [
     confidenceScore < 65 ? "Additional deposit recommended" : null,
-    !params.uploadedDocuments.includes("guarantor") && confidenceScore < 55 ? "Guarantor recommended" : null,
+    !uploadedDocuments.includes("guarantor") && confidenceScore < 55 ? "Guarantor recommended" : null,
     byCatalogTier("core").filter((value) => !uploadedSet.has(value)).length > 0
       ? "Additional income verification recommended"
       : null,

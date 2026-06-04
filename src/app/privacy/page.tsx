@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicSiteFooter } from "@/components/public-site-footer";
-import { SafeKeyBrand } from "@/components/safekey-brand";
+import { PublicSiteHeaderServer } from "@/components/public-site-header-server";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -36,13 +36,13 @@ const sections = [
   },
 ] as const;
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
       <div className="mx-auto max-w-6xl space-y-8">
+        <PublicSiteHeaderServer />
         <section className="brand-hero space-y-6 p-7 sm:p-8">
           <div className="space-y-4">
-            <SafeKeyBrand href="/" priority variant="logo" />
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8b6b17]">Privacy Policy</p>
               <h1 className="text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl">

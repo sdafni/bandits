@@ -19,6 +19,7 @@ export const env = {
     process.env.NEXT_PUBLIC_APP_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.NODE_ENV === "production" ? "https://getsafekey.app" : "http://localhost:3000"),
+  /** Comma-separated emails promoted to role=admin on signup (unlimited access, no Stripe). */
   adminEmails:
     process.env.ADMIN_EMAILS
       ?.split(",")

@@ -9,8 +9,7 @@ import {
   updateDocumentRequirementsAction,
   waiveDocumentRequirementAction,
 } from "@/app/actions/safekey-core";
-import { TenantDocumentStatusBadge } from "@/components/tenant-document-status";
-import { normalizeDocumentReviewStatus } from "@/lib/document-review";
+import { DocumentReviewForm } from "@/components/document-review-form";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
 import { useLocale, useT } from "@/lib/i18n/context";
@@ -124,7 +123,6 @@ export function SafeKeyCoreWorkflowPanel({
   const noteAction = addReviewerNoteAction.bind(null, checkId);
   const decisionAction = recordLandlordDecisionAction.bind(null, checkId);
   const [requirementsState, requirementsFormAction] = useActionState(updateRequirementsAction, initialState);
-  const [reviewState, reviewFormAction] = useActionState(reviewAction, initialState);
   const [waiveState, waiveFormAction] = useActionState(
     waiveDocumentRequirementAction.bind(null, checkId),
     initialState,
@@ -138,7 +136,6 @@ export function SafeKeyCoreWorkflowPanel({
     return rightTime - leftTime;
   });
   const priorityOptions: DocumentPriority[] = ["required", "recommended", "optional"];
-  const reviewStatuses = ["accepted", "rejected", "needs_replacement", "not_requested"] as const;
 
   return (
     <div className="space-y-6">
@@ -221,59 +218,16 @@ export function SafeKeyCoreWorkflowPanel({
             <p className="text-sm text-slate-500">{t("tenantUpload.noDocuments")}</p>
           ) : (
             <ul className="space-y-4">
-              {sortedDocuments.map((document) => {
-                const status = normalizeDocumentReviewStatus(document.upload_status);
-                return (
-                  <li className="rounded-2xl border border-slate-200 bg-slate-50 p-4" key={document.id}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {getLocalizedDocumentLabel(locale, document.document_type)}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">{document.file_name}</p>
-                      </div>
-                      <TenantDocumentStatusBadge locale={locale} status={status} />
-                    </div>
-                    <form action={reviewFormAction} className="mt-4 space-y-3">
-                      {asAdmin ? <input name="as_admin" type="hidden" value="on" /> : null}
-                      <input name="document_id" type="hidden" value={document.id} />
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {reviewStatuses.map((reviewStatus) => (
-                          <label
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                            key={reviewStatus}
-                          >
-                            <input
-                              className="mr-2"
-                              defaultChecked={status === reviewStatus}
-                              name="review_status"
-                              required
-                              type="radio"
-                              value={reviewStatus}
-                            />
-                            {t(`safekeyCore.reviewStatus.${reviewStatus}`)}
-                          </label>
-                        ))}
-                      </div>
-                      <label className="block space-y-2">
-                        <span className="text-sm font-medium text-slate-700">{t("safekeyCore.reviewNote")}</span>
-                        <textarea
-                          className="input min-h-20"
-                          defaultValue={document.review_note ?? document.rejection_reason ?? ""}
-                          name="note"
-                          placeholder={t("safekeyCore.reviewNotePlaceholder")}
-                        />
-                      </label>
-                      <SubmitButton pendingLabel={t("safekeyCore.reviewing")}>
-                        {t("safekeyCore.reviewCta")}
-                      </SubmitButton>
-                    </form>
-                  </li>
-                );
-              })}
+              {sortedDocuments.map((document) => (
+                <DocumentReviewForm
+                  asAdmin={asAdmin}
+                  document={document}
+                  key={document.id}
+                  reviewAction={reviewAction}
+                />
+              ))}
             </ul>
           )}
-          <FormStatusMessage state={reviewState} />
         </section>
       ) : null}
 

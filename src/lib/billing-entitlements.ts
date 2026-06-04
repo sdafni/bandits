@@ -11,9 +11,27 @@ import {
   type MonetizationPermissions,
 } from "@/lib/monetization";
 import type { BillingOverview } from "@/lib/billing-queries";
-import { getBillingOverviewForUser, getScreeningPaymentForCheck } from "@/lib/billing-queries";
+import { getScreeningPaymentForCheck } from "@/lib/billing-queries";
+import { getSafeBillingOverviewForUser } from "@/lib/safe-billing-overview";
 import { getStripeProductionReadiness } from "@/lib/env";
 import { getMonetizationConfig } from "@/lib/platform-settings";
+import {
+  getAdminMonetizationEntitlements,
+  getAdminMonetizationGates,
+  isAdminLandlordId,
+} from "@/lib/admin-access";
+
+function buildAdminMonetizationAccessSnapshot(config: MonetizationConfig): MonetizationAccessSnapshot {
+  const entitlements = getAdminMonetizationEntitlements();
+  const gates = getAdminMonetizationGates();
+
+  return resolveMonetizationAccessSnapshot({
+    billingNavEnabled: false,
+    config,
+    entitlements,
+    gates,
+  });
+}
 
 export type BillingEntitlements = MonetizationEntitlements & {
   activeSubscription: BillingOverview["activeSubscription"];
@@ -58,8 +76,8 @@ export async function resolveBillingEntitlementsForCheck({
   useAdmin?: boolean;
 }): Promise<BillingEntitlements> {
   const [overview, screeningPayment] = await Promise.all([
-    getBillingOverviewForUser(landlordId, { admin: useAdmin }),
-    getScreeningPaymentForCheck(checkId, { admin: useAdmin }),
+    getSafeBillingOverviewForUser(landlordId, { admin: useAdmin }),
+    getScreeningPaymentForCheck(checkId, { admin: useAdmin }).catch(() => null),
   ]);
 
   const snapshot = buildEntitlementSnapshot(overview, screeningPayment);
@@ -76,7 +94,7 @@ export async function resolveBillingEntitlementsForLandlord(
   landlordId: string,
   options?: { admin?: boolean },
 ): Promise<BillingEntitlements> {
-  const overview = await getBillingOverviewForUser(landlordId, options);
+  const overview = await getSafeBillingOverviewForUser(landlordId, options);
   const snapshot = buildEntitlementSnapshot(overview, null);
 
   return {
@@ -91,8 +109,9 @@ export function resolveMonetizationAccessSnapshot(params: {
   config: MonetizationConfig;
   entitlements: MonetizationEntitlements;
   billingNavEnabled: boolean;
+  gates?: ReturnType<typeof evaluateAllMonetizationGates>;
 }): MonetizationAccessSnapshot {
-  const gates = evaluateAllMonetizationGates(params.config, params.entitlements);
+  const gates = params.gates ?? evaluateAllMonetizationGates(params.config, params.entitlements);
   const createUploadLinkBlockReason = getMonetizationBlockReason(
     "create_upload_link",
     params.config,
@@ -121,11 +140,16 @@ export const resolveFunnelAccessSnapshot = resolveMonetizationAccessSnapshot;
 export async function resolveMonetizationAccessForLandlord(
   landlordId: string,
 ): Promise<MonetizationAccessSnapshot> {
-  const [config, entitlements, stripeReadiness] = await Promise.all([
+  const [config, entitlements, stripeReadiness, landlordIsAdmin] = await Promise.all([
     getMonetizationConfig(),
     resolveBillingEntitlementsForLandlord(landlordId, { admin: true }),
     Promise.resolve(getStripeProductionReadiness()),
+    isAdminLandlordId(landlordId),
   ]);
+
+  if (landlordIsAdmin) {
+    return buildAdminMonetizationAccessSnapshot(config);
+  }
 
   const billingNavEnabled =
     config.billingEnabled && stripeReadiness.isCheckoutReady && entitlements.schemaReady;
@@ -149,11 +173,16 @@ export async function resolveMonetizationAccessForCheck({
   landlordId: string;
   useAdmin?: boolean;
 }): Promise<MonetizationAccessSnapshot> {
-  const [config, entitlements, stripeReadiness] = await Promise.all([
+  const [config, entitlements, stripeReadiness, landlordIsAdmin] = await Promise.all([
     getMonetizationConfig(),
     resolveBillingEntitlementsForCheck({ checkId, landlordId, useAdmin }),
     Promise.resolve(getStripeProductionReadiness()),
+    isAdminLandlordId(landlordId),
   ]);
+
+  if (landlordIsAdmin) {
+    return buildAdminMonetizationAccessSnapshot(config);
+  }
 
   const billingNavEnabled =
     config.billingEnabled && stripeReadiness.isCheckoutReady && entitlements.schemaReady;
@@ -194,9 +223,12 @@ export async function assertMonetizationGateForCheck({
   | { allowed: true; snapshot: MonetizationAccessSnapshot }
   | { allowed: false; snapshot: MonetizationAccessSnapshot; failure: NonNullable<MonetizationPermissions["createUploadLinkBlockReason"]> | null }
 > {
-  const snapshot = await resolveMonetizationAccessForCheck({ checkId, landlordId, useAdmin });
+  const [snapshot, landlordIsAdmin] = await Promise.all([
+    resolveMonetizationAccessForCheck({ checkId, landlordId, useAdmin }),
+    isAdminLandlordId(landlordId),
+  ]);
 
-  if (isMonetizationGateOpen(snapshot, gate)) {
+  if (landlordIsAdmin || isMonetizationGateOpen(snapshot, gate)) {
     return { allowed: true, snapshot };
   }
 

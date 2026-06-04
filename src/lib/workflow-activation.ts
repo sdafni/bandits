@@ -1,6 +1,8 @@
 import "server-only";
 
 import { notifyTenantUploadInvitation } from "@/lib/notifications";
+import { getCatalogDocumentLabel } from "@/lib/safekey-document-catalog";
+import { resolveCheckDocumentPlan } from "@/lib/safekey-document-plan";
 import { createSecureUploadCredentials } from "@/lib/secure-upload-link";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -13,6 +15,26 @@ type TenantCheckRow = {
   secure_upload_url: string | null;
   properties: { name: string } | null;
 };
+
+async function getRequestedDocumentsForInvitation(checkId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("tenant_checks")
+    .select("document_requirements, requested_documents")
+    .eq("id", checkId)
+    .maybeSingle();
+
+  if (!data) {
+    return [];
+  }
+
+  const plan = resolveCheckDocumentPlan(data);
+  return plan.requirements.map((requirement) => ({
+    documentType: requirement.documentType,
+    label: getCatalogDocumentLabel(requirement.documentType),
+    priority: requirement.priority,
+  }));
+}
 
 export async function getTenantCheckForActivation(checkId: string) {
   const admin = createAdminClient();
@@ -89,6 +111,7 @@ export async function activateTenantWorkflowForCheck(
   if (sendEmail && check.tenant_email) {
     await notifyTenantUploadInvitation({
       propertyName: check.properties?.name ?? "Property",
+      requestedDocuments: await getRequestedDocumentsForInvitation(checkId),
       tenantEmail: check.tenant_email,
       tenantName: check.tenant_full_name,
       uploadUrl,

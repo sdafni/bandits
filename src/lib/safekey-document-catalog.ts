@@ -1,9 +1,11 @@
 import {
   getAcceptedDocumentTypes,
+  getLatestDocumentsByType,
   getPendingUploadDocumentTypesForReview,
   resolveSlotReviewStatus,
   slotReviewStatusCountsAsComplete,
   slotReviewStatusCountsAsTenantSubmitted,
+  type SlotReviewStatus,
   type TenantDocumentReviewRow,
 } from "@/lib/document-review";
 
@@ -355,14 +357,6 @@ export function evaluateRequiredDocumentSlots(params: {
   });
 }
 
-function countCompleteSlots(
-  slots: SafeKeyRequiredSlot[],
-  documents: TenantDocumentReviewRow[],
-  requirements: DocumentRequirement[],
-) {
-  return slots.filter((slot) => isSlotReviewComplete(slot, documents, requirements)).length;
-}
-
 function countTenantSubmittedSlots(
   slots: SafeKeyRequiredSlot[],
   documents: TenantDocumentReviewRow[],
@@ -376,6 +370,18 @@ function countAcceptedSlots(
   documents: TenantDocumentReviewRow[],
 ) {
   return slots.filter((slot) => getAcceptedTypesForSlot(slot, documents).length > 0).length;
+}
+
+function slotStatusCountsAsMissing(status: SlotReviewStatus) {
+  return status === "missing" || status === "needs_replacement";
+}
+
+function getSubmittedTypesForSlot(slot: SafeKeyRequiredSlot, documents: TenantDocumentReviewRow[]) {
+  const latestByType = getLatestDocumentsByType(documents);
+
+  return getSlotDocumentTypes(slot)
+    .map((documentType) => normalizeDocumentType(documentType))
+    .filter((documentType) => latestByType.has(documentType));
 }
 
 function computeTrustCompletionPercent(params: {
@@ -418,37 +424,60 @@ export function evaluateDocumentPlan(params: {
   const optionalSlots = slots.filter((slot) => slot.priority === "optional");
   const receivedDocumentTypes: string[] = [];
   const missingDocumentTypes: string[] = [];
+  const slotStatuses = slots.map((slot) => ({
+    slot,
+    status: resolveSlotReviewStatus(slot, documents, {
+      waived: isRequirementWaivedForSlot(slot, params.requirements),
+    }),
+  }));
 
-  for (const slot of slots) {
-    const acceptedForSlot = getAcceptedTypesForSlot(slot, documents);
-    if (acceptedForSlot.length > 0) {
-      receivedDocumentTypes.push(...acceptedForSlot);
+  for (const { slot, status } of slotStatuses) {
+    if (slotStatusCountsAsMissing(status)) {
+      if (slot.kind === "any_of") {
+        missingDocumentTypes.push(slot.label);
+      } else {
+        missingDocumentTypes.push(slot.documentType);
+      }
       continue;
     }
 
-    if (isSlotReviewComplete(slot, documents, params.requirements)) {
-      continue;
-    }
-
-    if (slot.kind === "any_of") {
-      missingDocumentTypes.push(slot.label);
-    } else {
-      missingDocumentTypes.push(slot.documentType);
+    const submittedTypes = getSubmittedTypesForSlot(slot, documents);
+    if (submittedTypes.length > 0) {
+      receivedDocumentTypes.push(...submittedTypes);
     }
   }
 
-  const receivedCount = countCompleteSlots(slots, documents, params.requirements);
   const totalCount = slots.length;
-  const missingCount = totalCount - receivedCount;
-  const requiredReceived = countCompleteSlots(requiredSlots, documents, params.requirements);
+  const missingCount = slotStatuses.filter(({ status }) => slotStatusCountsAsMissing(status)).length;
+  const receivedCount = totalCount - missingCount;
   const requiredTotal = requiredSlots.length;
   const requiredSubmitted = countTenantSubmittedSlots(requiredSlots, documents, params.requirements);
-  const recommendedReceived = countCompleteSlots(recommendedSlots, documents, params.requirements);
   const recommendedTotal = recommendedSlots.length;
-  const optionalReceived = countCompleteSlots(optionalSlots, documents, params.requirements);
   const optionalTotal = optionalSlots.length;
-  const missingRequired = requiredTotal - requiredSubmitted;
-  const missingRecommended = recommendedTotal - recommendedReceived;
+  const missingRequired = requiredSlots.filter((slot) =>
+    slotStatusCountsAsMissing(
+      resolveSlotReviewStatus(slot, documents, {
+        waived: isRequirementWaivedForSlot(slot, params.requirements),
+      }),
+    ),
+  ).length;
+  const missingRecommended = recommendedSlots.filter((slot) =>
+    slotStatusCountsAsMissing(
+      resolveSlotReviewStatus(slot, documents, {
+        waived: isRequirementWaivedForSlot(slot, params.requirements),
+      }),
+    ),
+  ).length;
+  const requiredReceived = requiredTotal - missingRequired;
+  const recommendedReceived = recommendedTotal - missingRecommended;
+  const optionalReceived = optionalSlots.filter(
+    (slot) =>
+      !slotStatusCountsAsMissing(
+        resolveSlotReviewStatus(slot, documents, {
+          waived: isRequirementWaivedForSlot(slot, params.requirements),
+        }),
+      ),
+  ).length;
   const trustCompletionPercent = computeTrustCompletionPercent({
     optionalReceived: countAcceptedSlots(optionalSlots, documents),
     optionalTotal,

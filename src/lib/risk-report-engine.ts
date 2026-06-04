@@ -5,7 +5,7 @@ import { generateTenantRiskReport, type GeneratedTenantReport, type TenantReview
 import type { Database } from "@/lib/database.types";
 import { getRiskLevelFromScore } from "@/lib/risk-report";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateAndStoreProfessionalReport } from "@/lib/reports/generate-and-store";
+import { ensureProfessionalReportPdf } from "@/lib/reports/ensure-professional-report";
 
 export type TenantCheckReportSource = {
   id: string;
@@ -101,7 +101,7 @@ export async function generateAndPersistTenantRiskReport(
   }
 
   try {
-    await generateAndStoreProfessionalReport(check.id);
+    await ensureProfessionalReportPdf(check.id);
   } catch (error) {
     console.warn(
       "[safekey-report:pdf:fallback]",

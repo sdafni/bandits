@@ -10,17 +10,12 @@ import {
   SAFEKEY_DOCUMENT_CATEGORIES,
 } from "@/lib/safekey-document-catalog";
 import { evaluateCheckDocumentPlan, resolveCheckDocumentPlan } from "@/lib/safekey-document-plan";
-import { resolveSlotReviewStatus, type SlotReviewStatus, type TenantDocumentReviewRow } from "@/lib/document-review";
+import { mapSlotStatusToDisplay, type DocumentDisplayStatus } from "@/lib/document-display-status";
+import { resolveSlotReviewStatus, type TenantDocumentReviewRow } from "@/lib/document-review";
 
 export type SafeKeyTrustLevel = "incomplete" | "partial" | "good" | "ready_for_review";
 
-export type ScoreboardItemStatus =
-  | "accepted"
-  | "missing"
-  | "needs_replacement"
-  | "not_requested"
-  | "pending_review"
-  | "waived";
+export type ScoreboardItemStatus = DocumentDisplayStatus;
 
 export type SafeKeyScoreboardItem = {
   category: SafeKeyDocumentCategoryKey | null;
@@ -48,8 +43,10 @@ export type SafeKeyScoreboard = {
   requiredTotal: number;
   submissionReady: boolean;
   total: number;
+  approvalCompletionPercent: number;
   trustCompletionPercent: number;
   trustLevel: SafeKeyTrustLevel;
+  uploadCompletionPercent: number;
 };
 
 function resolveItemCategory(slot: SafeKeyRequiredSlot): SafeKeyDocumentCategoryKey | null {
@@ -77,12 +74,10 @@ function resolveItemDisplayLabel(slot: SafeKeyRequiredSlot, acceptedForSlot: str
   return getCatalogDocumentDefinition(slot.documentType)?.label ?? slot.documentType;
 }
 
-function mapSlotStatusToScoreboard(slotStatus: SlotReviewStatus): ScoreboardItemStatus {
-  if (slotStatus === "waived") {
-    return "waived";
-  }
-
-  return slotStatus;
+function mapSlotStatusToScoreboard(
+  slotStatus: ReturnType<typeof resolveSlotReviewStatus>,
+): ScoreboardItemStatus {
+  return mapSlotStatusToDisplay(slotStatus);
 }
 
 function resolveLatestReviewNote(
@@ -153,10 +148,11 @@ export function buildSafeKeyScoreboard(params: {
   });
 
   const pendingReviewDocumentTypes = items
-    .filter((item) => item.status === "pending_review")
+    .filter((item) => item.status === "uploaded" || item.status === "under_review")
     .map((item) => item.documentType);
 
   return {
+    approvalCompletionPercent: evaluation.trustCompletionPercent,
     complete:
       collection.phase === "documents_complete" ||
       collection.phase === "under_review" ||
@@ -176,7 +172,8 @@ export function buildSafeKeyScoreboard(params: {
     submissionReady: evaluation.submissionComplete,
     total: evaluation.total,
     trustCompletionPercent: evaluation.trustCompletionPercent,
-    trustLevel: resolveTrustLevel(evaluation.trustCompletionPercent),
+    trustLevel: resolveTrustLevel(evaluation.completionPercent),
+    uploadCompletionPercent: evaluation.completionPercent,
   };
 }
 

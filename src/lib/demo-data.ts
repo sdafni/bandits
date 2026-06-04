@@ -611,11 +611,19 @@ export function getDemoProtectionCards() {
 }
 
 export function isDemoCheckId(checkId: string) {
-  return demoCaseMap.has(checkId);
+  if (shouldIncludeDemoCasesInWorkspace()) {
+    return demoCaseMap.has(checkId);
+  }
+
+  return false;
 }
 
 export function isDemoUploadToken(token: string) {
-  return demoTokenMap.has(token);
+  if (shouldIncludeDemoCasesInWorkspace()) {
+    return demoTokenMap.has(token);
+  }
+
+  return false;
 }
 
 export function getDemoRouteExamples() {

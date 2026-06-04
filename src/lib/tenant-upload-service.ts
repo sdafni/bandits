@@ -13,6 +13,7 @@ import {
   normalizeDocumentType,
 } from "@/lib/safekey-document-catalog";
 import { isCheckDocumentPlanSubmissionComplete } from "@/lib/document-submission";
+import { listTenantDocumentsForCheck } from "@/lib/check-persistence";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureTenantDocumentsBucket } from "@/lib/tenant-document-storage";
 
@@ -59,24 +60,53 @@ export async function resolveActiveUploadCheck(token: string) {
   return check;
 }
 
+function normalizeOptionalText(value: string | null | undefined) {
+  if (value == null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export async function upsertTenantUploadProfile(check: PublicCheckDetail, profile: TenantUploadProfileInput) {
   const admin = createAdminClient();
   const existing = check.tenant_public_profiles;
   const payload = {
     consent_confirmed: profile.consentConfirmed ?? existing?.consent_confirmed ?? false,
-    current_address: profile.currentAddress?.trim() || existing?.current_address || null,
-    email: profile.email?.trim().toLowerCase() || existing?.email || null,
-    employer_name: profile.employerName?.trim() || existing?.employer_name || null,
-    employment_status: profile.employmentStatus?.trim() || existing?.employment_status || null,
-    full_name: profile.fullName?.trim() || existing?.full_name || check.tenant_full_name,
+    current_address:
+      profile.currentAddress !== undefined
+        ? normalizeOptionalText(profile.currentAddress)
+        : existing?.current_address ?? null,
+    email:
+      profile.email !== undefined
+        ? normalizeOptionalText(profile.email)?.toLowerCase() ?? null
+        : existing?.email ?? null,
+    employer_name:
+      profile.employerName !== undefined
+        ? normalizeOptionalText(profile.employerName)
+        : existing?.employer_name ?? null,
+    employment_status:
+      profile.employmentStatus !== undefined
+        ? normalizeOptionalText(profile.employmentStatus)
+        : existing?.employment_status ?? null,
+    full_name:
+      profile.fullName !== undefined
+        ? normalizeOptionalText(profile.fullName) ?? check.tenant_full_name
+        : existing?.full_name ?? check.tenant_full_name,
     monthly_income:
-      profile.monthlyIncome != null && !Number.isNaN(profile.monthlyIncome)
-        ? profile.monthlyIncome
+      profile.monthlyIncome !== undefined
+        ? profile.monthlyIncome != null && !Number.isNaN(profile.monthlyIncome)
+          ? profile.monthlyIncome
+          : null
         : existing?.monthly_income ?? null,
     monthly_rent: check.properties?.monthly_rent ?? null,
-    move_in_date: profile.moveInDate?.trim() || existing?.move_in_date || null,
-    notes: profile.notes?.trim() || existing?.notes || null,
-    phone: profile.phone?.trim() || existing?.phone || null,
+    move_in_date:
+      profile.moveInDate !== undefined
+        ? normalizeOptionalText(profile.moveInDate)
+        : existing?.move_in_date ?? null,
+    notes: profile.notes !== undefined ? normalizeOptionalText(profile.notes) : existing?.notes ?? null,
+    phone: profile.phone !== undefined ? normalizeOptionalText(profile.phone) : existing?.phone ?? null,
     tenant_check_id: check.id,
   };
 
@@ -123,6 +153,18 @@ export async function uploadTenantDocumentBatch(params: {
 
   try {
     for (const file of params.files) {
+      const duplicateOnCheck = params.check.tenant_documents.find(
+        (document) =>
+          document.file_name === file.name &&
+          normalizeDocumentType(document.document_type) !== normalizedType,
+      );
+
+      if (duplicateOnCheck) {
+        throw new TenantUploadError(
+          "duplicate_file",
+          `This file was already uploaded for ${getDocumentLabel(normalizeDocumentType(duplicateOnCheck.document_type))}. Upload a separate file for ${getDocumentLabel(normalizedType)}.`,
+        );
+      }
       const mimeType = getUploadMimeType(file);
       const storagePath = buildStoragePath(params.check.id, normalizedType, file.name);
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -184,15 +226,7 @@ export async function uploadTenantDocumentBatch(params: {
     throw error;
   }
 
-  const refreshedDocuments = [
-    ...params.check.tenant_documents,
-    ...uploadedDocumentIds.map((id, index) => ({
-      created_at: new Date().toISOString(),
-      document_type: normalizedType,
-      id,
-      upload_status: "pending_review" as const,
-    })),
-  ];
+  const refreshedDocuments = await listTenantDocumentsForCheck(params.check.id);
 
   return {
     documentPlan,

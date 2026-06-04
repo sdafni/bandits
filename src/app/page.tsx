@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { HomePageContent } from "@/components/home-page-content";
 import { getCurrentUserContext, isAdminContext } from "@/lib/auth";
+import { resolveSiteAuthState } from "@/lib/site-auth-state";
 import {
   buildBillingPath,
   buildDashboardStartCheckPath,
@@ -13,13 +14,13 @@ import { getRequestLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Trusted Tenants. Safer Rentals.",
+  title: "Know Who Gets the Key | SafeKey",
   description:
-    "Simple tenant checks for landlords in Greece — start a check, collect documents, get a recommendation.",
+    "Tenant verification and rental trust reports for landlords in Greece. Start a check, collect documents, get a clear recommendation.",
   openGraph: {
     description:
-      "Start a tenant check, send a secure upload link, and get a clear rental recommendation.",
-    title: "SafeKey | Trusted Tenants. Safer Rentals.",
+      "Tenant verification and rental trust reports for landlords in Greece.",
+    title: "SafeKey | Know Who Gets the Key",
   },
 };
 
@@ -49,9 +50,9 @@ export default async function HomePage({
     if (params.start === "check") {
       redirect(buildDashboardStartCheckPath(locale));
     }
-
-    redirect(withLocalePath(locale, "/dashboard"));
   }
 
-  return <HomePageContent />;
+  const auth = await resolveSiteAuthState();
+
+  return <HomePageContent auth={auth} />;
 }
