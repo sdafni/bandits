@@ -746,6 +746,7 @@ export const messages: Record<AppLocale, MessageTree> = {
       income: "Μηνιαίο εισόδημα",
       rent: "Μηνιαίο ενοίκιο",
       missingCategories: "Λείπουν",
+      creditReportConsentConfirmed: "Συναίνεση πιστωτικού report: επιβεβαιώθηκε",
       requestMissingTitle: "Αίτημα ελλειπών εγγράφων",
       requestMissingBody: "Προσθέστε κατηγορίες στον έλεγχο και ειδοποιήστε τον ενοικιαστή.",
       requestMessage: "Μήνυμα προς τον ενοικιαστή",
@@ -862,6 +863,9 @@ export const messages: Record<AppLocale, MessageTree> = {
       profileSaving: "Αποθήκευση στοιχείων...",
       profileSaved: "Τα στοιχεία σας αποθηκεύτηκαν.",
       autoUploadHint: "Κάθε έγγραφο ανεβαίνει αμέσως μόλις το επιλέξετε. Τα στοιχεία σας αποθηκεύονται αυτόματα.",
+      creditReportConsent:
+        "Συναινώ να μοιραστώ το πιστωτικό report και το credit score μου με τη SafeKey και τον ιδιοκτήτη που ζήτησε τον έλεγχο.",
+      creditReportConsentRequired: "Επιβεβαιώστε τη συναίνεση πριν ανεβάσετε το πιστωτικό report.",
       uploadingDocument: "Ανέβασμα εγγράφου...",
       fullName: "Ονοματεπώνυμο",
       email: "Email",
@@ -1032,7 +1036,7 @@ export const messages: Record<AppLocale, MessageTree> = {
       disclaimer:
         "Η SafeKey προσφέρει ορατότητα εγγράφων και καθοδήγηση. Η τελική απόφαση μίσθωσης παραμένει δική σας.",
       identitySection: "Ταυτότητα",
-      financialSection: "Οικονομικά στοιχεία",
+      financialSection: "Πιστωτική / Οικονομική αξιοπιστία",
       documentCompleteness: "Πληρότητα εγγράφων",
       rentalRisk: "Δείκτες για τη μίσθωση",
       missingGuidance: "Τι μπορεί να λείπει",
@@ -1046,6 +1050,38 @@ export const messages: Record<AppLocale, MessageTree> = {
       generatedAt: "Δημιουργήθηκε",
       noRiskIndicators: "Δεν εντοπίστηκαν επιπλέον δείκτες.",
       noNextSteps: "Δεν απαιτείται επιπλέον ενέργεια.",
+      financialReliabilityTitle: "Οικονομική αξιοπιστία",
+      creditReportLabel: "Πιστωτικό report",
+      creditScoreLabel: "Credit score",
+      creditReportValue: {
+        uploaded: "Ανέβηκε",
+        not_uploaded: "Δεν ανέβηκε",
+      },
+      creditScoreValue: {
+        available: "Διαθέσιμο",
+        not_available: "Μη διαθέσιμο",
+      },
+      creditReportSecurityNote:
+        "Η SafeKey δεν ζητά κωδικούς τράπεζας, usernames, διαπιστευτήρια e-banking ή πρόσβαση σε λογαριασμούς. Γίνεται δεκτό μόνο το επίσημο PDF που λαμβάνετε απευθείας από τη Tiresias.",
+    },
+    creditReport: {
+      guidanceTitle: "Ενισχύστε το SafeKey Trust Score σας",
+      optionalHint: "Το έγγραφο είναι προαιρετικό αλλά μπορεί να ενισχύσει το SafeKey Trust Score σας.",
+      tiresiasIntro:
+        "Τα πιστωτικά reports στην Ελλάδα μπορούν να ζητηθούν δωρεάν από τη Tiresias, τον επίσημο Ελληνικό Πιστωτικό Οργανισμό.",
+      step1: "Ζητήστε το δωρεάν πιστωτικό report σας από τη σελίδα Tiresias Public Service.",
+      step2: "Ζητήστε Credit Report, Credit Score ή και τα δύο — δωρεάν για ιδιώτες.",
+      step3: "Λάβετε το report με email από τη Tiresias.",
+      step4: "Ανεβάστε το επίσημο PDF στο SafeKey.",
+      getFreeReportCta: "Λήψη δωρεάν πιστωτικού report",
+      securityNotice:
+        "Η SafeKey δεν ζητά ποτέ κωδικούς τράπεζας, usernames, διαπιστευτήρια e-banking ή πρόσβαση σε λογαριασμούς. Ανεβάστε μόνο το επίσημο PDF που λαμβάνετε απευθείας από τη Tiresias.",
+      status: {
+        not_provided: "Δεν παρασχέθηκε",
+        requested: "Ζητήθηκε",
+        uploaded: "Ανέβηκε",
+        verified: "Επαληθεύτηκε",
+      },
     },
     documents: {
       afm: "ΑΦΜ (Αριθμός Φορολογικού Μητρώου)",
@@ -1062,6 +1098,7 @@ export const messages: Record<AppLocale, MessageTree> = {
       utilityBill: "Λογαριασμός κοινής ωφέλειας",
       guarantor: "Εγγυητής",
       bankGuarantee: "Τραπεζική εγγύηση",
+      creditReport: "Πιστωτικό report / Tiresias report",
       categoryIdentity: "Ταυτότητα",
       categoryIncome: "Εισόδημα",
       categoryFinancial: "Οικονομικά",
@@ -1825,6 +1862,7 @@ export const messages: Record<AppLocale, MessageTree> = {
       income: "Monthly income",
       rent: "Monthly rent",
       missingCategories: "Missing",
+      creditReportConsentConfirmed: "Credit report consent: confirmed",
       requestMissingTitle: "Request missing documents",
       requestMissingBody: "Add categories to this check and notify the tenant to upload them.",
       requestMessage: "Message to tenant",
@@ -1941,6 +1979,9 @@ export const messages: Record<AppLocale, MessageTree> = {
       profileSaving: "Saving your details...",
       profileSaved: "Your details were saved.",
       autoUploadHint: "Each document uploads immediately when you select it. Your profile details save automatically.",
+      creditReportConsent:
+        "I consent to share my Credit Report and Credit Score with SafeKey and the requesting landlord.",
+      creditReportConsentRequired: "Confirm credit report consent before uploading this document.",
       uploadingDocument: "Uploading document...",
       fullName: "Full name",
       email: "Email",
@@ -2111,7 +2152,7 @@ export const messages: Record<AppLocale, MessageTree> = {
       disclaimer:
         "SafeKey gives you document visibility and guidance. The final rental decision stays with you.",
       identitySection: "Identity verification",
-      financialSection: "Financial visibility",
+      financialSection: "Credit / Financial Reliability",
       documentCompleteness: "Document completeness",
       rentalRisk: "Rental indicators",
       missingGuidance: "What may be missing",
@@ -2125,6 +2166,38 @@ export const messages: Record<AppLocale, MessageTree> = {
       generatedAt: "Generated",
       noRiskIndicators: "No additional indicators detected.",
       noNextSteps: "No further action required.",
+      financialReliabilityTitle: "Financial Reliability",
+      creditReportLabel: "Credit Report",
+      creditScoreLabel: "Credit Score",
+      creditReportValue: {
+        uploaded: "Uploaded",
+        not_uploaded: "Not uploaded",
+      },
+      creditScoreValue: {
+        available: "Available",
+        not_available: "Not available",
+      },
+      creditReportSecurityNote:
+        "SafeKey never asks for bank passwords, usernames, online banking credentials, or account access. Only the official PDF obtained directly from Tiresias is accepted.",
+    },
+    creditReport: {
+      guidanceTitle: "Strengthen your SafeKey Trust Score",
+      optionalHint: "This document is optional but may strengthen your SafeKey Trust Score.",
+      tiresiasIntro:
+        "Credit Reports in Greece can be requested free of charge from Tiresias, the official Greek Credit Bureau.",
+      step1: "Request your free Credit Report from the Tiresias Public Service page.",
+      step2: "Request Credit Report, Credit Score, or both — free for individuals.",
+      step3: "Receive the report by email from Tiresias.",
+      step4: "Upload the official PDF to SafeKey.",
+      getFreeReportCta: "Get My Free Credit Report",
+      securityNotice:
+        "SafeKey never asks for bank passwords, usernames, online banking credentials, or account access. Only upload the official PDF you receive directly from Tiresias.",
+      status: {
+        not_provided: "Not provided",
+        requested: "Requested",
+        uploaded: "Uploaded",
+        verified: "Verified",
+      },
     },
     documents: {
       afm: "VAT Number (AFM)",
@@ -2141,6 +2214,7 @@ export const messages: Record<AppLocale, MessageTree> = {
       utilityBill: "Utility bill",
       guarantor: "Guarantor",
       bankGuarantee: "Bank guarantee",
+      creditReport: "Credit Report / Tiresias Report",
       categoryIdentity: "Identity",
       categoryIncome: "Income",
       categoryFinancial: "Financial",

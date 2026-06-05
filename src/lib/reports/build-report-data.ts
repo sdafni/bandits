@@ -1,4 +1,5 @@
 import type { Database } from "@/lib/database.types";
+import { resolveCreditReportFinancialReliability } from "@/lib/credit-report";
 import { getDocumentDefinition } from "@/lib/trust-workflows";
 import {
   getRecommendationLabel,
@@ -129,6 +130,7 @@ export function buildProfessionalReportData(input: BuildReportInput): Profession
     },
     uploadedDocuments,
     missingDocuments,
+    financialReliability: resolveCreditReportFinancialReliability(input.uploadedDocumentTypes),
     redFlags: input.aiReport.red_flags,
     explanation: {
       summary: explanationText,

@@ -1,11 +1,15 @@
 import type { AppLocale } from "@/lib/i18n";
+import { resolveCreditReportFinancialReliability } from "@/lib/credit-report";
 import { translate } from "@/lib/i18n/messages";
 import {
   SAFEKEY_DOCUMENT_CATEGORIES,
   SAFEKEY_DOCUMENT_DEFINITIONS,
+  CREDIT_REPORT_DOCUMENT_TYPE,
   getCatalogDocumentDefinition,
   getCatalogDocumentLabel,
   getDefaultRecommendedDocuments,
+  mergeVoluntaryTrustBoostRequirements,
+  migrateRequestedDocumentsToRequirements,
   normalizeDocumentType,
   normalizeRequestedDocuments,
   type SafeKeyDocumentCategoryKey,
@@ -71,6 +75,7 @@ export function buildTrustWorkflowReport(params: {
     "tax_return",
     "utility_bill",
     "recommendation_letter",
+    CREDIT_REPORT_DOCUMENT_TYPE,
   ]);
   const trustIndicatorsUploaded = uploadedDocuments.filter((value) => trustIndicatorDocs.has(value)).length;
   const referencesUploaded = uploadedDocuments.filter((value) => value === "landlord_reference").length;
@@ -124,11 +129,16 @@ export function buildTrustWorkflowReport(params: {
       : "Residency documentation not provided",
     highRiskDetected ? "Information consistency requires manual review" : "Name consistency appears stable",
   ];
+  const hasCreditReport = uploadedDocuments.includes(CREDIT_REPORT_DOCUMENT_TYPE);
+  const financialReliability = resolveCreditReportFinancialReliability(uploadedDocuments);
   const financialSection = [
     trustIndicatorsUploaded >= 2 ? "Stable recurring income indicators detected" : "Partial financial visibility",
     uploadedDocuments.includes("bank_statement")
       ? "Bank history available"
       : "Limited banking history available",
+    hasCreditReport
+      ? "Credit report / Tiresias report received"
+      : "Not provided — tenant may upload later if available.",
   ];
   const documentChecklist = [
     { label: "ID verified", state: hasIdentityProof ? "complete" : "missing" },
@@ -149,6 +159,10 @@ export function buildTrustWorkflowReport(params: {
     {
       label: "Tax documentation",
       state: uploadedDocuments.includes("tax_return") ? "complete" : "missing",
+    },
+    {
+      label: "Credit report / Tiresias report",
+      state: hasCreditReport ? "complete" : "warning",
     },
   ] as const;
   const rentalRiskIndicators = [
@@ -225,6 +239,7 @@ export function buildTrustWorkflowReport(params: {
     financialReceived: byCategory("financial").filter((value) => uploadedSet.has(value)),
     confidenceLevel,
     documentChecklist,
+    financialReliability,
     financialSection,
     identitySection,
     minimumEvidenceMet: hasIdentityProof && trustIndicatorsUploaded >= 1,

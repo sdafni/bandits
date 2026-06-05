@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { escapeHtml, renderSafeKeyEmail } from "@/lib/email/layout";
 import { sendEmail } from "@/lib/email/resend";
 import type { Recommendation } from "@/lib/database.types";
+import { buildCreditReportTrustEmailSection } from "@/lib/credit-report";
 import { getRecommendationLabel, getRiskLevelFromScore, getRiskLevelLabel } from "@/lib/risk-report";
 
 type RequestedDocumentLine = {
@@ -95,6 +96,7 @@ function formatRequestedDocumentsForEmail(documents: RequestedDocumentLine[] | u
 export async function notifyTenantUploadInvitation(input: TenantUploadInvitationInput) {
   const subject = `SafeKey secure upload invitation · ${input.propertyName}`;
   const requested = formatRequestedDocumentsForEmail(input.requestedDocuments);
+  const creditReportSection = buildCreditReportTrustEmailSection();
   const text = [
     `Hello ${input.tenantName},`,
     "",
@@ -107,6 +109,7 @@ export async function notifyTenantUploadInvitation(input: TenantUploadInvitation
     "Expected review time: 24-48 hours after all requested documents are uploaded.",
     "",
     "This link is private. Do not share it with anyone else.",
+    creditReportSection.text,
     "",
     "SafeKey Trust Operations",
   ].join("\n");
@@ -118,6 +121,7 @@ export async function notifyTenantUploadInvitation(input: TenantUploadInvitation
       ${requested.html}
       <p style="margin:0 0 12px;color:#334155;line-height:1.6;"><strong>Expected review time:</strong> 24-48 hours after all requested documents are uploaded.</p>
       <p style="margin:16px 0 0;font-size:13px;color:#475569;line-height:1.5;">This link is private and time-limited. If anything looks unexpected, contact your landlord before sharing documents.</p>
+      ${creditReportSection.html}
     `,
     cta: { label: "Open secure upload page", href: input.uploadUrl },
   });

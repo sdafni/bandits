@@ -574,6 +574,12 @@ export default async function LandlordCheckDetailPage({
                     {detail.tenant_public_profiles.notes ?? "No notes supplied"}
                   </dd>
                 </div>
+                {detail.tenant_public_profiles.credit_report_consent ? (
+                  <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4">
+                    <dt className="text-emerald-800">Credit report consent</dt>
+                    <dd className="mt-1 font-semibold text-emerald-950">Confirmed</dd>
+                  </div>
+                ) : null}
               </dl>
             ) : (
               <p className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">

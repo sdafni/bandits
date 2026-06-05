@@ -576,6 +576,9 @@ export type Database = {
       tenant_public_profiles: {
         Row: {
           consent_confirmed: boolean;
+          credit_report_consent: boolean;
+          credit_report_consent_at: string | null;
+          credit_report_requested_at: string | null;
           created_at: string;
           current_address: string | null;
           email: string | null;
@@ -593,6 +596,9 @@ export type Database = {
         };
         Insert: {
           consent_confirmed?: boolean;
+          credit_report_consent?: boolean;
+          credit_report_consent_at?: string | null;
+          credit_report_requested_at?: string | null;
           created_at?: string;
           current_address?: string | null;
           email?: string | null;

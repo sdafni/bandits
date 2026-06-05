@@ -45,6 +45,27 @@ export function SafeKeyTrustReport({
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+          {t("reportViewer.financialReliabilityTitle")}
+        </p>
+        <dl className="mt-2 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+          <div>
+            <dt className="text-slate-500">{t("reportViewer.creditReportLabel")}</dt>
+            <dd className="font-medium text-slate-900">
+              {t(`reportViewer.creditReportValue.${report.financialReliability.creditReport}`)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">{t("reportViewer.creditScoreLabel")}</dt>
+            <dd className="font-medium text-slate-900">
+              {t(`reportViewer.creditScoreValue.${report.financialReliability.creditScore}`)}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-xs leading-5 text-slate-500">{t("reportViewer.creditReportSecurityNote")}</p>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">{t("reportViewer.documentCompleteness")}</p>
         <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
           {report.documentChecklist.map((item) => (

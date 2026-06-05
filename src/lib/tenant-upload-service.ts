@@ -9,6 +9,7 @@ import { getDocumentLabel } from "@/lib/trust-workflows";
 import { getPublicCheckByToken } from "@/lib/queries";
 import { resolveCheckDocumentPlan } from "@/lib/safekey-document-plan";
 import {
+  CREDIT_REPORT_DOCUMENT_TYPE,
   getPendingUploadDocumentTypesFromRequirements,
   normalizeDocumentType,
 } from "@/lib/safekey-document-catalog";
@@ -19,6 +20,7 @@ import { ensureTenantDocumentsBucket } from "@/lib/tenant-document-storage";
 
 export type TenantUploadProfileInput = {
   consentConfirmed?: boolean;
+  creditReportConsent?: boolean;
   currentAddress?: string;
   email?: string;
   employerName?: string | null;
@@ -72,8 +74,17 @@ function normalizeOptionalText(value: string | null | undefined) {
 export async function upsertTenantUploadProfile(check: PublicCheckDetail, profile: TenantUploadProfileInput) {
   const admin = createAdminClient();
   const existing = check.tenant_public_profiles;
+  const creditReportConsent =
+    profile.creditReportConsent ?? existing?.credit_report_consent ?? false;
   const payload = {
     consent_confirmed: profile.consentConfirmed ?? existing?.consent_confirmed ?? false,
+    credit_report_consent: creditReportConsent,
+    credit_report_consent_at: creditReportConsent
+      ? existing?.credit_report_consent && existing.credit_report_consent_at
+        ? existing.credit_report_consent_at
+        : new Date().toISOString()
+      : (existing?.credit_report_consent_at ?? null),
+    credit_report_requested_at: existing?.credit_report_requested_at ?? null,
     current_address:
       profile.currentAddress !== undefined
         ? normalizeOptionalText(profile.currentAddress)
@@ -119,6 +130,39 @@ export async function upsertTenantUploadProfile(check: PublicCheckDetail, profil
   return payload;
 }
 
+export async function markCreditReportRequested(check: PublicCheckDetail) {
+  const admin = createAdminClient();
+  const existing = check.tenant_public_profiles;
+  const requestedAt = existing?.credit_report_requested_at ?? new Date().toISOString();
+
+  const { error } = await admin.from("tenant_public_profiles").upsert(
+    {
+      consent_confirmed: existing?.consent_confirmed ?? false,
+      credit_report_consent: existing?.credit_report_consent ?? false,
+      credit_report_consent_at: existing?.credit_report_consent_at ?? null,
+      credit_report_requested_at: requestedAt,
+      current_address: existing?.current_address ?? null,
+      email: existing?.email ?? null,
+      employer_name: existing?.employer_name ?? null,
+      employment_status: existing?.employment_status ?? null,
+      full_name: existing?.full_name ?? check.tenant_full_name,
+      monthly_income: existing?.monthly_income ?? null,
+      monthly_rent: check.properties?.monthly_rent ?? null,
+      move_in_date: existing?.move_in_date ?? null,
+      notes: existing?.notes ?? null,
+      phone: existing?.phone ?? null,
+      tenant_check_id: check.id,
+    },
+    { onConflict: "tenant_check_id" },
+  );
+
+  if (error) {
+    throw new TenantUploadError("credit_report_request_failed", error.message);
+  }
+
+  return requestedAt;
+}
+
 export async function uploadTenantDocumentBatch(params: {
   check: PublicCheckDetail;
   documentType: string;
@@ -126,6 +170,14 @@ export async function uploadTenantDocumentBatch(params: {
   profile: TenantUploadProfileInput;
 }) {
   const normalizedType = normalizeDocumentType(params.documentType);
+
+  if (normalizedType === CREDIT_REPORT_DOCUMENT_TYPE && !params.profile.creditReportConsent) {
+    throw new TenantUploadError(
+      "credit_report_consent_required",
+      "Confirm credit report consent before uploading this document.",
+    );
+  }
+
   const documentPlan = resolveCheckDocumentPlan(params.check);
   const pendingTypes = getPendingUploadDocumentTypesFromRequirements(
     documentPlan.requirements,

@@ -17,6 +17,7 @@ const DOCUMENT_KEYS: Record<string, string> = {
   utility_bill: "documents.utilityBill",
   guarantor: "documents.guarantor",
   bank_guarantee: "documents.bankGuarantee",
+  credit_report: "documents.creditReport",
 };
 
 const CATEGORY_KEYS: Record<string, string> = {

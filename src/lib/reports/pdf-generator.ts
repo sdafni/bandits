@@ -261,6 +261,36 @@ function drawDocumentsReview(page: PDFPage, fonts: Fonts, data: ProfessionalRepo
       y -= 28;
     }
   }
+
+  y -= 16;
+  page.drawText("Financial Reliability", { x: 50, y, size: 12, font: fonts.bold, color: NAVY });
+  y -= 22;
+  y = drawLabelValue(
+    page,
+    fonts,
+    "Credit Report",
+    data.financialReliability.creditReport === "uploaded" ? "Uploaded" : "Not uploaded",
+    240,
+    y,
+  );
+  drawLabelValue(
+    page,
+    fonts,
+    "Credit Score",
+    data.financialReliability.creditScore === "available" ? "Available" : "Not available",
+    240,
+    y,
+  );
+  drawWrapped(
+    page,
+    "SafeKey only accepts the official PDF obtained directly by the tenant from Tiresias. Bank passwords and online banking credentials are never requested.",
+    50,
+    y - 36,
+    fonts.regular,
+    9,
+    495,
+    MUTED,
+  );
 }
 
 function drawRedFlags(page: PDFPage, fonts: Fonts, data: ProfessionalReportData) {

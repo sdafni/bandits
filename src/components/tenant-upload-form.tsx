@@ -5,11 +5,14 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  markCreditReportRequestedAction,
   saveTenantUploadProfileAction,
   submitTenantApplicationAction,
   uploadTenantDocumentAction,
   type TenantUploadActionState,
 } from "@/app/actions/tenant-upload";
+import { CreditReportGuidancePanel } from "@/components/credit-report-guidance";
+import { resolveCreditReportWorkflowStatus } from "@/lib/credit-report";
 import { FormStatusMessage } from "@/components/form-status-message";
 import { SubmitButton } from "@/components/submit-button";
 import {
@@ -17,6 +20,7 @@ import {
   isCheckDocumentPlanSubmissionComplete,
 } from "@/lib/document-submission";
 import {
+  CREDIT_REPORT_DOCUMENT_TYPE,
   getPendingUploadDocumentTypesFromRequirements,
   getSlotDocumentTypes,
   getUploadRowsFromRequirements,
@@ -60,6 +64,8 @@ function profileFromSavedRow(
 ): TenantUploadProfileDraft {
   return {
     consentConfirmed: savedProfile?.consentConfirmed ?? false,
+    creditReportConsent: savedProfile?.creditReportConsent ?? false,
+    creditReportRequestedAt: savedProfile?.creditReportRequestedAt ?? null,
     currentAddress: savedProfile?.currentAddress ?? "",
     email: savedProfile?.email ?? "",
     employerName: savedProfile?.employerName ?? "",
@@ -85,13 +91,18 @@ function appendProfileToFormData(formData: FormData, profile: TenantUploadProfil
   if (profile.consentConfirmed) {
     formData.set("consent_confirmed", "on");
   }
+  if (profile.creditReportConsent) {
+    formData.set("credit_report_consent", "on");
+  }
 }
 
 function DocumentUploadRow({
   canUpload,
+  creditReportConsent,
   documentType,
   getProfileSnapshot,
   locale,
+  onCreditReportConsentChange,
   onUploaded,
   priority,
   reviewNote,
@@ -101,9 +112,11 @@ function DocumentUploadRow({
   token,
 }: {
   canUpload: boolean;
+  creditReportConsent: boolean;
   documentType: string;
   getProfileSnapshot: () => TenantUploadProfileDraft;
   locale: ReturnType<typeof useLocale>["locale"];
+  onCreditReportConsentChange: (checked: boolean) => void;
   onUploaded: (
     documentType: string,
     payload?: {
@@ -152,8 +165,15 @@ function DocumentUploadRow({
     uploadState.tenantDocuments,
   ]);
 
+  const isCreditReport = normalizeDocumentType(documentType) === CREDIT_REPORT_DOCUMENT_TYPE;
+  const creditConsentRequired = isCreditReport && canUpload;
+
   async function handleUploadSelectedFiles(fileList: FileList | null) {
     if (!fileList?.length || !canUpload) {
+      return;
+    }
+
+    if (isCreditReport && !creditReportConsent) {
       return;
     }
 
@@ -186,12 +206,24 @@ function DocumentUploadRow({
           })}
         </p>
       ) : null}
+      {creditConsentRequired ? (
+        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-700">
+          <input
+            checked={creditReportConsent}
+            className="mt-0.5"
+            name="credit_report_consent"
+            onChange={(event) => onCreditReportConsentChange(event.target.checked)}
+            type="checkbox"
+          />
+          <span>{t("tenantUpload.creditReportConsent")}</span>
+        </label>
+      ) : null}
       {canUpload ? (
         <>
           <input
             accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.json"
             className="input file:mb-3 file:mr-0 file:block file:w-full file:rounded-full file:border-0 file:bg-[#0f2343] file:px-4 file:py-2 file:text-sm file:font-medium file:text-white sm:file:mb-0 sm:file:mr-4 sm:file:inline-block sm:file:w-auto"
-            disabled={isUploading}
+            disabled={isUploading || (creditConsentRequired && !creditReportConsent)}
             multiple
             name={getDocumentUploadFieldName(documentType)}
             onChange={(event) => {
@@ -202,6 +234,9 @@ function DocumentUploadRow({
             ref={fileInputRef}
             type="file"
           />
+          {creditConsentRequired && !creditReportConsent ? (
+            <p className="text-xs text-amber-900">{t("tenantUpload.creditReportConsentRequired")}</p>
+          ) : null}
           {isUploading ? (
             <p className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -273,6 +308,14 @@ export function TenantUploadForm({
 
   const [profile, setProfile] = useState<TenantUploadProfileDraft>(initialProfile);
   const [tenantDocuments, setTenantDocuments] = useState<TenantDocumentReviewRow[]>(initialTenantDocuments);
+  const creditReportWorkflowStatus = useMemo(
+    () =>
+      resolveCreditReportWorkflowStatus({
+        creditReportRequestedAt: profile.creditReportRequestedAt,
+        tenantDocuments,
+      }),
+    [profile.creditReportRequestedAt, tenantDocuments],
+  );
   const [profileSaveState, setProfileSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const profileSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -355,6 +398,16 @@ export function TenantUploadForm({
   }
 
   const getProfileSnapshot = useCallback(() => profile, [profile]);
+
+  const handleCreditReportRequested = useCallback(async () => {
+    const result = await markCreditReportRequestedAction(token);
+    if (!result.error) {
+      const requestedAt = profile.creditReportRequestedAt ?? new Date().toISOString();
+      const nextProfile = { ...profile, creditReportRequestedAt: requestedAt };
+      setProfile(nextProfile);
+      writeTenantUploadDraft(token, nextProfile);
+    }
+  }, [profile, token]);
 
   const handleDocumentUploaded = useCallback(
     (
@@ -600,6 +653,9 @@ export function TenantUploadForm({
             );
             const rowComplete =
               slotStatus === "accepted" || slotStatus === "pending_review" || slotStatus === "waived";
+            const isCreditReportRow = row.documentTypes.some(
+              (documentType) => normalizeDocumentType(documentType) === CREDIT_REPORT_DOCUMENT_TYPE,
+            );
 
             return (
               <div
@@ -623,11 +679,13 @@ export function TenantUploadForm({
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-600">
-                      {rowComplete && !rowNeedsUpload
-                        ? t("tenantUpload.documentAlreadyUploaded")
-                        : row.priority === "required"
-                          ? t("tenantUpload.documentUploadRequired")
-                          : t("tenantUpload.documentUploadOptional")}
+                      {isCreditReportRow
+                        ? t("creditReport.optionalHint")
+                        : rowComplete && !rowNeedsUpload
+                          ? t("tenantUpload.documentAlreadyUploaded")
+                          : row.priority === "required"
+                            ? t("tenantUpload.documentUploadRequired")
+                            : t("tenantUpload.documentUploadOptional")}
                     </p>
                     {row.slot.kind === "any_of" && row.documentTypes.length > 1 && rowNeedsUpload ? (
                       <p className="mt-1 text-xs text-slate-500">
@@ -645,6 +703,15 @@ export function TenantUploadForm({
                     </span>
                   ) : null}
                 </div>
+
+                {isCreditReportRow ? (
+                  <div className="mt-3">
+                    <CreditReportGuidancePanel
+                      onRequestCreditReport={() => void handleCreditReportRequested()}
+                      status={creditReportWorkflowStatus}
+                    />
+                  </div>
+                ) : null}
 
                 <div className="mt-3 space-y-3">
                   {row.documentTypes.map((documentType) => {
@@ -664,10 +731,16 @@ export function TenantUploadForm({
                     return (
                       <DocumentUploadRow
                         canUpload={canUpload}
+                        creditReportConsent={profile.creditReportConsent ?? false}
                         documentType={documentType}
                         getProfileSnapshot={getProfileSnapshot}
                         key={`${rowKey}-${documentType}`}
                         locale={locale}
+                        onCreditReportConsentChange={(checked) => {
+                          const nextProfile = { ...profile, creditReportConsent: checked };
+                          setProfile(nextProfile);
+                          scheduleProfileSave(nextProfile);
+                        }}
                         onUploaded={handleDocumentUploaded}
                         priority={row.priority}
                         reviewNote={latest ? getDocumentReviewNote(latest) : null}

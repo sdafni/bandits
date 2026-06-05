@@ -20,6 +20,7 @@ export type CaseReviewerNote = {
 
 export type TenantSummaryCard = {
   completionPercent: number;
+  creditReportConsent: boolean;
   employmentStatus: string | null;
   landlordDecision: LandlordDecision;
   missingCategories: string[];
@@ -85,6 +86,7 @@ export function buildTenantSummaryCard(params: {
 
   return {
     completionPercent: scoreboard.uploadCompletionPercent,
+    creditReportConsent: Boolean(params.profile?.credit_report_consent),
     employmentStatus: params.profile?.employment_status ?? null,
     landlordDecision: (params.check.landlord_decision as LandlordDecision | undefined) ?? "pending",
     missingCategories: scoreboard.missingDocumentTypes.map(getCatalogDocumentLabel),

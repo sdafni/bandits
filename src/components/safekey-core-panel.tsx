@@ -86,6 +86,12 @@ export function TenantSummaryCardPanel({ summary }: { summary: TenantSummaryCard
           {t("safekeyCore.missingCategories")}: {summary.missingCategories.join(", ")}
         </p>
       ) : null}
+
+      {summary.creditReportConsent ? (
+        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          {t("safekeyCore.creditReportConsentConfirmed")}
+        </p>
+      ) : null}
     </section>
   );
 }

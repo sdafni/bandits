@@ -82,6 +82,7 @@ export async function activateTenantWorkflowForCheck(
     if (options?.resendEmail && check.tenant_email) {
       await notifyTenantUploadInvitation({
         propertyName: check.properties?.name ?? "Property",
+        requestedDocuments: await getRequestedDocumentsForInvitation(checkId),
         tenantEmail: check.tenant_email,
         tenantName: check.tenant_full_name,
         uploadUrl: check.secure_upload_url,

@@ -716,6 +716,9 @@ function buildDemoCase(input: {
 
   const tenantProfile: Database["public"]["Tables"]["tenant_public_profiles"]["Row"] = {
     consent_confirmed: true,
+    credit_report_consent: false,
+    credit_report_consent_at: null,
+    credit_report_requested_at: null,
     created_at: resolvedReviewRequestedAt,
     current_address: input.currentAddress,
     email: input.tenant.email,

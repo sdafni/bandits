@@ -35,6 +35,8 @@ function profileDraftFromDatabase(
 
   return {
     consentConfirmed: profile.consent_confirmed,
+    creditReportConsent: profile.credit_report_consent,
+    creditReportRequestedAt: profile.credit_report_requested_at,
     currentAddress: profile.current_address ?? "",
     email: profile.email ?? "",
     employerName: profile.employer_name ?? "",

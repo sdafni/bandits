@@ -44,6 +44,12 @@ export const SAFEKEY_DOCUMENT_DEFINITIONS: SafeKeyDocumentDefinition[] = [
   { category: "income", catalogTier: "core", label: "Employer Letter", value: "employer_letter" },
   { category: "financial", catalogTier: "core", label: "Bank Statement", value: "bank_statement" },
   {
+    category: "trust_boost",
+    catalogTier: "trust_boost",
+    label: "Credit Report / Tiresias Report",
+    value: "credit_report",
+  },
+  {
     category: "rental_history",
     catalogTier: "core",
     label: "Previous Landlord Reference",
@@ -142,6 +148,7 @@ export const DEFAULT_DOCUMENT_PRIORITIES: Record<string, DocumentPriority> = {
   afm: "required",
   bank_guarantee: "optional",
   bank_statement: "required",
+  credit_report: "recommended",
   employer_letter: "recommended",
   employment_contract: "recommended",
   guarantor: "optional",
@@ -213,6 +220,17 @@ export function getDefaultDocumentRequirements(): DocumentRequirement[] {
     documentType,
     priority: getDefaultDocumentRequirementPriority(documentType),
   }));
+}
+
+export const CREDIT_REPORT_DOCUMENT_TYPE = "credit_report";
+
+/** Always offered to tenants — not persisted on landlord check requirements. */
+export const VOLUNTARY_TRUST_BOOST_REQUIREMENTS: DocumentRequirement[] = [
+  { documentType: CREDIT_REPORT_DOCUMENT_TYPE, priority: "recommended" },
+];
+
+export function mergeVoluntaryTrustBoostRequirements(requirements: DocumentRequirement[]): DocumentRequirement[] {
+  return dedupeDocumentRequirements([...requirements, ...VOLUNTARY_TRUST_BOOST_REQUIREMENTS]);
 }
 
 export function migrateRequestedDocumentsToRequirements(requestedDocuments: string[]): DocumentRequirement[] {

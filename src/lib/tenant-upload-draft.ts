@@ -1,5 +1,7 @@
 export type TenantUploadProfileDraft = {
   consentConfirmed?: boolean;
+  creditReportConsent?: boolean;
+  creditReportRequestedAt?: string | null;
   currentAddress?: string;
   email?: string;
   employerName?: string;
@@ -86,6 +88,10 @@ export function mergeTenantUploadProfileDraft(params: {
 }): TenantUploadProfileDraft {
   return {
     consentConfirmed: params.savedProfile?.consentConfirmed ?? params.localDraft?.consentConfirmed ?? false,
+    creditReportConsent:
+      params.savedProfile?.creditReportConsent ?? params.localDraft?.creditReportConsent ?? false,
+    creditReportRequestedAt:
+      params.savedProfile?.creditReportRequestedAt ?? params.localDraft?.creditReportRequestedAt ?? null,
     currentAddress: pickDraftField(params.savedProfile?.currentAddress, params.localDraft?.currentAddress),
     email: pickDraftField(params.savedProfile?.email, params.localDraft?.email),
     employerName: pickDraftField(params.savedProfile?.employerName, params.localDraft?.employerName),

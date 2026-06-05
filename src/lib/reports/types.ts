@@ -26,6 +26,10 @@ export type ProfessionalReportData = {
   };
   uploadedDocuments: string[];
   missingDocuments: string[];
+  financialReliability: {
+    creditReport: "uploaded" | "not_uploaded";
+    creditScore: "available" | "not_available";
+  };
   redFlags: string[];
   explanation: {
     summary: string;

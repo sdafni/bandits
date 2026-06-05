@@ -22,11 +22,13 @@ import { getDocumentLabel } from "@/lib/trust-workflows";
 import {
   resolveActiveUploadCheck,
   TenantUploadError,
+  markCreditReportRequested,
   uploadTenantDocumentBatch,
   upsertTenantUploadProfile,
   type TenantUploadProfileInput,
 } from "@/lib/tenant-upload-service";
 import { isCheckDocumentPlanSubmissionComplete } from "@/lib/document-submission";
+import { CREDIT_REPORT_DOCUMENT_TYPE, normalizeDocumentType } from "@/lib/safekey-document-catalog";
 import { resolveCheckDocumentPlan } from "@/lib/safekey-document-plan";
 import { getUploadedDocumentTypes } from "@/lib/document-submission";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -44,6 +46,10 @@ const optionalDraftEmailSchema = z.preprocess(
 
 const profileDraftSchema = z.object({
   consentConfirmed: z.preprocess(
+    (value) => value === true || value === "on" || value === "true",
+    z.boolean().optional(),
+  ),
+  creditReportConsent: z.preprocess(
     (value) => value === true || value === "on" || value === "true",
     z.boolean().optional(),
   ),
@@ -102,6 +108,7 @@ export type TenantUploadActionState = ActionState & {
 function parseProfileDraft(formData: FormData) {
   return parseFormSchema(profileDraftSchema, {
     consentConfirmed: formData.get("consent_confirmed") === "on",
+    creditReportConsent: formData.get("credit_report_consent") === "on",
     currentAddress: formEntry(formData.get("current_address")),
     email: formEntry(formData.get("email")),
     employerName: formEntry(formData.get("employer_name")),
@@ -134,6 +141,7 @@ function toProfileInput(
 
   return {
     consentConfirmed: data.consentConfirmed,
+    creditReportConsent: data.creditReportConsent,
     currentAddress: data.currentAddress,
     email: data.email,
     employerName: data.employerName,
@@ -155,6 +163,32 @@ function revalidateCaseReviewPaths(checkId: string) {
   revalidatePath(`/dashboard/checks/${checkId}`);
   revalidatePath("/admin/review");
   revalidatePath(`/admin/review/${checkId}`);
+}
+
+export async function markCreditReportRequestedAction(token: string): Promise<TenantUploadActionState> {
+  try {
+    if (isDemoUploadToken(token)) {
+      return { success: "Credit report request recorded for the presentation upload link." };
+    }
+
+    if (!hasSupabaseServiceEnv()) {
+      return { error: "Secure uploads are not configured yet." };
+    }
+
+    const check = await resolveActiveUploadCheck(token);
+    await markCreditReportRequested(check);
+    revalidateTenantUploadPage(token);
+
+    return { success: "Credit report request recorded." };
+  } catch (error) {
+    if (error instanceof TenantUploadError) {
+      return { error: error.message };
+    }
+
+    return {
+      error: error instanceof Error ? error.message : "Could not record your credit report request.",
+    };
+  }
 }
 
 export async function saveTenantUploadProfileAction(
@@ -217,6 +251,16 @@ export async function uploadTenantDocumentAction(
       return { error: `Select a file for ${getDocumentLabel(documentType)} before uploading.`, documentType };
     }
 
+    if (
+      normalizeDocumentType(documentType) === CREDIT_REPORT_DOCUMENT_TYPE &&
+      !parsed.data.creditReportConsent
+    ) {
+      return {
+        error: "Confirm credit report consent before uploading this document.",
+        documentType,
+      };
+    }
+
     const check = await resolveActiveUploadCheck(token);
     const result = await uploadTenantDocumentBatch({
       check,
@@ -263,6 +307,7 @@ export async function submitTenantApplicationAction(
 
     const parsed = parseFormSchema(submitApplicationSchema, {
       consentConfirmed: formData.get("consent_confirmed") === "on",
+      creditReportConsent: formData.get("credit_report_consent") === "on",
       currentAddress: formEntry(formData.get("current_address")),
       email: formEntry(formData.get("email")),
       employerName: optionalFormEntry(formData.get("employer_name")),

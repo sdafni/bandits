@@ -5,6 +5,7 @@ import {
   dedupeDocumentRequirements,
   evaluateDocumentPlan,
   getDefaultDocumentRequirements,
+  mergeVoluntaryTrustBoostRequirements,
   migrateRequestedDocumentsToRequirements,
   normalizeDocumentType,
   normalizeRequestedDocuments,
@@ -29,10 +30,11 @@ export function resolveCheckDocumentPlan(check: CheckDocumentSource): CheckDocum
   const parsedRequirements = parseStoredDocumentRequirements(check.document_requirements);
   const normalizedRequestedDocuments = normalizeRequestedDocuments(check.requested_documents);
 
-  const requirements =
+  const baseRequirements =
     parsedRequirements.length > 0
       ? dedupeDocumentRequirements(parsedRequirements)
       : migrateRequestedDocumentsToRequirements(normalizedRequestedDocuments);
+  const requirements = mergeVoluntaryTrustBoostRequirements(baseRequirements);
 
   return {
     requirements,
