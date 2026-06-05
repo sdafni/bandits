@@ -315,7 +315,7 @@ async function main() {
 
     const pdfPath = path.join(os.tmpdir(), `safekey-credit-report-${Date.now()}.pdf`);
     createMinimalPdf(pdfPath);
-    const creditFileInput = uploadPage.locator('input[name="document_credit_report"]').first();
+    const creditFileInput = uploadPage.locator('input[name="documents_credit_report"]').first();
     const creditInputVisible = await creditFileInput.isVisible().catch(() => false);
     if (creditInputVisible) {
       await creditFileInput.setInputFiles(pdfPath);
@@ -371,7 +371,7 @@ async function main() {
       }),
     );
 
-    const samplePdfRes = await fetch(`${APP_URL}/api/reports/sample/download`);
+    const samplePdfRes = await fetch(`${APP_URL}/api/sample-report/pdf`);
     let pdfHasFinancial = false;
     if (samplePdfRes.ok) {
       const pdfBuffer = Buffer.from(await samplePdfRes.arrayBuffer());
