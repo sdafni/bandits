@@ -5,6 +5,7 @@ export const siteConfig = {
   defaultDescription:
     "Simple tenant checks for landlords in Greece — start a check, collect documents, get a recommendation.",
   domain: "https://getsafekey.app",
+  supportEmail: "support@safekey.app",
   marketLine: "Built for the Greek rental market",
   ogDescription:
     "Start a tenant check, send a secure upload link, and get a clear rental recommendation.",
