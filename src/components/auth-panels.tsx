@@ -22,11 +22,14 @@ export function AuthPanels() {
     searchParams.get("next") ??
       (selectedPlan ? buildBillingPath(selectedPlan, { autoCheckout: selectedPlan !== "screening" }) : null),
   );
+  const signupTabRequested = searchParams.get("tab") === "signup";
   const hasPlanIntent = Boolean(selectedPlan);
   const [signInState, signInFormAction] = useActionState(signInAction, initialState);
   const [signUpState, signUpFormAction] = useActionState(signUpAction, initialState);
   const [resendState, resendFormAction] = useActionState(resendConfirmationEmailAction, initialState);
-  const [activeTab, setActiveTab] = useState<"sign_in" | "sign_up">(hasPlanIntent ? "sign_up" : "sign_in");
+  const [activeTab, setActiveTab] = useState<"sign_in" | "sign_up">(
+    hasPlanIntent || signupTabRequested ? "sign_up" : "sign_in",
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");

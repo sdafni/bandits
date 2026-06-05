@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signOutAction } from "@/app/actions";
-import { buildDashboardStartCheckPath, buildStartCheckLoginHref } from "@/lib/billing-navigation";
+import { buildPrimaryConversionHref } from "@/lib/billing-navigation";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
 import type { SiteAuthState } from "@/lib/site-auth-state";
@@ -24,9 +24,7 @@ export function SiteAuthNav({
   const signInPath = withLocalePath(locale, "/login");
   const dashboardPath = withLocalePath(locale, "/dashboard");
   const accountPath = withLocalePath(locale, "/dashboard/account");
-  const startCheckPath = auth.isAuthenticated
-    ? buildDashboardStartCheckPath(locale)
-    : buildStartCheckLoginHref(locale);
+  const startCheckPath = buildPrimaryConversionHref(locale, auth);
 
   if (variant === "toolbar") {
     return (

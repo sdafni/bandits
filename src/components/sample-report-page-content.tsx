@@ -4,11 +4,12 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, FileDown } from "lucide-react";
 import { Badge } from "@/components/badge";
 import { SafeKeyTrustReport } from "@/components/safekey-trust-report";
-import { buildStartCheckLoginHref } from "@/lib/billing-navigation";
+import { buildPrimaryConversionHref } from "@/lib/billing-navigation";
 import { getDocumentLabel } from "@/lib/trust-workflows";
 import { getSampleTrustReport, sampleReportMeta, SAMPLE_REPORT_CASE_ID } from "@/lib/sample-report-data";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
+import type { SiteAuthState } from "@/lib/site-auth-state";
 
 const recommendationTone = {
   approve: "success",
@@ -16,11 +17,11 @@ const recommendationTone = {
   decline: "danger",
 } as const;
 
-export function SampleReportPageContent() {
+export function SampleReportPageContent({ auth }: { auth: SiteAuthState }) {
   const { locale } = useLocale();
   const t = useT();
   const report = getSampleTrustReport();
-  const startPath = buildStartCheckLoginHref(locale);
+  const startPath = buildPrimaryConversionHref(locale, auth);
   const homePath = withLocalePath(locale, "/");
   const pdfPath = "/api/sample-report/pdf";
 

@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { ArrowRight, FileDown } from "lucide-react";
-import { buildStartCheckLoginHref } from "@/lib/billing-navigation";
+import { buildPrimaryConversionHref } from "@/lib/billing-navigation";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
+import type { SiteAuthState } from "@/lib/site-auth-state";
 
-export function LandingSampleReport() {
+export function LandingSampleReport({ auth }: { auth: SiteAuthState }) {
   const { locale } = useLocale();
   const t = useT();
-  const startPath = buildStartCheckLoginHref(locale);
+  const startPath = buildPrimaryConversionHref(locale, auth);
   const samplePath = withLocalePath(locale, "/sample-report");
 
   return (

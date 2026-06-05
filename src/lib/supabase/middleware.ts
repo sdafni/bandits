@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { assertSupabaseBrowserEnv, env } from "@/lib/env";
-import { sanitizeInternalPath } from "@/lib/safe-redirect";
+import { stripLocaleFromPath } from "@/lib/i18n";
+import { splitInternalPath } from "@/lib/safe-redirect";
 import type { Database } from "@/lib/database.types";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/admin"];
@@ -51,10 +52,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
-    const nextPath = sanitizeInternalPath(request.nextUrl.searchParams.get("next"));
+    const { pathname: nextPathname, search: nextSearch } = splitInternalPath(
+      request.nextUrl.searchParams.get("next"),
+    );
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = nextPath;
-    redirectUrl.search = "";
+    redirectUrl.pathname = stripLocaleFromPath(nextPathname);
+    redirectUrl.search = nextSearch;
     return NextResponse.redirect(redirectUrl);
   }
 

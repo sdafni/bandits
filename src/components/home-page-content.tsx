@@ -8,7 +8,7 @@ import { LandingSampleReport } from "@/components/landing-sample-report";
 import { LandingSiteHeader } from "@/components/landing-site-header";
 import { BILLING_PLANS, SCREENING_PAYMENT_PRODUCT } from "@/lib/billing";
 import { getLocalizedPlanName } from "@/lib/billing-i18n";
-import { buildLoginHref, buildStartCheckLoginHref } from "@/lib/billing-navigation";
+import { buildLoginHref, buildPrimaryConversionHref } from "@/lib/billing-navigation";
 import { useLocale } from "@/lib/i18n/context";
 import { localizeHref, withLocalePath } from "@/lib/i18n";
 import type { SiteAuthState } from "@/lib/site-auth-state";
@@ -28,9 +28,7 @@ const planChooseKeys: Record<string, "pricing.chooseBasic" | "pricing.choosePro"
 export function HomePageContent({ auth }: { auth: SiteAuthState }) {
   const { locale, t } = useLocale();
   const signInPath = withLocalePath(locale, "/login#auth");
-  const startCheckPath = auth.isAuthenticated
-    ? withLocalePath(locale, "/dashboard?start=check")
-    : buildStartCheckLoginHref(locale);
+  const startCheckPath = buildPrimaryConversionHref(locale, auth);
 
   const workflowSteps = [
     { icon: ClipboardList, title: t("workflow.step1Title"), description: t("workflow.step1Body") },
@@ -182,7 +180,7 @@ export function HomePageContent({ auth }: { auth: SiteAuthState }) {
           </div>
         </section>
 
-        <LandingSampleReport />
+        <LandingSampleReport auth={auth} />
 
         <section className="space-y-6" id="how-it-works">
           <div className="max-w-2xl space-y-2">

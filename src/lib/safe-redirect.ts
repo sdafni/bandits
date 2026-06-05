@@ -18,3 +18,17 @@ export function sanitizeInternalPath(value: string | null | undefined, fallback 
 
   return trimmed;
 }
+
+export function splitInternalPath(value: string | null | undefined, fallback = "/dashboard") {
+  const sanitized = sanitizeInternalPath(value, fallback);
+  const queryIndex = sanitized.indexOf("?");
+
+  if (queryIndex === -1) {
+    return { pathname: sanitized, search: "" };
+  }
+
+  return {
+    pathname: sanitized.slice(0, queryIndex),
+    search: sanitized.slice(queryIndex),
+  };
+}

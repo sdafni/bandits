@@ -16,7 +16,7 @@ export default async function SampleReportPage() {
   return (
     <main className="min-h-screen">
       <LandingSiteHeader auth={auth} />
-      <SampleReportPageContent />
+      <SampleReportPageContent auth={auth} />
       <div className="page-shell pb-10">
         <PublicSiteFooterContent showTrustLayer={false} />
       </div>

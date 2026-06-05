@@ -2,8 +2,10 @@ import type { BillingPlanKey } from "@/lib/billing";
 import type { AppLocale } from "@/lib/i18n";
 import { localizeHref, withLocalePath } from "@/lib/i18n";
 import { sanitizeInternalPath } from "@/lib/safe-redirect";
+import type { SiteAuthState } from "@/lib/site-auth-state";
 
 export const START_TENANT_CHECK_PATH = "/dashboard?start=check";
+export const PRIMARY_CONVERSION_NEXT_PATH = "/dashboard";
 
 export type BillingPlanIntent = BillingPlanKey | "screening";
 
@@ -48,8 +50,24 @@ export function buildDashboardStartCheckPath(locale: AppLocale) {
 }
 
 export function buildStartCheckLoginHref(locale: AppLocale) {
-  const nextPath = buildDashboardStartCheckPath(locale);
-  return localizeHref(locale, `/login?next=${encodeURIComponent(nextPath)}`);
+  return localizeHref(locale, `/login?next=${encodeURIComponent(START_TENANT_CHECK_PATH)}`);
+}
+
+export function buildSignupLoginHref(locale: AppLocale, nextPath = PRIMARY_CONVERSION_NEXT_PATH) {
+  const params = new URLSearchParams({
+    tab: "signup",
+    next: nextPath,
+  });
+
+  return localizeHref(locale, `/login?${params.toString()}#auth`);
+}
+
+export function buildPrimaryConversionHref(locale: AppLocale, auth: SiteAuthState) {
+  if (auth.isAuthenticated) {
+    return withLocalePath(locale, PRIMARY_CONVERSION_NEXT_PATH);
+  }
+
+  return buildSignupLoginHref(locale);
 }
 
 export function resolveAuthRedirectPath(nextValue: FormDataEntryValue | null, planValue: FormDataEntryValue | null) {

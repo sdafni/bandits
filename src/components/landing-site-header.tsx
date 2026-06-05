@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SafeKeyBrand } from "@/components/safekey-brand";
-import { buildStartCheckLoginHref } from "@/lib/billing-navigation";
+import { buildPrimaryConversionHref } from "@/lib/billing-navigation";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { withLocalePath } from "@/lib/i18n";
 import type { SiteAuthState } from "@/lib/site-auth-state";
@@ -21,9 +21,7 @@ export function LandingSiteHeader({ auth }: { auth: SiteAuthState }) {
   const homePath = withLocalePath(locale, "/");
   const signInPath = withLocalePath(locale, "/login#auth");
   const dashboardPath = withLocalePath(locale, "/dashboard");
-  const startPath = auth.isAuthenticated
-    ? withLocalePath(locale, "/dashboard?start=check")
-    : buildStartCheckLoginHref(locale);
+  const startPath = buildPrimaryConversionHref(locale, auth);
 
   const links = [
     { href: `${homePath}#pricing`, label: t("nav.pricing") },
