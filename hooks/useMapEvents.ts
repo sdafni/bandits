@@ -1,9 +1,25 @@
-import { getEvents } from '@/app/services/events';
+import { getEvents, type EventFilters } from '@/app/services/events';
+import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
+import { readExploreMapSeedEvents } from '@/lib/exploreMapEventsCache';
+import {
+  ATHENS_CENTER,
+  boundsFromMapEvents,
+  eventMapCoordinates,
+} from '@/lib/mapCoordinates';
+import { resolveGooglePlaceBusinessData } from '@/lib/placePhoto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type Event = Database['public']['Tables']['event']['Row'];
+
+export type UseMapEventsOptions = {
+  /**
+   * When set (e.g. embedded map / mini preview), overrides `banditId` from the route.
+   * Same `getEvents` path runs on web and native — never browser-only.
+   */
+  banditId?: string | null;
+};
 
 export interface MapBounds {
   center: { latitude: number; longitude: number };
@@ -16,40 +32,117 @@ export interface MapBounds {
   };
 }
 
-export function useMapEvents(onEventPress?: (event: Event) => void) {
-  const { banditId } = useLocalSearchParams();
+async function enrichEventCoordinates(event: Event): Promise<Event> {
+  if (eventMapCoordinates(event)) return event;
+
+  const placeId = String((event as { google_place_id?: string | null }).google_place_id ?? '').trim();
+  if (!placeId) return event;
+
+  try {
+    const resolved = await resolveGooglePlaceBusinessData({
+      placeId,
+      name: event.name ?? '',
+      address: event.address ?? '',
+      city: event.city ?? 'Athens',
+      neighborhood: event.neighborhood ?? '',
+      photoLimit: 1,
+    });
+    if (resolved?.locationLat != null && resolved?.locationLng != null) {
+      return {
+        ...event,
+        location_lat: resolved.locationLat,
+        location_lng: resolved.locationLng,
+      };
+    }
+  } catch {
+    // keep row for list; map will skip until coords exist
+  }
+  return event;
+}
+
+async function enrichEventsForMap(events: Event[]): Promise<Event[]> {
+  const needsBackfill = events.filter((event) => !eventMapCoordinates(event));
+  if (needsBackfill.length === 0) return events;
+
+  const backfilledById = new Map<string, Event>();
+  const chunkSize = 4;
+  for (let i = 0; i < needsBackfill.length; i += chunkSize) {
+    const chunk = needsBackfill.slice(i, i + chunkSize);
+    const results = await Promise.all(chunk.map((event) => enrichEventCoordinates(event)));
+    for (const row of results) {
+      backfilledById.set(row.id, row);
+    }
+  }
+
+  return events.map((event) => backfilledById.get(event.id) ?? event);
+}
+
+export function useMapEvents(
+  onEventPress?: (event: Event) => void,
+  options?: UseMapEventsOptions,
+) {
+  const { banditId: rawRouteBanditId } = useLocalSearchParams<{ banditId?: string }>();
+  const routeBanditId = Array.isArray(rawRouteBanditId) ? rawRouteBanditId[0] : rawRouteBanditId;
+
+  const propBanditId =
+    options?.banditId != null && String(options.banditId).trim() !== ''
+      ? String(options.banditId).trim()
+      : '';
+  const effectiveBanditId =
+    propBanditId !== ''
+      ? propBanditId
+      : routeBanditId && routeBanditId !== 'undefined'
+        ? routeBanditId
+        : undefined;
+
+  const { selectedCity } = useCity();
   const router = useRouter();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const seedEvents = readExploreMapSeedEvents(selectedCity ?? undefined, effectiveBanditId);
+  const [events, setEvents] = useState<Event[]>(seedEvents);
+  const [loading, setLoading] = useState(seedEvents.length === 0);
   const [error, setError] = useState<string | null>(null);
+  const hasPaintedEventsRef = useRef(seedEvents.length > 0);
 
-  useEffect(() => {
-    fetchEvents();
-  }, [banditId]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!hasPaintedEventsRef.current) setLoading(true);
       setError(null);
-      
-      const allEventsData = await getEvents({ banditId: banditId as string });
-      
-      // Filter out any events that still have null coordinates
-      const validEvents = allEventsData.filter(event => 
-        event.location_lat != null && 
-        event.location_lng != null &&
-        typeof event.location_lat === 'number' &&
-        typeof event.location_lng === 'number'
-      );
-      
-      setEvents(validEvents);
+
+      const filters: EventFilters = {};
+      if (effectiveBanditId) {
+        filters.banditId = effectiveBanditId;
+      } else if (selectedCity?.trim()) {
+        filters.city = selectedCity.trim();
+      }
+
+      const load = getEvents(filters);
+      const timeoutMs = 28000;
+      const allEventsData = await Promise.race([
+        load,
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Could not load places in time. Check your connection and try again.')),
+            timeoutMs,
+          ),
+        ),
+      ]);
+
+      setEvents(allEventsData);
+      hasPaintedEventsRef.current = true;
+      setLoading(false);
+      void enrichEventsForMap(allEventsData).then((enriched) => {
+        setEvents(enriched);
+      });
     } catch (err) {
       console.error('Error fetching events:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
-    } finally {
       setLoading(false);
     }
-  };
+  }, [effectiveBanditId, selectedCity]);
+
+  useEffect(() => {
+    void fetchEvents();
+  }, [fetchEvents]);
 
   const calculateOptimalMapBounds = (initialRegion: {
     latitude: number;
@@ -57,61 +150,50 @@ export function useMapEvents(onEventPress?: (event: Event) => void) {
     latitudeDelta: number;
     longitudeDelta: number;
   }): MapBounds => {
-    if (events.length === 0) {
+    const fallback = {
+      latitude: initialRegion.latitude,
+      longitude: initialRegion.longitude,
+      latitudeDelta: initialRegion.latitudeDelta,
+      longitudeDelta: initialRegion.longitudeDelta,
+    };
+    const { center, zoom } = boundsFromMapEvents(events, fallback);
+
+    const mappable = events
+      .map((event) => eventMapCoordinates(event))
+      .filter((coords): coords is { lat: number; lng: number } => coords != null);
+
+    if (mappable.length === 0) {
       return {
-        center: { latitude: initialRegion.latitude, longitude: initialRegion.longitude },
-        zoom: 12,
+        center,
+        zoom,
         bounds: {
-          north: initialRegion.latitude + initialRegion.latitudeDelta / 2,
-          south: initialRegion.latitude - initialRegion.latitudeDelta / 2,
-          east: initialRegion.longitude + initialRegion.longitudeDelta / 2,
-          west: initialRegion.longitude - initialRegion.longitudeDelta / 2,
-        }
+          north: fallback.latitude + fallback.latitudeDelta / 2,
+          south: fallback.latitude - fallback.latitudeDelta / 2,
+          east: fallback.longitude + fallback.longitudeDelta / 2,
+          west: fallback.longitude - fallback.longitudeDelta / 2,
+        },
       };
     }
-    
-    // Find the bounding box of all events
-    const lats = events.map(event => event.location_lat);
-    const lngs = events.map(event => event.location_lng);
-    
+
+    const lats = mappable.map((c) => c.lat);
+    const lngs = mappable.map((c) => c.lng);
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
     const minLng = Math.min(...lngs);
     const maxLng = Math.max(...lngs);
-    
-    // Calculate center point
-    const centerLat = (minLat + maxLat) / 2;
-    const centerLng = (minLng + maxLng) / 2;
-    
-    // Calculate the span (delta) of the bounding box
-    const latSpan = maxLat - minLat;
-    const lngSpan = maxLng - minLng;
-    
-    // Add some padding (10% on each side)
+    const latSpan = Math.max(maxLat - minLat, 0.0001);
+    const lngSpan = Math.max(maxLng - minLng, 0.0001);
     const padding = 0.1;
-    const paddedLatSpan = latSpan * (1 + padding * 2);
-    const paddedLngSpan = lngSpan * (1 + padding * 2);
-    
-    // Calculate optimal zoom level based on the span
-    let zoom = 14; // Default zoom
-    
-    if (paddedLatSpan > 0.1) zoom = 10;  // Very wide area
-    else if (paddedLatSpan > 0.05) zoom = 11;  // Wide area
-    else if (paddedLatSpan > 0.02) zoom = 12; // Medium area
-    else if (paddedLatSpan > 0.01) zoom = 13; // Small area
-    else if (paddedLatSpan > 0.005) zoom = 14; // Very small area
-    else if (paddedLatSpan > 0.002) zoom = 15; // Tiny area
-    else zoom = 16; // Very tiny area
-    
+
     return {
-      center: { latitude: centerLat, longitude: centerLng },
-      zoom: zoom,
+      center,
+      zoom,
       bounds: {
-        north: maxLat + (latSpan * padding),
-        south: minLat - (latSpan * padding),
-        east: maxLng + (lngSpan * padding),
-        west: minLng - (lngSpan * padding)
-      }
+        north: maxLat + latSpan * padding,
+        south: minLat - latSpan * padding,
+        east: maxLng + lngSpan * padding,
+        west: minLng - lngSpan * padding,
+      },
     };
   };
 
@@ -119,10 +201,9 @@ export function useMapEvents(onEventPress?: (event: Event) => void) {
     if (onEventPress) {
       onEventPress(event);
     } else {
-      // Default behavior: navigate to event detail page
-      const url = banditId 
-        ? `/event/${event.id}?banditId=${banditId}` as any
-        : `/event/${event.id}` as any;
+      const url = effectiveBanditId
+        ? (`/event/${event.id}?banditId=${effectiveBanditId}` as any)
+        : (`/event/${event.id}` as any);
       router.push(url);
     }
   };
@@ -131,9 +212,10 @@ export function useMapEvents(onEventPress?: (event: Event) => void) {
     events,
     loading,
     error,
-    banditId: banditId as string,
+    banditId: effectiveBanditId ?? '',
     calculateOptimalMapBounds,
     handleEventPress,
     refetchEvents: fetchEvents,
+    athensFallback: ATHENS_CENTER,
   };
 }

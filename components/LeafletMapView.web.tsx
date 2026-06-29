@@ -1,19 +1,89 @@
-import { getEvents } from '@/app/services/events';
 import { useMapEvents as useMapEventsHook } from '@/hooks/useMapEvents';
+import { ATHENS_CENTER, boundsFromMapEvents, eventMapCoordinates } from '@/lib/mapCoordinates';
 import { Database } from '@/lib/database.types';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { repairDisplayText } from '@/lib/repairTextEncoding';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import EventList, { EventListRef } from './EventList';
 
 type Event = Database['public']['Tables']['event']['Row'];
+
+/**
+ * Branded placeholder used when a bandit has no events with coordinates yet.
+ * Keeps every mini-map thumbnail visually consistent (same size, same rounding,
+ * same brand tones) so we never expose raw, empty OSM tiles to the user.
+ */
+function MiniMapPlaceholder() {
+  return (
+    <View style={styles.miniPlaceholder} accessibilityLabel="City map preview">
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          background:
+            'linear-gradient(135deg, #FFD9A8 0%, #FFB475 35%, #FF7E5F 70%, #5B6EE1 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 14,
+            left: 18,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 0 0 2px #C0392B inset, 0 1px 2px rgba(0,0,0,0.25)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 36,
+            right: 20,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 0 0 2px #27AE60 inset, 0 1px 2px rgba(0,0,0,0.25)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            left: 26,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 0 0 2px #2980B9 inset, 0 1px 2px rgba(0,0,0,0.25)',
+          }}
+        />
+        <div
+          style={{
+            fontSize: 22,
+            color: '#FFFFFF',
+            textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+          }}
+        >
+          📍
+        </div>
+      </div>
+    </View>
+  );
+}
 
 // Dynamic imports for Leaflet (client-side only)
 let MapContainer: any = null;
 let TileLayer: any = null;
 let Marker: any = null;
 let Popup: any = null;
-let useMapEvents: any = null;
 let L: any = null;
 
 interface MapViewProps {
@@ -41,60 +111,64 @@ export default function LeafletMapView({
   banditId
 }: MapViewProps) {
   const eventListRef = useRef<EventListRef>(null);
-  const { banditId: routeBanditId } = useLocalSearchParams();
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState<any>(null);
+  const [activeEventIndex, setActiveEventIndex] = useState(0);
+  const { banditId: routeBanditId } = useLocalSearchParams();
+  const routeBanditIdValue = Array.isArray(routeBanditId) ? routeBanditId[0] : routeBanditId;
+  const scopedBanditId = banditId ?? routeBanditIdValue;
 
-  // Use provided banditId prop, or fall back to route param
-  const activeBanditId = banditId || routeBanditId;
+  /** Same hook + shared `getEvents` path as native (`LeafletMapView.native.tsx`). */
+  const { events, loading, error, banditId: mapBanditId } = useMapEventsHook(
+    undefined,
+    scopedBanditId ? { banditId: scopedBanditId } : undefined,
+  );
+
+  const activeBanditId = mapBanditId || scopedBanditId;
 
   // Create a handler that scrolls to the event instead of navigating
   const handleMarkerPress = (event: any) => {
+    const idx = events.findIndex((e) => e.id === event.id);
+    if (idx >= 0) setActiveEventIndex(idx);
     eventListRef.current?.scrollToEvent(event.id);
   };
 
-  // Custom state for mini map with specific banditId
-  const [customEvents, setCustomEvents] = useState<Event[]>([]);
-  const [customLoading, setCustomLoading] = useState(false);
-  const [customError, setCustomError] = useState<string | null>(null);
+  const focusMapOnEvent = useCallback(
+    (event: Event) => {
+      const idx = events.findIndex((e) => e.id === event.id);
+      if (idx >= 0) setActiveEventIndex(idx);
+      const coords = eventMapCoordinates(event);
+      if (mapInstance && coords) {
+        mapInstance.flyTo([coords.lat, coords.lng], Math.max(mapInstance.getZoom(), 15), {
+          animate: true,
+          duration: 0.45,
+        });
+      }
+    },
+    [events, mapInstance],
+  );
 
-  // Use hook for normal mode, custom state for mini mode with banditId
-  const hookData = useMapEventsHook();
-  const events = banditId ? customEvents : hookData.events;
-  const loading = banditId ? customLoading : hookData.loading;
-  const error = banditId ? customError : hookData.error;
-  const calculateOptimalMapBounds = hookData.calculateOptimalMapBounds;
-
-  // Fetch events for specific banditId when in mini mode
-  useEffect(() => {
-    if (banditId && miniMode) {
-      fetchEventsForBandit();
-    }
-  }, [banditId, miniMode]);
-
-  const fetchEventsForBandit = async () => {
-    try {
-      setCustomLoading(true);
-      setCustomError(null);
-
-      const allEventsData = await getEvents({ banditId });
-
-      // Filter out any events that still have null coordinates
-      const validEvents = allEventsData.filter(event =>
-        event.location_lat != null &&
-        event.location_lng != null &&
-        typeof event.location_lat === 'number' &&
-        typeof event.location_lng === 'number'
-      );
-
-      setCustomEvents(validEvents);
-    } catch (err) {
-      console.error('Error fetching events for bandit:', err);
-      setCustomError(err instanceof Error ? err.message : 'Failed to fetch events');
-    } finally {
-      setCustomLoading(false);
+  const focusEventByStep = (dir: -1 | 1) => {
+    if (events.length === 0) return;
+    const next = Math.max(0, Math.min(events.length - 1, activeEventIndex + dir));
+    setActiveEventIndex(next);
+    const nextEvent = events[next];
+    if (!nextEvent) return;
+    eventListRef.current?.scrollToEvent(nextEvent.id);
+    const coords = eventMapCoordinates(nextEvent);
+    if (mapInstance && coords) {
+      mapInstance.flyTo([coords.lat, coords.lng], mapInstance.getZoom(), {
+        animate: true,
+        duration: 0.45,
+      });
     }
   };
+
+  useEffect(() => {
+    if (activeEventIndex >= events.length) {
+      setActiveEventIndex(0);
+    }
+  }, [activeEventIndex, events.length]);
 
   // Debug logging
   useEffect(() => {
@@ -121,7 +195,6 @@ export default function LeafletMapView({
         TileLayer = reactLeaflet.TileLayer;
         Marker = reactLeaflet.Marker;
         Popup = reactLeaflet.Popup;
-        useMapEvents = reactLeaflet.useMapEvents;
         L = leaflet.default;
 
         // Fix for default marker icons in webpack
@@ -187,39 +260,26 @@ export default function LeafletMapView({
     '#4CAF50', '#009688', '#00BCD4', '#03A9F4', '#2196F3', '#3F51B5', '#673AB7', '#9C27B0'
   ];
 
-  // Track used colors to ensure uniqueness
-  const [usedColors, setUsedColors] = useState<Set<string>>(new Set());
-
-  // Color assignment cache to maintain consistency
-  const [colorAssignments] = useState<Map<string, string>>(new Map());
-  let colorIndex = 0;
-
-  // Create custom marker icon with unique color
-  const createCustomIcon = (eventId: string) => {
-    if (!L) return null;
-
-    // Get or assign a unique color for this event
-    let color = colorAssignments.get(eventId);
-    if (!color) {
-      // Find the next available color
-      while (colorIndex < markerColors.length && usedColors.has(markerColors[colorIndex])) {
-        colorIndex++;
-      }
-
-      if (colorIndex < markerColors.length) {
-        color = markerColors[colorIndex];
-        colorAssignments.set(eventId, color);
-        setUsedColors(prev => new Set([...prev, color!]));
-        colorIndex++;
-      } else {
-        // Fallback to a default color if we somehow run out
-        color = '#C0392B';
+  /** Stable marker colors — never setState during render (fixes hook / render crashes on web). */
+  const eventColorById = useMemo(() => {
+    const m = new Map<string, string>();
+    let idx = 0;
+    for (const e of events) {
+      if (!eventMapCoordinates(e)) continue;
+      if (!m.has(e.id)) {
+        m.set(e.id, markerColors[idx % markerColors.length]);
+        idx += 1;
       }
     }
+    return m;
+  }, [events]);
 
-    // Smaller markers for mini mode
-    const size = miniMode ? 10 : 20;
-    const borderWidth = miniMode ? 1 : 2;
+  const createCustomIcon = (eventId: string) => {
+    if (!L) return null;
+    const color = eventColorById.get(eventId) ?? '#C0392B';
+    /** Mini-mode markers are larger and bolder so the dots are clearly visible at 80×80. */
+    const size = miniMode ? 14 : 20;
+    const borderWidth = miniMode ? 2 : 2;
 
     return L.divIcon({
       html: `
@@ -229,57 +289,63 @@ export default function LeafletMapView({
           background-color: ${color};
           border: ${borderWidth}px solid white;
           border-radius: 50%;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.45);
         "></div>
       `,
       className: 'custom-marker',
       iconSize: [size, size],
-      iconAnchor: [size/2, size/2],
+      iconAnchor: [size / 2, size / 2],
     });
   };
 
-  // Calculate bounds for map
-  const getMapBounds = () => {
-    if (events.length === 0) {
-      return {
-        center: [initialRegion.latitude, initialRegion.longitude] as [number, number],
-        zoom: 13
-      };
-    }
+  /**
+   * Detect "no mappable events" so the mini-mode thumbnail can render a
+   * branded placeholder instead of empty OSM tiles. Without this guard, bandits
+   * with no event coordinates show up as a confusing "pale blue lines" preview.
+   */
+  const hasMappableEvents = useMemo(
+    () => events.some((e) => eventMapCoordinates(e) != null),
+    [events],
+  );
 
-    const mapBounds = calculateOptimalMapBounds(initialRegion);
-    return {
-      center: [mapBounds.center.latitude, mapBounds.center.longitude] as [number, number],
-      zoom: mapBounds.zoom || 13
+  const mapBounds = useMemo(() => {
+    const { center, zoom } = boundsFromMapEvents(
+      events,
+      initialRegion.latitude ? initialRegion : ATHENS_CENTER,
+      miniMode,
+    );
+    return { center: [center.latitude, center.longitude] as [number, number], zoom };
+  }, [events, initialRegion.latitude, initialRegion.longitude, miniMode]);
+
+  useEffect(() => {
+    if (!mapInstance || miniMode) return;
+    const handler = () => {
+      const center = mapInstance.getCenter();
+      const zoom = mapInstance.getZoom();
+      onRegionChange({
+        latitude: center.lat,
+        longitude: center.lng,
+        latitudeDelta: 0.01 / Math.pow(2, zoom - 10),
+        longitudeDelta: 0.01 / Math.pow(2, zoom - 10),
+      });
     };
-  };
+    mapInstance.on('moveend', handler);
+    return () => {
+      mapInstance.off('moveend', handler);
+    };
+  }, [mapInstance, miniMode, onRegionChange]);
 
-  const mapBounds = getMapBounds();
-
-  // Handle map events
-  const MapEventHandler = () => {
-    const map = useMapEvents ? useMapEvents({
-      moveend: () => {
-        const center = map.getCenter();
-        const zoom = map.getZoom();
-        const region = {
-          latitude: center.lat,
-          longitude: center.lng,
-          latitudeDelta: 0.01 / Math.pow(2, zoom - 10),
-          longitudeDelta: 0.01 / Math.pow(2, zoom - 10),
-        };
-        onRegionChange(region);
-      },
-    }) : null;
-
-    useEffect(() => {
-      if (map) {
-        setMapInstance(map);
-      }
-    }, [map]);
-
-    return null;
-  };
+  /**
+   * Mini-mode rendering policy (every bandit thumbnail looks consistent):
+   *  - While events are loading OR Leaflet isn't ready → show the branded placeholder.
+   *  - If the bandit has zero mappable events → show the branded placeholder.
+   *  - Only render the actual Leaflet preview when we are sure markers will appear.
+   * This eliminates the "pale blue lines / cropped OSM tiles" case the user
+   * reported on Neo's card and removes any cold-start flicker.
+   */
+  if (miniMode && (loading || !leafletLoaded || !hasMappableEvents)) {
+    return <MiniMapPlaceholder />;
+  }
 
   if (!leafletLoaded) {
     return (
@@ -315,6 +381,7 @@ export default function LeafletMapView({
           crossOrigin=""
         />
         <MapContainer
+          key={`${mapBounds.center[0]}-${mapBounds.center[1]}-${mapBounds.zoom}-${events.length}`}
           center={mapBounds.center}
           zoom={mapBounds.zoom}
           style={{ height: '100%', width: '100%' }}
@@ -327,7 +394,6 @@ export default function LeafletMapView({
           boxZoom={!miniMode}
           attributionControl={!miniMode}
         >
-          {!miniMode && <MapEventHandler />}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -335,14 +401,15 @@ export default function LeafletMapView({
 
           {/* Event markers */}
           {events.map((event) => {
-            if (!event.location_lat || !event.location_lng) {
+            const coords = eventMapCoordinates(event);
+            if (!coords) {
               return null;
             }
 
             return (
               <Marker
                 key={event.id}
-                position={[event.location_lat, event.location_lng]}
+                position={[coords.lat, coords.lng]}
                 icon={createCustomIcon(event.id)}
                 eventHandlers={miniMode ? {} : {
                   click: () => handleMarkerPress(event),
@@ -351,10 +418,10 @@ export default function LeafletMapView({
                 {!miniMode && (
                   <Popup>
                     <div style={{ minWidth: '200px' }}>
-                      <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{event.name}</h3>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{repairDisplayText(event.name || '')}</h3>
                       {event.address && (
                         <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: '#666' }}>
-                          {event.address}
+                          {repairDisplayText(event.address || '')}
                         </p>
                       )}
                       {event.genre && (
@@ -375,17 +442,47 @@ export default function LeafletMapView({
 
       {/* Bottom 60% - Events List (only in normal mode) */}
       {!miniMode && (
-        <EventList
-          ref={eventListRef}
-          events={events}
-          loading={loading}
-          error={error}
-          banditId={activeBanditId as string}
-          variant="horizontal"
-          showButton={false}
-          imageHeight={154}
-          contentContainerStyle={styles.eventsContainer}
-        />
+        <View style={styles.recommendationsPanel}>
+          <View style={styles.recommendationsHeader}>
+            <Text style={styles.recommendationsTitle}>Map picks</Text>
+            {events.length > 1 ? (
+              <View style={styles.recommendationArrows}>
+                <Pressable
+                  style={[styles.arrowBtn, activeEventIndex === 0 && styles.arrowBtnDisabled]}
+                  disabled={activeEventIndex === 0}
+                  onPress={() => focusEventByStep(-1)}
+                >
+                  <Text style={styles.arrowText}>‹</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.arrowBtn,
+                    activeEventIndex >= events.length - 1 && styles.arrowBtnDisabled,
+                  ]}
+                  disabled={activeEventIndex >= events.length - 1}
+                  onPress={() => focusEventByStep(1)}
+                >
+                  <Text style={styles.arrowText}>›</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.recommendationsHint}>
+            Scroll the strip or use arrows. Marker and card clicks stay unchanged.
+          </Text>
+          <EventList
+            ref={eventListRef}
+            events={events}
+            loading={loading}
+            error={error}
+            banditId={activeBanditId as string}
+            variant="horizontal"
+            showButton={false}
+            imageHeight={154}
+            contentContainerStyle={styles.eventsContainer}
+            onEventPress={focusMapOnEvent}
+          />
+        </View>
       )}
     </View>
   );
@@ -406,12 +503,24 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   mapContainer: {
-    height: '40%',
-    backgroundColor: '#f0f0f0',
+    height: '46%',
+    backgroundColor: '#e9ecef',
   },
   miniMapContainer: {
     flex: 1,
     backgroundColor: '#f0f0f0',
+  },
+  miniLoadingBox: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 48,
+  },
+  miniPlaceholder: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+    backgroundColor: '#FFB475',
   },
   loadingContainer: {
     flex: 1,
@@ -419,6 +528,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eventsContainer: {
-    marginTop: 8,
+    marginTop: 6,
+    paddingHorizontal: 6,
+    paddingBottom: 12,
+  },
+  recommendationsPanel: {
+    flex: 1,
+    backgroundColor: '#f7f8fa',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 10,
+  },
+  recommendationsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  recommendationsTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1f2937',
+  },
+  recommendationsHint: {
+    fontSize: 12,
+    color: '#6b7280',
+    paddingHorizontal: 12,
+    marginBottom: 6,
+  },
+  recommendationArrows: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  arrowBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowBtnDisabled: {
+    opacity: 0.35,
+  },
+  arrowText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: -1,
   },
 });

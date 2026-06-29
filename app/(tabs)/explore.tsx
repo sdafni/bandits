@@ -1,5 +1,6 @@
 import { getEvents, toggleEventLike } from '@/app/services/events';
 import EventCard from '@/components/EventCard';
+import ExploreGridCard from '@/components/ExploreGridCard';
 import { useCity } from '@/contexts/CityContext';
 import { Database } from '@/lib/database.types';
 import { usePremiumRefreshControl } from '@/lib/mobilePullToRefresh';
@@ -158,21 +159,25 @@ export default function Explore() {
   }, [banditId, router]);
 
   const renderEventCard = useCallback(
-    (item: Event) => (
-      <EventCard
-        event={item}
-        onLike={() => void toggleLike(item.id)}
-        isLiked={likedEventIds.has(item.id)}
-        variant={isDesktopGrid ? 'grid' : 'default'}
-        showRecommendations
-        banditId={banditId}
-        onPress={() =>
-          router.push(
-            `${banditId ? `/spot/${item.id}?banditId=${encodeURIComponent(banditId)}` : `/spot/${item.id}`}` as any,
-          )
-        }
-      />
-    ),
+    (item: Event) => {
+      const spotUrl = banditId
+        ? `/spot/${item.id}?banditId=${encodeURIComponent(banditId)}`
+        : `/spot/${item.id}`;
+      const commonProps = {
+        event: item,
+        onLike: () => void toggleLike(item.id),
+        isLiked: likedEventIds.has(item.id),
+        showRecommendations: true as const,
+        banditId,
+        onPress: () => router.push(spotUrl as any),
+      };
+
+      if (isDesktopGrid) {
+        return <ExploreGridCard {...commonProps} />;
+      }
+
+      return <EventCard {...commonProps} variant="default" />;
+    },
     [banditId, isDesktopGrid, likedEventIds, router, toggleLike],
   );
 

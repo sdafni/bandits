@@ -1,10 +1,10 @@
-import { getEvents } from '@/app/services/events';
 import { useMapEvents } from '@/hooks/useMapEvents';
-import { Database } from '@/lib/database.types';
+import { ATHENS_CENTER, eventMapCoordinates } from '@/lib/mapCoordinates';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
+import type { Database } from '@/lib/database.types';
 import EventList, { EventListRef } from './EventList';
 
 type Event = Database['public']['Tables']['event']['Row'];
@@ -24,69 +24,161 @@ interface MapViewProps {
   banditId?: string;
 }
 
+function buildLeafletHtml(args: {
+  initialLat: number;
+  initialLng: number;
+  initialZoom: number;
+  markersJson: string;
+  athensLat: number;
+  athensLng: number;
+}): string {
+  const { initialLat, initialLng, initialZoom, markersJson, athensLat, athensLng } = args;
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <style>
+    html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    var ATHENS = { lat: ${athensLat}, lng: ${athensLng} };
+    var map = L.map('map', { zoomControl: true }).setView([${initialLat}, ${initialLng}], ${initialZoom});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    var markers = [];
+    var markerById = {};
+
+    var genreColor = {
+      Food: '#E67E22',
+      Nightlife: '#8E44AD',
+      Shopping: '#2980B9',
+      Culture: '#16A085',
+      Coffee: '#6E4B3A'
+    };
+
+    function colorFor(genre, id) {
+      if (genreColor[genre]) return genreColor[genre];
+      var fallback = ['#C0392B', '#2E86AB', '#1D8348', '#AF7AC5', '#D68910'];
+      var idx = Math.abs(String(id).split('').reduce(function(a, c) { return a + c.charCodeAt(0); }, 0)) % fallback.length;
+      return fallback[idx];
+    }
+
+    function markerIcon(color) {
+      return L.divIcon({
+        html: '<div style="width:22px;height:22px;background:' + color + ';border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>',
+        className: 'custom-marker-container',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function updateMarkers(markersData) {
+      markers.forEach(function(marker) { map.removeLayer(marker); });
+      markers = [];
+      markerById = {};
+      (markersData || []).forEach(function(markerData) {
+        if (!markerData || !isFinite(markerData.lat) || !isFinite(markerData.lng)) return;
+        var color = colorFor(markerData.genre, markerData.id);
+        var marker = L.marker([markerData.lat, markerData.lng], { icon: markerIcon(color) })
+          .addTo(map)
+          .bindPopup('<div style="min-width:180px"><h3 style="margin:0 0 6px 0;font-size:15px">' + escapeHtml(markerData.name) + '</h3><p style="margin:0;font-size:12px;color:#666">' + escapeHtml(markerData.address) + '</p></div>')
+          .on('click', function() {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerClick', eventId: markerData.id }));
+          });
+        markers.push(marker);
+        markerById[markerData.id] = marker;
+      });
+
+      if (markers.length > 1) {
+        try {
+          var group = L.featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.12), { maxZoom: 15, animate: false });
+        } catch (e) {
+          map.setView([ATHENS.lat, ATHENS.lng], 13);
+        }
+      } else if (markers.length === 1) {
+        map.setView([markersData[0].lat, markersData[0].lng], 15);
+      } else {
+        map.setView([ATHENS.lat, ATHENS.lng], 13);
+      }
+
+      setTimeout(function() { map.invalidateSize(); }, 120);
+    }
+
+    window.__applyMapMarkers = updateMarkers;
+    window.__focusMarker = function(eventId) {
+      var marker = markerById[eventId];
+      if (!marker) return;
+      var latlng = marker.getLatLng();
+      map.setView(latlng, Math.max(map.getZoom(), 15), { animate: true });
+      marker.openPopup();
+    };
+    window.__resetMapCenter = function(lat, lng, zoom) {
+      map.setView([lat, lng], zoom || 13);
+    };
+
+    map.on('moveend', function() {
+      var center = map.getCenter();
+      var zoom = map.getZoom();
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'regionChange',
+        center: center,
+        latitudeDelta: 0.01 / Math.pow(2, zoom - 10),
+        longitudeDelta: 0.01 / Math.pow(2, zoom - 10)
+      }));
+    });
+
+  var INITIAL_MARKERS = ${markersJson};
+  function boot() {
+    try {
+      updateMarkers(INITIAL_MARKERS);
+    } catch (e) {
+      map.setView([ATHENS.lat, ATHENS.lng], 13);
+    }
+    setTimeout(function() {
+      map.invalidateSize();
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'mapReady' }));
+    }, 250);
+  }
+  if (document.readyState === 'complete') boot();
+  else window.addEventListener('load', boot);
+  </script>
+</body>
+</html>`;
+}
+
 export default function LeafletMapView({
   initialRegion,
   onMapReady,
   onError,
   onRegionChange,
-  miniMode = false,
-  banditId
+  banditId: banditIdProp,
 }: MapViewProps) {
   const eventListRef = useRef<EventListRef>(null);
   const webViewRef = useRef<WebView>(null);
   const { banditId: routeBanditId } = useLocalSearchParams();
   const [mapReady, setMapReady] = useState(false);
 
-  // Use provided banditId prop, or fall back to route param
-  const activeBanditId = banditId || routeBanditId;
+  const routeBanditIdValue = Array.isArray(routeBanditId) ? routeBanditId[0] : routeBanditId;
+  const scopedBanditId = banditIdProp ?? routeBanditIdValue;
 
-  // Create a handler that scrolls to the event instead of navigating
-  const handleMarkerPress = (event: any) => {
-    eventListRef.current?.scrollToEvent(event.id);
-  };
+  const { events, loading, error, banditId: mapBanditId } = useMapEvents(
+    undefined,
+    scopedBanditId ? { banditId: scopedBanditId } : undefined,
+  );
 
-  // Custom state for mini map with specific banditId
-  const [customEvents, setCustomEvents] = useState<Event[]>([]);
-  const [customLoading, setCustomLoading] = useState(false);
-  const [customError, setCustomError] = useState<string | null>(null);
-
-  // Use hook for normal mode, custom state for mini mode with banditId
-  const hookData = useMapEvents();
-  const events = banditId ? customEvents : hookData.events;
-  const loading = banditId ? customLoading : hookData.loading;
-  const error = banditId ? customError : hookData.error;
-  const calculateOptimalMapBounds = hookData.calculateOptimalMapBounds;
-
-  // Fetch events for specific banditId when in mini mode
-  useEffect(() => {
-    if (banditId && miniMode) {
-      fetchEventsForBandit();
-    }
-  }, [banditId, miniMode]);
-
-  const fetchEventsForBandit = async () => {
-    try {
-      setCustomLoading(true);
-      setCustomError(null);
-
-      const allEventsData = await getEvents({ banditId });
-
-      // Filter out any events that still have null coordinates
-      const validEvents = allEventsData.filter(event =>
-        event.location_lat != null &&
-        event.location_lng != null &&
-        typeof event.location_lat === 'number' &&
-        typeof event.location_lng === 'number'
-      );
-
-      setCustomEvents(validEvents);
-    } catch (err) {
-      console.error('Error fetching events for bandit:', err);
-      setCustomError(err instanceof Error ? err.message : 'Failed to fetch events');
-    } finally {
-      setCustomLoading(false);
-    }
-  };
+  const effectiveBanditId = mapBanditId || scopedBanditId;
 
   useEffect(() => {
     if (error) {
@@ -94,26 +186,72 @@ export default function LeafletMapView({
     }
   }, [error, onError]);
 
-  // Update markers when events change
-  useEffect(() => {
-    if (mapReady && webViewRef.current && events.length > 0) {
-      const markersData = events
-        .filter(event => event.location_lat && event.location_lng)
-        .map(event => ({
-          id: event.id,
-          lat: event.location_lat,
-          lng: event.location_lng,
-          name: event.name,
-          address: event.address,
-          genre: event.genre,
-        }));
+  const markersData = useMemo(
+    () =>
+      events
+        .map((event) => {
+          const coords = eventMapCoordinates(event);
+          if (!coords) return null;
+          return {
+            id: event.id,
+            lat: coords.lat,
+            lng: coords.lng,
+            name: event.name ?? '',
+            address: event.address ?? '',
+            genre: event.genre ?? '',
+          };
+        })
+        .filter((row): row is NonNullable<typeof row> => row != null),
+    [events],
+  );
 
-      webViewRef.current.postMessage(JSON.stringify({
-        type: 'updateMarkers',
-        markers: markersData
-      }));
-    }
-  }, [events, mapReady]);
+  const bootHtml = useMemo(
+    () =>
+      buildLeafletHtml({
+        initialLat: ATHENS_CENTER.latitude,
+        initialLng: ATHENS_CENTER.longitude,
+        initialZoom: 13,
+        markersJson: '[]',
+        athensLat: ATHENS_CENTER.latitude,
+        athensLng: ATHENS_CENTER.longitude,
+      }),
+    [],
+  );
+
+  const webViewKey = `city-map-${effectiveBanditId ?? 'all'}`;
+
+  useEffect(() => {
+    setMapReady(false);
+  }, [webViewKey]);
+
+  useEffect(() => {
+    if (!mapReady || !webViewRef.current) return;
+    const payload = JSON.stringify(markersData);
+    webViewRef.current.injectJavaScript(`
+      (function(){
+        if (typeof window.__applyMapMarkers === 'function') {
+          window.__applyMapMarkers(${payload});
+        }
+        true;
+      })();
+    `);
+  }, [mapReady, markersData]);
+
+  const focusMapOnEvent = useCallback(
+    (event: Event) => {
+      if (!webViewRef.current || !mapReady) return;
+      const safeId = String(event.id).replace(/'/g, "\\'");
+      webViewRef.current.injectJavaScript(`
+        (function(){
+          if (typeof window.__focusMarker === 'function') {
+            window.__focusMarker('${safeId}');
+          }
+          true;
+        })();
+      `);
+    },
+    [mapReady],
+  );
 
   const handleWebViewMessage = (event: any) => {
     try {
@@ -124,12 +262,13 @@ export default function LeafletMapView({
           setMapReady(true);
           onMapReady();
           break;
-        case 'markerClick':
-          const clickedEvent = events.find(e => e.id === data.eventId);
+        case 'markerClick': {
+          const clickedEvent = events.find((e) => e.id === data.eventId);
           if (clickedEvent) {
-            handleMarkerPress(clickedEvent);
+            eventListRef.current?.scrollToEvent(clickedEvent.id);
           }
           break;
+        }
         case 'regionChange':
           onRegionChange({
             latitude: data.center.lat,
@@ -147,285 +286,66 @@ export default function LeafletMapView({
     }
   };
 
-  // Calculate initial bounds
-  const getInitialBounds = () => {
-    if (events.length === 0) {
-      return {
-        center: { lat: initialRegion.latitude, lng: initialRegion.longitude },
-        zoom: 13
-      };
-    }
-
-    const mapBounds = calculateOptimalMapBounds(initialRegion);
-    return {
-      center: { lat: mapBounds.center.latitude, lng: mapBounds.center.longitude },
-      zoom: mapBounds.zoom || 13
-    };
-  };
-
-  const initialBounds = getInitialBounds();
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Leaflet Map</title>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-        crossorigin=""/>
-      <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-        crossorigin=""></script>
-      <style>
-        body { margin: 0; padding: 0; }
-        #map { height: 100vh; width: 100vw; }
-        .custom-marker {
-          width: 30px !important;
-          height: 30px !important;
-          background-color: #FF6B6B;
-          border: 2px solid white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          cursor: pointer;
-        }
-        ${miniMode ? `
-        .leaflet-control-attribution {
-          display: none !important;
-        }
-        .leaflet-control-zoom {
-          display: none !important;
-        }
-        ` : ''}
-      </style>
-    </head>
-    <body>
-      <div id="map"></div>
-      <script>
-        // Initialize map
-        var map = L.map('map').setView([${initialBounds.center.lat}, ${initialBounds.center.lng}], ${initialBounds.zoom});
-
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        var markers = [];
-
-        // Comprehensive color palette with darker colors for better contrast (100 colors)
-        var markerColors = [
-          // Basic colors first (high contrast)
-          '#C0392B', '#E74C3C', '#8E44AD', '#9B59B6', '#2980B9', '#3498DB', '#1ABC9C', '#16A085',
-          '#27AE60', '#2ECC71', '#F39C12', '#E67E22', '#D68910', '#CA6F1E', '#AF7AC5', '#8E44AD',
-          '#5DADE2', '#48C9B0', '#58D68D', '#F7DC6F', '#EB984E', '#EC7063', '#BB8FCE', '#85C1E9',
-
-          // Reds and Pinks
-          '#A93226', '#B03A2E', '#922B21', '#78281F', '#641E16', '#943126', '#A04000', '#B7472A',
-          '#CD5C5C', '#B22222', '#8B0000', '#A0522D', '#D2691E', '#FF6347', '#DC143C', '#B91C1C',
-
-          // Blues
-          '#1B4F72', '#21618C', '#2874A6', '#2E86AB', '#3090C7', '#5499C7', '#7FB3D3', '#85929E',
-          '#1F2937', '#374151', '#4B5563', '#6B7280', '#111827', '#1E3A8A', '#1E40AF', '#2563EB',
-
-          // Greens
-          '#0E4B29', '#145A32', '#186A3B', '#1D8348', '#229954', '#28B463', '#2ECC71', '#58D68D',
-          '#0F766E', '#047857', '#065F46', '#064E3B', '#022C22', '#14532D', '#166534', '#15803D',
-
-          // Purples
-          '#4A148C', '#6A1B9A', '#7B1FA2', '#8E24AA', '#9C27B0', '#AB47BC', '#BA68C8', '#CE93D8',
-          '#581C87', '#6B21A8', '#7C2D92', '#8B5CF6', '#A855F7', '#C084FC', '#DDD6FE', '#EDE9FE',
-
-          // Oranges and Yellows
-          '#B7472A', '#CB4335', '#D68910', '#E67E22', '#F39C12', '#F4D03F', '#F7DC6F', '#F9E79F',
-          '#D97706', '#EA580C', '#F59E0B', '#FBBF24', '#FCD34D', '#FDE047', '#FACC15', '#EAB308',
-
-          // Teals and Cyans
-          '#0E7490', '#0891B2', '#06B6D4', '#22D3EE', '#67E8F9', '#A7F3D0', '#6EE7B7', '#34D399',
-          '#059669', '#047857', '#065F46', '#064E3B', '#0F766E', '#0D9488', '#14B8A6', '#5EEAD4',
-
-          // Grays and Dark colors
-          '#212529', '#343A40', '#495057', '#6C757D', '#ADB5BD', '#CED4DA', '#DEE2E6', '#E9ECEF',
-          '#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB', '#F3F4F6',
-
-          // Additional vibrant colors
-          '#E91E63', '#FF5722', '#795548', '#607D8B', '#9E9E9E', '#FFEB3B', '#CDDC39', '#8BC34A',
-          '#4CAF50', '#009688', '#00BCD4', '#03A9F4', '#2196F3', '#3F51B5', '#673AB7', '#9C27B0'
-        ];
-
-        var usedColors = [];
-        var colorAssignments = {};
-        var colorIndex = 0;
-
-        // Function to create custom marker icon with unique color
-        function createCustomIcon(eventId) {
-          // Get or assign a unique color for this event
-          var color = colorAssignments[eventId];
-          if (!color) {
-            // Find the next available color
-            while (colorIndex < markerColors.length && usedColors.indexOf(markerColors[colorIndex]) !== -1) {
-              colorIndex++;
-            }
-
-            if (colorIndex < markerColors.length) {
-              color = markerColors[colorIndex];
-              colorAssignments[eventId] = color;
-              usedColors.push(color);
-              colorIndex++;
-            } else {
-              // Fallback to a default color if we somehow run out
-              color = '#C0392B';
-            }
-          }
-
-          // Smaller markers for mini mode
-          var size = ${miniMode ? '10' : '20'};
-          var borderWidth = ${miniMode ? '1' : '2'};
-
-          return L.divIcon({
-            html: '<div style="width: ' + size + 'px; height: ' + size + 'px; background-color: ' + color + '; border: ' + borderWidth + 'px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-            className: 'custom-marker-container',
-            iconSize: [size, size],
-            iconAnchor: [size/2, size/2]
-          });
-        }
-
-        // Function to update markers
-        function updateMarkers(markersData) {
-          // Clear existing markers
-          markers.forEach(marker => map.removeLayer(marker));
-          markers = [];
-
-          // Add new markers
-          markersData.forEach(function(markerData) {
-            var marker = L.marker([markerData.lat, markerData.lng], {icon: createCustomIcon(markerData.id)})
-              .addTo(map)
-              .bindPopup(\`
-                <div style="min-width: 200px;">
-                  <h3 style="margin: 0 0 8px 0; font-size: 16px;">\${markerData.name}</h3>
-                  \${markerData.address ? \`<p style="margin: 0 0 4px 0; font-size: 12px; color: #666;">\${markerData.address}</p>\` : ''}
-                  \${markerData.genre ? \`<p style="margin: 0; font-size: 10px; color: #888; text-transform: uppercase;">\${markerData.genre}</p>\` : ''}
-                </div>
-              \`)
-              .on('click', function() {
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                  type: 'markerClick',
-                  eventId: markerData.id
-                }));
-              });
-
-            markers.push(marker);
-          });
-
-          // Fit bounds if multiple markers
-          if (markersData.length > 1) {
-            var group = new L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.1));
-          }
-        }
-
-        // Listen for messages from React Native
-        document.addEventListener('message', function(event) {
-          try {
-            var data = JSON.parse(event.data);
-            if (data.type === 'updateMarkers') {
-              updateMarkers(data.markers);
-            }
-          } catch (e) {
-            console.error('Failed to parse message:', e);
-          }
-        });
-
-        // Map event handlers
-        map.on('moveend', function() {
-          var center = map.getCenter();
-          var zoom = map.getZoom();
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'regionChange',
-            center: center,
-            latitudeDelta: 0.01 / Math.pow(2, zoom - 10),
-            longitudeDelta: 0.01 / Math.pow(2, zoom - 10)
-          }));
-        });
-
-        // Notify React Native that map is ready
-        setTimeout(function() {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'mapReady'
-          }));
-        }, 1000);
-
-      </script>
-    </body>
-    </html>
-  `;
-
   return (
-    <View style={miniMode ? styles.miniContainer : styles.container}>
-      {/* Map - Full container in mini mode, top 40% in normal mode */}
-      <View style={miniMode ? styles.miniMapContainer : styles.mapContainer}>
+    <View style={styles.container}>
+      <View style={styles.mapContainer}>
         <WebView
+          key={webViewKey}
           ref={webViewRef}
-          source={{ html: htmlContent }}
+          source={{ html: bootHtml }}
           style={styles.webview}
           onMessage={handleWebViewMessage}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          mixedContentMode="compatibility"
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          scrollEnabled={!miniMode}
-          onError={(error) => {
-            console.error('WebView error:', error);
-            onError(error);
+          javaScriptEnabled
+          domStorageEnabled
+          originWhitelist={['*']}
+          allowsInlineMediaPlayback
+          startInLoadingState={false}
+          mixedContentMode="always"
+          onError={(webviewError) => {
+            onError(webviewError);
           }}
         />
+        {loading && markersData.length === 0 ? (
+          <View style={styles.mapLoadingOverlay} pointerEvents="none">
+            <ActivityIndicator size="large" color="#0a7ea4" />
+          </View>
+        ) : null}
       </View>
 
-      {/* Bottom 60% - Events List (only in normal mode) */}
-      {!miniMode && (
-        <EventList
-          ref={eventListRef}
-          events={events}
-          loading={loading}
-          error={error}
-          banditId={activeBanditId as string}
-          variant="horizontal"
-          showButton={false}
-          imageHeight={120}
-          contentContainerStyle={styles.eventsContainer}
-        />
-      )}
+      <EventList
+        ref={eventListRef}
+        events={events}
+        loading={loading}
+        error={error}
+        banditId={(effectiveBanditId || '') as string}
+        variant="horizontal"
+        showButton={false}
+        imageHeight={120}
+        contentContainerStyle={styles.eventsContainer}
+        onEventPress={focusMapOnEvent}
+      />
     </View>
   );
 }
 
-// Export a Marker component for compatibility
 export const LeafletMarker = () => {
-  return null; // Markers are handled internally
+  return null;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  miniContainer: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
   mapContainer: {
     height: '40%',
     backgroundColor: '#f0f0f0',
+    position: 'relative',
   },
-  miniMapContainer: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
+  mapLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(238, 241, 244, 0.55)',
   },
   webview: {
     flex: 1,
