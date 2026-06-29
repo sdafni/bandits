@@ -1,0 +1,493 @@
+{
+  "generatedAt": "2026-06-29T03:43:02.099Z",
+  "appliedCount": 312,
+  "sampleSize": 30,
+  "passCount": 30,
+  "failCount": 0,
+  "duplicateClusterCount": 15,
+  "unexpectedDuplicateClusters": 0,
+  "unexpectedDuplicates": [],
+  "results": [
+    {
+      "eventId": "6e70f8f7-d262-4376-8137-9ac09dd9a536",
+      "venueName": "Jazz In Jazz Live",
+      "genre": "Nightlife",
+      "bucket": "Bars/Nightlife",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJRZijS0a9oRQRbcmg2LE6dMs/photos/AaVGc3l9TzQjOsoDDysgzoufzgO0i2WAmLgUnMMOGpfN0…",
+      "loadMs": 1001,
+      "bytes": 304855,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "15206adb-4282-40a3-acee-7ddc6677d5c5",
+      "venueName": "S-CAPE Club",
+      "genre": "Nightlife",
+      "bucket": "Bars/Nightlife",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJXRfZLt68oRQR55suz2_lthc/photos/AaVGc3nqUANiOwsOtnNFt0dodgYNxPyr2-SF7fW5i4koW…",
+      "loadMs": 292,
+      "bytes": 125719,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "5735d1e2-2a74-4027-8846-35b509ba89a8",
+      "venueName": "Jazz In Jazz",
+      "genre": "Nightlife",
+      "bucket": "Bars/Nightlife",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJRZijS0a9oRQRbcmg2LE6dMs/photos/AaVGc3nf4kNjixHFnTCRxckeMJZAkL2ElzioeB29jB-Sk…",
+      "loadMs": 437,
+      "bytes": 328303,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "3c649ee8-c9ea-46b5-b050-6dd69dc4901f",
+      "venueName": "The Bar in Front of the Bar",
+      "genre": "Nightlife",
+      "bucket": "Bars/Nightlife",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJMbLXGNq9oRQR2afygzKgiOE/photos/AaVGc3nsCLdiSiIsmKI5ywryGm0dYEZoqSn4dleuh_zme…",
+      "loadMs": 259,
+      "bytes": 113969,
+      "dims": {
+        "w": 800,
+        "h": 1200
+      },
+      "aspect": 0.6666666666666666,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "2005b9b1-b97a-4140-bc27-fbc2e7197328",
+      "venueName": "Anglais Athens Rooftop Bar",
+      "genre": "Nightlife",
+      "bucket": "Bars/Nightlife",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJjwoy2iK9oRQRGvaCxUkSAhs/photos/AaVGc3mMFWIIJn0SdjmP_x99k2oHV8YKrCusjOhMztG1G…",
+      "loadMs": 393,
+      "bytes": 259904,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "15d887d7-2c78-433a-9f9c-de234b38b574",
+      "venueName": "Bios Culture Bar Rooftop",
+      "genre": "Nightlife",
+      "bucket": "Bars/Nightlife",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ_cOT3CC9oRQRcZdnJp_dsRA/photos/AaVGc3ndbqzxGG9KUhZNyPbBBoBKbEfineOOt3Q0p2jtl…",
+      "loadMs": 211,
+      "bytes": 379189,
+      "dims": {
+        "w": 1600,
+        "h": 1200
+      },
+      "aspect": 1.3333333333333333,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "625e767b-3dd3-46f5-86a3-64ffa23f2026",
+      "venueName": "Kowalski Bar Athens",
+      "genre": "Coffee",
+      "bucket": "Coffee",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ4f5rmra9oRQRBRMUriFGTcs/photos/AaVGc3lsqPmcJ_dYVvvg1LieXzoE9ycjWI6otpXvr1VMQ…",
+      "loadMs": 340,
+      "bytes": 362050,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "75753d42-5a5a-4768-8dc4-09463d00d66e",
+      "venueName": "Lotte",
+      "genre": "Coffee",
+      "bucket": "Coffee",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJZ69FcBq9oRQRIpaIMhGfS6U/photos/AaVGc3mPGJTGCsAwJMrEbrqdYKS3EKesnDikaYLk3ZnMe…",
+      "loadMs": 421,
+      "bytes": 329550,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "59d53e13-26ee-4fa0-88da-c20043888808",
+      "venueName": "Naif All-Day Café",
+      "genre": "Coffee",
+      "bucket": "Coffee",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJd5K_Gra9oRQRkRCs6-ycf_Q/photos/AaVGc3l4TRgWIhuw7zwl2-MZsBvHsOZgn-islXiWfKPGT…",
+      "loadMs": 230,
+      "bytes": 247216,
+      "dims": {
+        "w": 675,
+        "h": 1200
+      },
+      "aspect": 0.5625,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "e36a3ffd-9cc9-4afe-8e2e-2e8c9434476e",
+      "venueName": "Picky Brunch Specialty Coffee",
+      "genre": "Coffee",
+      "bucket": "Coffee",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ7fvJOu-9oRQRzHf10vSxp7c/photos/AaVGc3nUtB40-sJeL33XuGXCDY94kWC12fo_A6LUEOvDF…",
+      "loadMs": 191,
+      "bytes": 517954,
+      "dims": {
+        "w": 1600,
+        "h": 1067
+      },
+      "aspect": 1.499531396438613,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "0a1bdd2e-ea9f-44fe-891e-3b5abcfcde9f",
+      "venueName": "Blue Parrot",
+      "genre": "Coffee",
+      "bucket": "Coffee",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJXRWMXya9oRQRo0hJmLsblio/photos/AaVGc3kKM_KxBChXa_TgNgx_Kto1b-J8UFPojhkIh_U22…",
+      "loadMs": 232,
+      "bytes": 433187,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "2ea001b1-5fff-45f2-9b67-7f30b65294cd",
+      "venueName": "Vinyl Cafe",
+      "genre": "Coffee",
+      "bucket": "Coffee",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJaWn1U967oRQRLcGV_JVyJDM/photos/AaVGc3ms6eK0jpRhNh8q5_VrQW8jEgWmC_Dz2UiLKQKCU…",
+      "loadMs": 352,
+      "bytes": 302695,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "f99f6a96-1355-4e3a-81d5-b34490989f33",
+      "venueName": "Dexameni Outdoor Cinema",
+      "genre": "Culture",
+      "bucket": "Culture",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ0XLwm0e9oRQR2t1yAkLYZbg/photos/AaVGc3lkg02nrDx3Ap7S-Jv6uH98d4T0A0b3KqAAkcKLl…",
+      "loadMs": 204,
+      "bytes": 225917,
+      "dims": {
+        "w": 1600,
+        "h": 900
+      },
+      "aspect": 1.7777777777777777,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "365759dc-984f-4a1e-9492-9d886a7828cb",
+      "venueName": "ASFA BBQ (Athens School of Fine Arts)",
+      "genre": "Culture",
+      "bucket": "Culture",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJX7AgiGO8oRQRrQONJhQhuKU/photos/AaVGc3lz9hsQgHnPajiuJGN_qTRONGiLDXqUZgN4aDJIN…",
+      "loadMs": 177,
+      "bytes": 59008,
+      "dims": {
+        "w": 720,
+        "h": 536
+      },
+      "aspect": 1.3432835820895523,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "c023277d-3eea-4c69-be45-c67e0c9bc06a",
+      "venueName": "Cine Zefiros Open Air Cinema",
+      "genre": "Culture",
+      "bucket": "Culture",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ48k73x69oRQRmcRyMyUn3zU/photos/AaVGc3lYTIu7Q57xl37AjXl5gsi-ILmK_RUP0Ah-Yi42F…",
+      "loadMs": 202,
+      "bytes": 294771,
+      "dims": {
+        "w": 1600,
+        "h": 1200
+      },
+      "aspect": 1.3333333333333333,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "9684004a-915b-4af1-85e8-f63196c79db8",
+      "venueName": "Cine Thisio",
+      "genre": "Culture",
+      "bucket": "Culture",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ48k73x69oRQRmcRyMyUn3zU/photos/AaVGc3nmjX_bihJyvZjiTtwt3oVFGxf2NYxen0kh9t0IF…",
+      "loadMs": 161,
+      "bytes": 294771,
+      "dims": {
+        "w": 1600,
+        "h": 1200
+      },
+      "aspect": 1.3333333333333333,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "3942284f-afa9-4c4b-9825-60726b68aba8",
+      "venueName": "Avioti Fashion ED",
+      "genre": "Culture",
+      "bucket": "Culture",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJu5kH3jy9oRQR7Dtd2RR8_XA/photos/AaVGc3lniqii6-FJOajU1cXJwJk77jNDrVbiR5N6am-qn…",
+      "loadMs": 440,
+      "bytes": 117397,
+      "dims": {
+        "w": 1024,
+        "h": 683
+      },
+      "aspect": 1.499267935578331,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "695cb973-40e3-4cd4-bb58-83e4ef1de426",
+      "venueName": "Elika Gallery",
+      "genre": "Culture",
+      "bucket": "Culture",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJOx25TTi9oRQRNYjsrFQigQk/photos/AaVGc3nkbEGU6rZpS6IqM0A7F_dhWnQEvHVWvDNOND2w6…",
+      "loadMs": 438,
+      "bytes": 128525,
+      "dims": {
+        "w": 1600,
+        "h": 900
+      },
+      "aspect": 1.7777777777777777,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "e1b27b30-c902-48fe-8307-c3b787012fea",
+      "venueName": "Monokeros Bakery",
+      "genre": "Food",
+      "bucket": "Food",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJt1_Q0qC9oRQR4HAOnNoH0-Q/photos/AaVGc3nlfQIVdgTlmgWrGyhovZdxn-C-1xG095W2xXrDz…",
+      "loadMs": 231,
+      "bytes": 307727,
+      "dims": {
+        "w": 1600,
+        "h": 901
+      },
+      "aspect": 1.7758046614872365,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "db5543e7-4ab2-41c4-a175-d3741e6c40ca",
+      "venueName": "Ex Machina",
+      "genre": "Food",
+      "bucket": "Food",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJt5NN5Ni9oRQRRA-Ec_y2ecY/photos/AaVGc3mFCpsLQ3a6k2EyPKQ2xhfOlWrS_VMtMZ1LG8-n4…",
+      "loadMs": 224,
+      "bytes": 311638,
+      "dims": {
+        "w": 1593,
+        "h": 1200
+      },
+      "aspect": 1.3275,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "167836a8-e053-4c60-a412-7f137b748bd5",
+      "venueName": "Krabo Beach Bar & Restaurant",
+      "genre": "Food",
+      "bucket": "Food",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJ-wjAIC_roRQR4p2a07h-CxY/photos/AaVGc3mEVnxMXmizzX_sCOVirSrAU0taWZLXN8lMD6qQm…",
+      "loadMs": 237,
+      "bytes": 438871,
+      "dims": {
+        "w": 1600,
+        "h": 901
+      },
+      "aspect": 1.7758046614872365,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "015de590-08d0-4a41-91d6-05d5b6556c60",
+      "venueName": "Seychelles",
+      "genre": "Food",
+      "bucket": "Food",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJF81tjSa9oRQR-YzddOp6Lz8/photos/AaVGc3meHEEs28hxO3XL0PCxcKlXx7MOpVKHXCoVpYVcY…",
+      "loadMs": 419,
+      "bytes": 271762,
+      "dims": {
+        "w": 1600,
+        "h": 1200
+      },
+      "aspect": 1.3333333333333333,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "753dbe70-20ac-4b0e-959f-ff270780c551",
+      "venueName": "Nido Athens",
+      "genre": "Food",
+      "bucket": "Food",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJDx02F2q9oRQR8gJ_kB4kkck/photos/AaVGc3m56DbSl4aI5n4rapIdHjR5WYxddB6jQjI7mmZjn…",
+      "loadMs": 413,
+      "bytes": 302008,
+      "dims": {
+        "w": 1600,
+        "h": 1200
+      },
+      "aspect": 1.3333333333333333,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "791ddb6d-6e40-44a8-9279-fe0629f9207b",
+      "venueName": "Sessions",
+      "genre": "Food",
+      "bucket": "Food",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJCxKmI4u9oRQREry9ivBdhaU/photos/AaVGc3ksf5R0hdS_xAkMTrEavZrOgMV-_3n_wBgPOOrio…",
+      "loadMs": 368,
+      "bytes": 245518,
+      "dims": {
+        "w": 1600,
+        "h": 1067
+      },
+      "aspect": 1.499531396438613,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "39f8253e-dd99-45ba-b3db-5dd9049093ba",
+      "venueName": "THE MAKERS concept store",
+      "genre": "Shopping",
+      "bucket": "Shopping",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJL-NAOc-9oRQRXMYCdQGL_Uo/photos/AaVGc3nLEJ5PHh9lGe2FpTmuhp14TDyvqczk6yC1x7Lm3…",
+      "loadMs": 213,
+      "bytes": 2109961,
+      "dims": {
+        "w": 1600,
+        "h": 901
+      },
+      "aspect": 1.7758046614872365,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "3141c923-a77b-4aee-81ed-86a952fa3ca5",
+      "venueName": "Handpicked Cherries",
+      "genre": "Shopping",
+      "bucket": "Shopping",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJAZO78gK9oRQRMdDdkBeSvd4/photos/AaVGc3kyiU26QqvqN6pJNi-3ZuWRUKI8lGADgy9FCDuDQ…",
+      "loadMs": 264,
+      "bytes": 372373,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "af65432d-a70f-47f2-8efc-b9e07af25cb7",
+      "venueName": "Maru Ceramics Boutique Pottery Store",
+      "genre": "Shopping",
+      "bucket": "Shopping",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJfXYkfzeYoRQRGYDCIe2pbvY/photos/AaVGc3kWH5U86QMfSKiz9MdYw7FEr1aM8jVTm_wV5mJ39…",
+      "loadMs": 355,
+      "bytes": 101524,
+      "dims": {
+        "w": 1600,
+        "h": 902
+      },
+      "aspect": 1.7738359201773837,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "d1f7f448-a34a-4812-b8e2-b79cb9c80509",
+      "venueName": "King Kong Athens Vintage",
+      "genre": "Shopping",
+      "bucket": "Shopping",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJRUe35Ke9oRQRcaduZWFbwgU/photos/AaVGc3nVT5jUf13mexfH5xQxTbF8hJFfIUwWfNr1ikkyf…",
+      "loadMs": 208,
+      "bytes": 261238,
+      "dims": {
+        "w": 900,
+        "h": 1200
+      },
+      "aspect": 0.75,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "baa3439e-f593-47cb-9749-da3b4c327a63",
+      "venueName": "Luxury Toys",
+      "genre": "Shopping",
+      "bucket": "Shopping",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJC9znPDy9oRQRAR8KGDTBe9U/photos/AaVGc3kVhQBWOx3SHVUCWqNZUtVezY1BIJmWiURhOmblT…",
+      "loadMs": 437,
+      "bytes": 310993,
+      "dims": {
+        "w": 1200,
+        "h": 1200
+      },
+      "aspect": 1,
+      "pass": true,
+      "issues": []
+    },
+    {
+      "eventId": "9257327d-f307-4b4a-ae25-0f5e800ca909",
+      "venueName": "Avyssinias Square Flea Market",
+      "genre": "Shopping",
+      "bucket": "Shopping",
+      "imageUrl": "https://places.googleapis.com/v1/places/ChIJsQ6HWCK9oRQR7QU0v_vbZho/photos/AaVGc3nsg2ucv9-XAhDcCBeeBo3K17jG2J2FhVkY3xBkK…",
+      "loadMs": 365,
+      "bytes": 415743,
+      "dims": {
+        "w": 1600,
+        "h": 1200
+      },
+      "aspect": 1.3333333333333333,
+      "pass": true,
+      "issues": []
+    }
+  ],
+  "verdict": "PASS"
+}

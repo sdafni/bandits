@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Athens Venue Hero — Manual Review</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #1a1d24;
+      --border: #2a2f3a;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #7c9cff;
+      --ok: #3dd68c;
+      --warn: #f5a623;
+      --keep: #6b7280;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15, 17, 21, 0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      backdrop-filter: blur(8px);
+    }
+    header h1 { margin: 0 0 4px; font-size: 1.15rem; font-weight: 600; }
+    header p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    input[type="search"], select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      min-width: 200px;
+    }
+    button {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button:hover { border-color: var(--accent); }
+    button.primary { background: #2a3a66; border-color: var(--accent); }
+    button.ok { background: #1a3d2e; border-color: var(--ok); }
+    .stats { margin-left: auto; font-size: 0.85rem; color: var(--muted); }
+    main { padding: 16px 20px 80px; max-width: 1400px; margin: 0 auto; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .card.decided-keep { border-left: 4px solid var(--keep); }
+    .card.decided-use { border-left: 4px solid var(--ok); }
+    .card.decided-skip { border-left: 4px solid var(--warn); opacity: 0.85; }
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .card-head h2 { margin: 0; font-size: 1.05rem; }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #252932;
+      color: var(--muted);
+      margin-right: 6px;
+    }
+    .rec-box {
+      background: #12151c;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 0.9rem;
+    }
+    .rec-box strong { color: var(--accent); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .thumb {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0a0c10;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .thumb.selected { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+    .thumb.recommended { border-color: var(--accent); }
+    .thumb-inner {
+      position: relative;
+      aspect-ratio: 4/3;
+      background: #111;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .thumb-inner .img-fail-msg {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 0.72rem;
+      text-align: center;
+      padding: 8px;
+    }
+    .thumb-inner.img-failed img { opacity: 0.12; }
+    .thumb-inner.img-failed .img-fail-msg { display: flex; }
+    .thumb .cap {
+      padding: 6px 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .saved-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1a3d2e;
+      border: 1px solid var(--ok);
+      color: #b8f5d4;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-top: 14px;
+      font-size: 0.9rem;
+    }
+    .saved-banner strong { color: var(--ok); }
+    .review-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .review-nav .pos { color: var(--muted); font-size: 0.85rem; margin-right: auto; }
+    .auto-next-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .auto-next-label input { accent-color: var(--accent); }
+    .thumb.selected .thumb-inner::after {
+      content: '✓';
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: var(--ok);
+      color: #0a1a12;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      z-index: 1;
+    }
+    .thumb.hero-preview .cap strong { color: var(--ok); }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    a { color: var(--accent); }
+    .thumb-open {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: none;
+      background: none;
+      cursor: zoom-in;
+      text-align: left;
+    }
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.92);
+      flex-direction: column;
+    }
+    .lightbox.open { display: flex; }
+    body.lightbox-open { overflow: hidden; }
+    .lightbox-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .lightbox-top h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lightbox-meta { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .lightbox-close {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      font-size: 1.4rem;
+      line-height: 1;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+    }
+    .lightbox-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      position: relative;
+      padding: 8px 56px;
+    }
+    .lightbox-img-wrap {
+      max-width: min(96vw, 1400px);
+      max-height: calc(100vh - 120px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox-img-wrap img {
+      max-width: 100%;
+      max-height: calc(100vh - 120px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    .lightbox-img-wrap.loading img { opacity: 0.2; }
+    .lightbox-spinner {
+      display: none;
+      position: absolute;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .lightbox-img-wrap.loading .lightbox-spinner { display: block; }
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 88px;
+      padding: 0;
+      font-size: 1.6rem;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .lightbox-nav:hover:not(:disabled) { background: rgba(255,255,255,0.14); border-color: var(--accent); }
+    .lightbox-nav:disabled { opacity: 0.25; cursor: default; }
+    .lightbox-nav.prev { left: 8px; }
+    .lightbox-nav.next { right: 8px; }
+    .lightbox-foot {
+      flex-shrink: 0;
+      padding: 10px 16px 14px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .lightbox-foot kbd {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      font-size: 0.75rem;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Athens Venue Hero — Manual Review</h1>
+    <p>Gold-standard curation. Images load via local proxy (fresh Google Places photos). No database writes.</p>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search venue…" />
+      <select id="filter">
+        <option value="all">All venues</option>
+        <option value="pending" selected>Pending</option>
+        <option value="keep_current">Approved — keep current</option>
+        <option value="use_candidate">Approved — use candidate</option>
+        <option value="skip">Skipped / reject all</option>
+      </select>
+      <button type="button" id="exportBtn" class="primary">Export approvals JSON</button>
+      <button type="button" id="clearBtn">Clear saved decisions</button>
+      <label class="auto-next-label" title="When off, you stay on the card to verify your choice">
+        <input type="checkbox" id="autoNext" /> Auto-advance
+      </label>
+      <span class="stats" id="stats">Loading…</span>
+    </div>
+  </header>
+  <main id="main"><div class="loading">Loading review-data.json…</div></main>
+
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Photo preview">
+    <div class="lightbox-top">
+      <div style="min-width:0">
+        <h3 id="lbVenue">—</h3>
+        <div class="lightbox-meta" id="lbMeta">—</div>
+      </div>
+      <button type="button" class="lightbox-close" id="lbClose" aria-label="Close">×</button>
+    </div>
+    <div class="lightbox-stage">
+      <button type="button" class="lightbox-nav prev" id="lbPrev" aria-label="Previous photo">‹</button>
+      <div class="lightbox-img-wrap loading" id="lbWrap">
+        <div class="lightbox-spinner">Loading full resolution…</div>
+        <img id="lbImg" alt="" />
+      </div>
+      <button type="button" class="lightbox-nav next" id="lbNext" aria-label="Next photo">›</button>
+    </div>
+    <div class="lightbox-foot">
+      <span id="lbCounter">1 / 1</span>
+      · <kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>Esc</kbd> close
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'bandits-venue-hero-review-v1';
+    const AUTO_NEXT_KEY = 'bandits-venue-hero-auto-next';
+    const TOP_N = 5;
+    let pack = null;
+    let decisions = loadDecisions();
+    let focusedEventId = null;
+    let justSavedId = null;
+
+    function loadDecisions() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      } catch {
+        return {};
+      }
+    }
+    function saveDecisions() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(decisions));
+      updateStats();
+      syncDecisionsToServer();
+    }
+
+    async function syncDecisionsToServer() {
+      if (!pack) return;
+      const rows = [];
+      for (const v of pack.venues) {
+        const d = decisionFor(v.eventId);
+        if (d.status === 'pending') continue;
+        rows.push({
+          eventId: v.eventId,
+          venueName: v.venueName,
+          ...d,
+          googlePlaceId: placeIdFor(v),
+        });
+      }
+      try {
+        await fetch('/api/approvals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            exportedAt: new Date().toISOString(),
+            note: 'Auto-sync from review UI localStorage',
+            decisions: rows,
+          }),
+        });
+      } catch {
+        /* offline / server not running */
+      }
+    }
+
+    function loadAutoNext() {
+      return localStorage.getItem(AUTO_NEXT_KEY) === '1';
+    }
+    function saveAutoNext(on) {
+      localStorage.setItem(AUTO_NEXT_KEY, on ? '1' : '0');
+    }
+
+    function pendingVenues() {
+      const q = document.getElementById('search')?.value.trim().toLowerCase() ?? '';
+      return pack.venues.filter((v) => {
+        if (q && !v.venueName.toLowerCase().includes(q)) return false;
+        return decisionFor(v.eventId).status === 'pending';
+      });
+    }
+
+    function ensureFocus() {
+      if (focusedEventId && pack.venues.some((v) => v.eventId === focusedEventId)) return;
+      focusedEventId = pendingVenues()[0]?.eventId ?? pack.venues[0]?.eventId ?? null;
+    }
+
+    function approvedHeroThumb(v, d) {
+      if (d.status !== 'use_candidate' || d.candidateIndex == null) return null;
+      const idx = d.candidateIndex;
+      const src = candidateSrc(v, idx, 480);
+      const full = candidateFullSrc(v, idx);
+      if (src || full) {
+        return { src: src ?? full, full: full ?? src, label: 'New hero (approved)' };
+      }
+      if (d.previewUrl) {
+        const proxied = d.previewUrl.startsWith('/') ? d.previewUrl : proxySrc(d.previewUrl, 480);
+        const proxiedFull = d.previewUrl.startsWith('/') ? d.previewUrl : proxySrc(d.previewUrl, 1600);
+        return { src: proxied, full: proxiedFull, label: 'New hero (approved)' };
+      }
+      return null;
+    }
+
+    function decisionSummary(d) {
+      if (d.status === 'keep_current') return 'Kept current hero';
+      if (d.status === 'use_candidate') return `Approved Google photo ${(d.candidateIndex ?? 0) + 1} as new hero`;
+      if (d.status === 'skip') return 'Skipped — no change';
+      return '';
+    }
+
+    function decisionFor(eventId) {
+      return decisions[eventId] ?? { status: 'pending' };
+    }
+
+    function placeIdFor(v) {
+      return v.googleListing?.placeId ?? v.currentHero?.googlePlaceId ?? null;
+    }
+
+    function candidateFor(v, idx) {
+      return v.candidates?.find((c) => c.index === idx) ?? v.candidates?.[idx] ?? null;
+    }
+
+    function candidateIndexes(v) {
+      const fromPack = (v.candidates || []).map((c) => c.index);
+      if (fromPack.length) return fromPack;
+      const pid = placeIdFor(v);
+      if (pid) return Array.from({ length: TOP_N }, (_, i) => i);
+      return [];
+    }
+
+    function candidateLabel(v, idx) {
+      const cand = candidateFor(v, idx);
+      if (cand?.label) return cand.label;
+      return placeIdFor(v) ? `Google photo ${idx + 1}` : `Photo ${idx + 1}`;
+    }
+
+    function candidateSrc(v, idx, w = 480) {
+      const cand = candidateFor(v, idx);
+      if (cand?.previewUrl) {
+        return cand.previewUrl.startsWith('/') ? cand.previewUrl : proxySrc(cand.previewUrl, w);
+      }
+      const pid = placeIdFor(v);
+      if (pid && v.eventId) return photoSrc(v.eventId, pid, idx, w);
+      return null;
+    }
+
+    function candidateFullSrc(v, idx) {
+      return candidateSrc(v, idx, 1600);
+    }
+
+    function proxySrc(url, w = 480) {
+      return `/api/proxy?url=${encodeURIComponent(url)}&w=${w}`;
+    }
+
+    function photoSrc(eventId, placeId, index, w = 480) {
+      const q = new URLSearchParams({ index: String(index), w: String(w) });
+      if (eventId) q.set('eventId', eventId);
+      if (placeId) q.set('placeId', placeId);
+      return `/api/photo?${q}`;
+    }
+
+    function photoFullSrc(eventId, placeId, index) {
+      return photoSrc(eventId, placeId, index, 1600);
+    }
+
+    function buildSlides(v) {
+      const d = decisionFor(v.eventId);
+      const approved = approvedHeroThumb(v, d);
+      const slides = [];
+      if (approved) {
+        slides.push({ label: approved.label, sub: 'Your approved selection', full: approved.full });
+      }
+      const current = v.currentHero?.previewUrl;
+      if (current) {
+        slides.push({
+          label: approved ? 'Previous hero' : 'Current hero',
+          sub: heroTypeLabel(v.currentHero?.type),
+          full: proxySrc(current, 1600),
+        });
+      }
+      const indexes = candidateIndexes(v);
+      for (const idx of indexes) {
+        const cand = candidateFor(v, idx);
+        const label = candidateLabel(v, idx);
+        const full = candidateFullSrc(v, idx);
+        const sub = cand?.sourceType === 'manual_press'
+          ? `Verified press · ${cand.source ?? 'manual'}`
+          : (placeIdFor(v) ? 'Google Places' : 'Gallery');
+        if (full) slides.push({ label, sub, full });
+      }
+      return slides;
+    }
+
+    function imgThumbHtml(src, alt, eventId, slideIndex) {
+      return `<button type="button" class="thumb-open" data-event-id="${eventId}" data-slide="${slideIndex}" aria-label="Inspect ${alt} full size">
+        <div class="thumb-inner">
+          <img src="${src}" alt="${alt}" loading="lazy" decoding="async"
+            onerror="this.closest('.thumb-inner').classList.add('img-failed')" />
+          <div class="img-fail-msg">Could not load</div>
+        </div>
+      </button>`;
+    }
+
+    const lightbox = {
+      eventId: null,
+      slides: [],
+      index: 0,
+    };
+
+    function openLightbox(eventId, startIndex = 0) {
+      const venue = pack.venues.find((x) => x.eventId === eventId);
+      if (!venue) return;
+      const slides = buildSlides(venue);
+      if (!slides.length) return;
+      lightbox.eventId = eventId;
+      lightbox.slides = slides;
+      lightbox.index = Math.max(0, Math.min(startIndex, slides.length - 1));
+      document.getElementById('lbVenue').textContent = venue.venueName;
+      document.getElementById('lightbox').classList.add('open');
+      document.body.classList.add('lightbox-open');
+      showLightboxSlide();
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.classList.remove('lightbox-open');
+      lightbox.eventId = null;
+      lightbox.slides = [];
+    }
+
+    function showLightboxSlide() {
+      const { slides, index } = lightbox;
+      const slide = slides[index];
+      if (!slide) return;
+      const wrap = document.getElementById('lbWrap');
+      const img = document.getElementById('lbImg');
+      wrap.classList.add('loading');
+      img.removeAttribute('src');
+      document.getElementById('lbMeta').textContent = `${slide.label}${slide.sub ? ` · ${slide.sub}` : ''}`;
+      document.getElementById('lbCounter').textContent = `${index + 1} / ${slides.length}`;
+      document.getElementById('lbPrev').disabled = index <= 0;
+      document.getElementById('lbNext').disabled = index >= slides.length - 1;
+      img.onload = () => wrap.classList.remove('loading');
+      img.onerror = () => {
+        wrap.classList.remove('loading');
+        img.alt = 'Could not load full resolution';
+      };
+      img.alt = slide.label;
+      img.src = slide.full;
+      const preload = (i) => {
+        if (i >= 0 && i < slides.length && slides[i]?.full) {
+          const p = new Image();
+          p.src = slides[i].full;
+        }
+      };
+      preload(index - 1);
+      preload(index + 1);
+    }
+
+    function lightboxStep(delta) {
+      if (!lightbox.slides.length) return;
+      const next = lightbox.index + delta;
+      if (next < 0 || next >= lightbox.slides.length) return;
+      lightbox.index = next;
+      showLightboxSlide();
+    }
+
+    document.getElementById('lbClose').addEventListener('click', closeLightbox);
+    document.getElementById('lbPrev').addEventListener('click', () => lightboxStep(-1));
+    document.getElementById('lbNext').addEventListener('click', () => lightboxStep(1));
+    document.getElementById('lightbox').addEventListener('click', (e) => {
+      if (e.target.id === 'lightbox') closeLightbox();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('lightbox').classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft') lightboxStep(-1);
+      else if (e.key === 'ArrowRight') lightboxStep(1);
+    });
+
+    function heroTypeLabel(t) {
+      const map = {
+        empty: 'Empty / app fallback',
+        stock_pexels: 'Pexels stock',
+        stock_other: 'Stock',
+        stored_upload: 'PDF / stored upload',
+        google: 'Google Business',
+        other: 'Other',
+      };
+      return map[t] || t;
+    }
+
+    async function resolveCandidateMedia(venue, idx) {
+      const cand = candidateFor(venue, idx);
+      if (cand?.previewUrl) {
+        const previewUrl = cand.previewUrl.startsWith('/')
+          ? `${window.location.origin}${cand.previewUrl}`
+          : cand.previewUrl;
+        return { previewUrl, photoResourceName: null, source: cand.sourceType ?? 'manual' };
+      }
+      const pid = placeIdFor(venue);
+      const q = new URLSearchParams({ index: String(idx) });
+      if (venue.eventId) q.set('eventId', venue.eventId);
+      if (pid) q.set('placeId', pid);
+      if (venue.eventId || pid) {
+        const r = await fetch(`/api/resolve?${q}`);
+        if (r.ok) {
+          const j = await r.json();
+          return { previewUrl: j.mediaUrl, photoResourceName: j.photoResourceName };
+        }
+      }
+      return null;
+    }
+
+    function renderCard(v) {
+      const d = decisionFor(v.eventId);
+      const rec = v.recommendation || {};
+      const recIdx = rec.candidateIndex;
+      const pid = placeIdFor(v);
+      const indexes = candidateIndexes(v);
+      const approved = approvedHeroThumb(v, d);
+      const saved = justSavedId === v.eventId && d.status !== 'pending';
+      const cardClass =
+        d.status === 'keep_current' ? 'decided-keep' :
+        d.status === 'use_candidate' ? 'decided-use' :
+        d.status === 'skip' ? 'decided-skip' : '';
+
+      const storedCurrent = v.currentHero?.previewUrl;
+      const heroSrc = approved?.src ?? (storedCurrent ? proxySrc(storedCurrent, 480) : null);
+      const heroSlide = 0;
+      const candSlideOffset = (approved ? 1 : 0) + (storedCurrent ? 1 : 0);
+      const heroCap = approved
+        ? `<strong>New hero (approved)</strong><br>Google Business`
+        : `<strong>Current</strong><br>${heroTypeLabel(v.currentHero?.type)}${v.currentHero?.type === 'google' ? '<br><span style="opacity:0.7">Stored URL may be expired</span>' : ''}`;
+      const heroSelected = d.status === 'keep_current' || d.status === 'use_candidate';
+
+      const currentBlock = `
+        <div class="thumb hero-preview ${heroSelected ? 'selected' : ''}" data-role="current">
+          ${heroSrc
+            ? imgThumbHtml(heroSrc, approved ? 'Approved hero' : 'Current hero', v.eventId, heroSlide)
+            : `<div class="thumb-inner" style="display:flex;align-items:center;justify-content:center;color:#666;font-size:0.8rem;padding:8px;text-align:center">No stored hero</div>`}
+          <div class="cap">${heroCap}</div>
+        </div>`;
+
+      const candidateBlocks = indexes.map((idx) => {
+        const cand = candidateFor(v, idx);
+        const label = candidateLabel(v, idx);
+        const isRec = rec.action === 'use_candidate' && idx === recIdx && d.status === 'pending';
+        const isSel = d.status === 'use_candidate' && d.candidateIndex === idx;
+        const src = candidateSrc(v, idx, 480);
+        const openIdx = candSlideOffset + idx;
+        const manualTag = cand?.sourceType === 'manual_press'
+          ? ' · <span style="color:var(--warn)">Press photo</span>'
+          : '';
+        return `
+          <div class="thumb ${isRec ? 'recommended' : ''} ${isSel ? 'selected' : ''}" data-idx="${idx}">
+            ${src ? imgThumbHtml(src, label, v.eventId, openIdx) : `<div class="thumb-inner"><div class="img-fail-msg" style="display:flex">No URL</div></div>`}
+            <div class="cap">${label}${manualTag}${isRec ? ' · <strong style="color:var(--accent)">Suggested</strong>' : ''}${isSel ? ' · <strong style="color:var(--ok)">Selected</strong>' : ''}</div>
+          </div>`;
+      }).join('');
+
+      const listing = v.googleListing || {};
+      const listingLine = listing.lookupError
+        ? `${listing.displayName || v.venueName} · ${listing.lookupError}`
+        : listing.placeId
+          ? `${listing.displayName || '—'} · ${listing.address || ''}`
+          : 'No Google listing matched';
+
+      const idxInPack = pack.venues.findIndex((x) => x.eventId === v.eventId);
+      const pendingCount = pendingVenues().length;
+
+      return `
+        <article class="card ${cardClass}" data-id="${v.eventId}" data-name="${v.venueName.toLowerCase()}">
+          <div class="card-head">
+            <div>
+              <h2>${v.venueName}</h2>
+              <span class="badge">${v.genre || '—'}</span>
+              <span class="badge">${heroTypeLabel(v.currentHero?.type)}</span>
+              ${d.status !== 'pending' ? `<span class="badge" style="color:var(--ok)">${d.status.replace('_', ' ')}</span>` : ''}
+            </div>
+            <div style="font-size:0.75rem;color:var(--muted);max-width:420px">${listingLine}</div>
+          </div>
+          ${d.status === 'pending' ? `<div class="rec-box">
+            <strong>Recommendation:</strong>
+            ${rec.action === 'keep_current' ? 'Keep current hero' : rec.action === 'use_candidate' ? `Use candidate ${(recIdx ?? 0) + 1}` : 'Review manually'}
+            <br><span style="color:var(--muted)">${rec.why || ''}</span>
+          </div>` : ''}
+          <div class="grid">
+            ${currentBlock}
+            ${candidateBlocks || '<p style="color:var(--muted);grid-column:1/-1">No Google listing — cannot fetch candidates.</p>'}
+          </div>
+          ${saved ? `<div class="saved-banner"><strong>✓ Saved</strong> — ${decisionSummary(d)}. Verify the hero preview above, then click <strong>Next venue →</strong>.</div>` : ''}
+          ${!saved && d.status !== 'pending' && pendingCount === 0 ? `<div class="saved-banner"><strong>All done!</strong> Every venue has a decision. Export approvals JSON when ready.</div>` : ''}
+          <div class="actions">
+            <button type="button" class="ok" data-act="keep_current" ${d.status !== 'pending' ? 'disabled' : ''}>Approve — keep current</button>
+            <button type="button" class="primary" data-act="use_recommended" ${indexes.length && d.status === 'pending' ? '' : 'disabled'}>Approve — use suggested candidate</button>
+            ${indexes.map((idx) =>
+              `<button type="button" data-act="use_candidate" data-idx="${idx}" ${d.status !== 'pending' ? 'disabled' : ''}>Use photo ${idx + 1}</button>`
+            ).join('')}
+            <button type="button" data-act="skip" ${d.status !== 'pending' ? 'disabled' : ''}>Skip — no change / reject all</button>
+            ${d.status !== 'pending' ? `<button type="button" data-act="undo">Undo decision</button>` : ''}
+          </div>
+          <div class="review-nav">
+            <span class="pos">Venue ${idxInPack + 1} of ${pack.venues.length} · ${pendingCount} pending</span>
+            <button type="button" id="prevVenueBtn" ${idxInPack <= 0 ? 'disabled' : ''}>← Previous venue</button>
+            <button type="button" id="nextVenueBtn" class="primary">Next venue →</button>
+          </div>
+        </article>`;
+    }
+
+    function updateStats() {
+      if (!pack) return;
+      const total = pack.venues.length;
+      let pending = 0, keep = 0, use = 0, skip = 0;
+      for (const v of pack.venues) {
+        const s = decisionFor(v.eventId).status;
+        if (s === 'keep_current') keep++;
+        else if (s === 'use_candidate') use++;
+        else if (s === 'skip') skip++;
+        else pending++;
+      }
+      document.getElementById('stats').textContent =
+        `${pending} pending · ${keep} keep · ${use} new hero · ${skip} skip · ${total} total`;
+    }
+
+    function goToVenue(eventId) {
+      focusedEventId = eventId;
+      justSavedId = null;
+      render();
+    }
+
+    function goToNextPending() {
+      const pending = pendingVenues();
+      const next = pending.find((v) => v.eventId !== focusedEventId) ?? pending[0];
+      if (next) goToVenue(next.eventId);
+      else {
+        justSavedId = null;
+        render();
+      }
+    }
+
+    function goToPrevVenue() {
+      if (!focusedEventId) return;
+      const idx = pack.venues.findIndex((v) => v.eventId === focusedEventId);
+      if (idx > 0) goToVenue(pack.venues[idx - 1].eventId);
+    }
+
+    function goToNextVenue() {
+      if (!focusedEventId) return;
+      const idx = pack.venues.findIndex((v) => v.eventId === focusedEventId);
+      for (let i = idx + 1; i < pack.venues.length; i++) {
+        if (decisionFor(pack.venues[i].eventId).status === 'pending') {
+          goToVenue(pack.venues[i].eventId);
+          return;
+        }
+      }
+      for (let i = 0; i < idx; i++) {
+        if (decisionFor(pack.venues[i].eventId).status === 'pending') {
+          goToVenue(pack.venues[i].eventId);
+          return;
+        }
+      }
+      justSavedId = null;
+      render();
+    }
+
+    function afterDecision(eventId) {
+      focusedEventId = eventId;
+      justSavedId = eventId;
+      saveDecisions();
+      if (loadAutoNext()) {
+        setTimeout(() => goToNextPending(), 600);
+      } else {
+        render();
+      }
+    }
+
+    function wireCardEvents(main) {
+      main.querySelectorAll('.thumb-open').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          openLightbox(btn.dataset.eventId, Number(btn.dataset.slide));
+        });
+      });
+      main.querySelectorAll('.actions button').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const card = btn.closest('.card');
+          const id = card.dataset.id;
+          const act = btn.dataset.act;
+          const venue = pack.venues.find((x) => x.eventId === id);
+          if (act === 'undo') {
+            delete decisions[id];
+            justSavedId = null;
+            saveDecisions();
+            render();
+            return;
+          }
+          if (act === 'keep_current') {
+            decisions[id] = { status: 'keep_current', decidedAt: new Date().toISOString() };
+            afterDecision(id);
+          } else if (act === 'skip') {
+            decisions[id] = { status: 'skip', decidedAt: new Date().toISOString() };
+            afterDecision(id);
+          } else if (act === 'use_recommended' || act === 'use_candidate') {
+            const idx = act === 'use_recommended'
+              ? (venue.recommendation?.candidateIndex ?? 0)
+              : Number(btn.dataset.idx);
+            btn.disabled = true;
+            const resolved = await resolveCandidateMedia(venue, idx);
+            btn.disabled = false;
+            if (!resolved?.previewUrl) {
+              alert(`Could not resolve Google photo ${idx + 1} for ${venue.venueName}.`);
+              return;
+            }
+            decisions[id] = {
+              status: 'use_candidate',
+              candidateIndex: idx,
+              previewUrl: resolved.previewUrl,
+              photoResourceName: resolved.photoResourceName,
+              decidedAt: new Date().toISOString(),
+            };
+            afterDecision(id);
+          }
+        });
+      });
+      document.getElementById('prevVenueBtn')?.addEventListener('click', goToPrevVenue);
+      document.getElementById('nextVenueBtn')?.addEventListener('click', goToNextVenue);
+    }
+
+    function render() {
+      if (!pack) return;
+      ensureFocus();
+      const main = document.getElementById('main');
+      const pending = pendingVenues();
+
+      if (!focusedEventId) {
+        main.innerHTML = '<div class="empty-state">No venues match your search.</div>';
+        updateStats();
+        return;
+      }
+
+      const v = pack.venues.find((x) => x.eventId === focusedEventId);
+      if (!v) {
+        focusedEventId = pending[0]?.eventId ?? null;
+        render();
+        return;
+      }
+
+      main.innerHTML = renderCard(v);
+      wireCardEvents(main);
+
+      if (decisionFor(v.eventId).status !== 'pending' && !justSavedId && pending.length > 0) {
+        /* browsing a decided venue — no-op */
+      }
+
+      updateStats();
+    }
+
+    document.getElementById('search').addEventListener('input', () => {
+      focusedEventId = null;
+      justSavedId = null;
+      render();
+    });
+    document.getElementById('filter').addEventListener('change', () => {
+      const filter = document.getElementById('filter').value;
+      if (filter === 'pending') {
+        focusedEventId = pendingVenues()[0]?.eventId ?? focusedEventId;
+      } else if (filter !== 'all') {
+        const match = pack.venues.find((v) => decisionFor(v.eventId).status === filter);
+        if (match) focusedEventId = match.eventId;
+      }
+      justSavedId = null;
+      render();
+    });
+    document.getElementById('autoNext').checked = loadAutoNext();
+    document.getElementById('autoNext').addEventListener('change', (e) => {
+      saveAutoNext(e.target.checked);
+    });
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (confirm('Clear all saved review decisions in this browser?')) {
+        decisions = {};
+        justSavedId = null;
+        focusedEventId = null;
+        saveDecisions();
+        render();
+      }
+    });
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('exportBtn');
+      btn.disabled = true;
+      btn.textContent = 'Resolving URLs…';
+      const rows = [];
+      for (const v of pack.venues) {
+        const d = { ...decisionFor(v.eventId) };
+        if (d.status === 'pending') continue;
+        if (d.status === 'use_candidate' && d.candidateIndex != null && !d.previewUrl?.includes('/media?')) {
+          const resolved = await resolveCandidateMedia(v, d.candidateIndex);
+          if (resolved?.previewUrl) {
+            d.previewUrl = resolved.previewUrl;
+            d.photoResourceName = resolved.photoResourceName;
+          }
+        }
+        rows.push({
+          eventId: v.eventId,
+          venueName: v.venueName,
+          ...d,
+          googlePlaceId: placeIdFor(v),
+        });
+      }
+      btn.disabled = false;
+      btn.textContent = 'Export approvals JSON';
+      const out = {
+        exportedAt: new Date().toISOString(),
+        note: 'Manual approvals only — run apply script separately after review',
+        decisions: rows,
+      };
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'venue-hero-approvals.json';
+      a.click();
+      try {
+        const syncRes = await fetch('/api/approvals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(out),
+        });
+        if (syncRes.ok) {
+          btn.textContent = 'Exported + saved on server ✓';
+        }
+      } catch {
+        /* download still succeeded */
+      }
+    });
+
+    fetch('/api/health')
+      .then((r) => {
+        if (!r.ok) throw new Error('not-proxy');
+        return fetch('review-data.json');
+      })
+      .then((r) => {
+        if (!r.ok) throw new Error('review-data.json not found — run: node scripts/build-venue-hero-review-pack-from-db.mjs');
+        return r.json();
+      })
+      .then((data) => {
+        pack = data;
+        if (!pack.venues?.length) {
+          document.getElementById('main').innerHTML =
+            '<div class="empty-state">review-data.json is empty. Run the build script first.</div>';
+          return;
+        }
+        const focusParam = new URLSearchParams(window.location.search).get('venue');
+        if (focusParam) {
+          const match = pack.venues.find(
+            (v) => v.eventId === focusParam || v.venueName.toLowerCase().includes(focusParam.toLowerCase()),
+          );
+          if (match) focusedEventId = match.eventId;
+        }
+        render();
+        syncDecisionsToServer();
+      })
+      .catch((err) => {
+        const msg = String(err.message) === 'not-proxy'
+          ? 'Start the review server (required for images):<br><code>node scripts/serve-venue-hero-review.mjs</code>'
+          : err.message;
+        document.getElementById('main').innerHTML =
+          `<div class="empty-state">${msg}</div>`;
+      });
+  </script>
+</body>
+</html>

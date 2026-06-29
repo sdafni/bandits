@@ -1,0 +1,1447 @@
+{
+  "generatedAt": "2026-06-28T16:40:00.502Z",
+  "totalVenues": 318,
+  "duplicateClusters": 57,
+  "inheritedPlaceIds": 6,
+  "livePlacesLookups": 29,
+  "lookupStats": {
+    "attempted": 29,
+    "succeeded": 29,
+    "failed": 0,
+    "zeroResults": 0,
+    "byStatus": {
+      "OK": 29
+    }
+  },
+  "withResolvedPlaceId": 318,
+  "clusters": [
+    {
+      "clusterKey": "lost",
+      "size": 4,
+      "canonicalEventId": "db0f6020-cd77-4f0c-9ebf-4ff1c709fbfe",
+      "canonicalName": "Lost",
+      "resolvedPlaceId": "ChIJ5UhWblK9oRQRLfYS5u3PSfs",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "d8294100-3e24-4dd4-9b3d-62a189e5a1ca",
+          "name": "1888 Athens",
+          "googlePlaceId": null,
+          "lookup": "no_listing"
+        },
+        {
+          "id": "db0f6020-cd77-4f0c-9ebf-4ff1c709fbfe",
+          "name": "Lost",
+          "googlePlaceId": "ChIJ5UhWblK9oRQRLfYS5u3PSfs",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "a8bfd2a5-8717-4376-b92c-4feee77c8b09",
+          "name": "Lost",
+          "googlePlaceId": "ChIJ5UhWblK9oRQRLfYS5u3PSfs",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "a70cdcf0-8d75-48f9-bc1a-c5846e78fd4e",
+          "name": "Lost",
+          "googlePlaceId": "ChIJ5UhWblK9oRQRLfYS5u3PSfs",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "akira sushi",
+      "size": 2,
+      "canonicalEventId": "9bcfc862-0c5e-4369-bbb2-913653577572",
+      "canonicalName": "Akira Sushi",
+      "resolvedPlaceId": "ChIJM8eAGSW9oRQRBERkiNduBXQ",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "9bcfc862-0c5e-4369-bbb2-913653577572",
+          "name": "Akira Sushi",
+          "googlePlaceId": "ChIJM8eAGSW9oRQRBERkiNduBXQ",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "e50644dc-2f93-4f05-bfec-a1e251dd31a7",
+          "name": "Akira Sushi Bar",
+          "googlePlaceId": "ChIJM8eAGSW9oRQRBERkiNduBXQ",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "akra",
+      "size": 2,
+      "canonicalEventId": "b2ed4041-c411-49ec-8469-777d820a9da7",
+      "canonicalName": "Akra",
+      "resolvedPlaceId": "ChIJB2hTykq9oRQRLdvTeHmPqqI",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "b2ed4041-c411-49ec-8469-777d820a9da7",
+          "name": "Akra",
+          "googlePlaceId": "ChIJB2hTykq9oRQRLdvTeHmPqqI",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "46077bdf-db2d-4cb0-aaa9-7a2131edb449",
+          "name": "Akra Restaurant Pangrati",
+          "googlePlaceId": "ChIJB2hTykq9oRQRLdvTeHmPqqI",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "ama lachei",
+      "size": 2,
+      "canonicalEventId": "e56226ea-bb1e-4253-8c99-540773f3381c",
+      "canonicalName": "Ama Lachei",
+      "resolvedPlaceId": "ChIJETz0yTW9oRQR23hUCd_DS80",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "e56226ea-bb1e-4253-8c99-540773f3381c",
+          "name": "Ama Lachei",
+          "googlePlaceId": "ChIJETz0yTW9oRQR23hUCd_DS80",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "478c98af-8108-4918-97eb-f2eada3e0efe",
+          "name": "Ama Lachei Restaurant",
+          "googlePlaceId": "ChIJETz0yTW9oRQR23hUCd_DS80",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "anafiotika cafe",
+      "size": 2,
+      "canonicalEventId": "e1e4158f-c74a-45e9-bde1-5313dd12a130",
+      "canonicalName": "Anafiotika Café",
+      "resolvedPlaceId": "ChIJmTYs-Re9oRQRKyPn7Jw6Rec",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "e1e4158f-c74a-45e9-bde1-5313dd12a130",
+          "name": "Anafiotika Café",
+          "googlePlaceId": "ChIJmTYs-Re9oRQRKyPn7Jw6Rec",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "077f8afb-c402-44c3-929f-0348a0b830ca",
+          "name": "Anafiotika Café",
+          "googlePlaceId": "ChIJmTYs-Re9oRQRKyPn7Jw6Rec",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "anana concept store",
+      "size": 2,
+      "canonicalEventId": "66bfccf2-cd84-4ee0-ad35-832d2d2a8cca",
+      "canonicalName": "Anana Concept Store",
+      "resolvedPlaceId": "ChIJFTV12z29oRQRjA6D0cNchGg",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "66bfccf2-cd84-4ee0-ad35-832d2d2a8cca",
+          "name": "Anana Concept Store",
+          "googlePlaceId": "ChIJFTV12z29oRQRjA6D0cNchGg",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "0244d4bd-da55-470e-bd53-81e6255b0fb0",
+          "name": "ΑNAMESA CONCEPT STORE",
+          "googlePlaceId": "ChIJFTV12z29oRQRjA6D0cNchGg",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "asfa bbq athens school of fine arts festival",
+      "size": 2,
+      "canonicalEventId": "9e994e73-093f-4214-b3a6-b3175e47848c",
+      "canonicalName": "ASFA BBQ (Athens School of Fine Arts Festival)",
+      "resolvedPlaceId": "ChIJX7AgiGO8oRQRrQONJhQhuKU",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "9e994e73-093f-4214-b3a6-b3175e47848c",
+          "name": "ASFA BBQ (Athens School of Fine Arts Festival)",
+          "googlePlaceId": "ChIJX7AgiGO8oRQRrQONJhQhuKU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "365759dc-984f-4a1e-9492-9d886a7828cb",
+          "name": "ASFA BBQ (Athens School of Fine Arts)",
+          "googlePlaceId": "ChIJX7AgiGO8oRQRrQONJhQhuKU",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "avant drag",
+      "size": 2,
+      "canonicalEventId": "458d9e90-1b12-4f25-a412-fdd209b4ee93",
+      "canonicalName": "Avant-Drag!",
+      "resolvedPlaceId": "ChIJ_6Bx8QS9oRQRKVSOXF_5614",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "458d9e90-1b12-4f25-a412-fdd209b4ee93",
+          "name": "Avant-Drag!",
+          "googlePlaceId": "ChIJ_6Bx8QS9oRQRKVSOXF_5614",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "2f06742a-7010-43b9-83b5-095e295246c6",
+          "name": "Koukles Club Athens",
+          "googlePlaceId": "ChIJ_6Bx8QS9oRQRKVSOXF_5614",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "avyssinias square flea market",
+      "size": 2,
+      "canonicalEventId": "9257327d-f307-4b4a-ae25-0f5e800ca909",
+      "canonicalName": "Avyssinias Square Flea Market",
+      "resolvedPlaceId": "ChIJsQ6HWCK9oRQR7QU0v_vbZho",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "9257327d-f307-4b4a-ae25-0f5e800ca909",
+          "name": "Avyssinias Square Flea Market",
+          "googlePlaceId": "ChIJsQ6HWCK9oRQR7QU0v_vbZho",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "1b45add9-6d20-4202-bf7a-1d5cb49f637f",
+          "name": "Monastiraki Flea Market",
+          "googlePlaceId": "ChIJsQ6HWCK9oRQR7QU0v_vbZho",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "baba au rum",
+      "size": 2,
+      "canonicalEventId": "becf1929-41e9-4436-9dd7-b70f82ab054a",
+      "canonicalName": "Baba au Rum",
+      "resolvedPlaceId": "ChIJFVsBjjy9oRQR7XnarON2k94",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "becf1929-41e9-4436-9dd7-b70f82ab054a",
+          "name": "Baba au Rum",
+          "googlePlaceId": "ChIJFVsBjjy9oRQR7XnarON2k94",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "3d9920c3-7125-4e71-9810-8908a401e983",
+          "name": "Baba Au Rum",
+          "googlePlaceId": "ChIJFVsBjjy9oRQR7XnarON2k94",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "bar amore",
+      "size": 3,
+      "canonicalEventId": "eda564a0-537d-4b0e-b4e4-9bacd691a029",
+      "canonicalName": "Bar Amore",
+      "resolvedPlaceId": "ChIJKafdpqq9oRQR978w1SKGMiA",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "eda564a0-537d-4b0e-b4e4-9bacd691a029",
+          "name": "Bar Amore",
+          "googlePlaceId": "ChIJKafdpqq9oRQR978w1SKGMiA",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "ce4a25ba-4114-4ba1-a423-e3d4252fa55b",
+          "name": "BAR AMORE",
+          "googlePlaceId": "ChIJKafdpqq9oRQR978w1SKGMiA",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "1007656d-6c08-4782-81c7-623a2622861d",
+          "name": "BAR AMORE",
+          "googlePlaceId": "ChIJKafdpqq9oRQR978w1SKGMiA",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "barrett",
+      "size": 2,
+      "canonicalEventId": "7e3667de-dd88-4a73-88ed-5e5e6b014c5f",
+      "canonicalName": "Barrett",
+      "resolvedPlaceId": "ChIJi-djbCO9oRQRJyXrD9VaJxI",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "7e3667de-dd88-4a73-88ed-5e5e6b014c5f",
+          "name": "Barrett",
+          "googlePlaceId": "ChIJi-djbCO9oRQRJyXrD9VaJxI",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "5043df7c-1bc8-47db-9159-3709c8011aa1",
+          "name": "Barrett Bar Art Bar Vinyl",
+          "googlePlaceId": "ChIJi-djbCO9oRQRJyXrD9VaJxI",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "bios",
+      "size": 4,
+      "canonicalEventId": "311ed5c6-59fb-4a17-9611-f8a8f1cd228d",
+      "canonicalName": "Bios",
+      "resolvedPlaceId": "ChIJ_cOT3CC9oRQRcZdnJp_dsRA",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "311ed5c6-59fb-4a17-9611-f8a8f1cd228d",
+          "name": "Bios",
+          "googlePlaceId": "ChIJ_cOT3CC9oRQRcZdnJp_dsRA",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "0a17c2b6-fd07-4d4f-8455-31f33cab05af",
+          "name": "BIOS",
+          "googlePlaceId": "ChIJ_cOT3CC9oRQRcZdnJp_dsRA",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "300aea5a-e357-453a-9ac7-a55a70fa9f18",
+          "name": "BIOS",
+          "googlePlaceId": "ChIJ_cOT3CC9oRQRcZdnJp_dsRA",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "15d887d7-2c78-433a-9f9c-de234b38b574",
+          "name": "Bios Culture Bar Rooftop",
+          "googlePlaceId": "ChIJ_cOT3CC9oRQRcZdnJp_dsRA",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "blue parrot",
+      "size": 2,
+      "canonicalEventId": "0a1bdd2e-ea9f-44fe-891e-3b5abcfcde9f",
+      "canonicalName": "Blue Parrot",
+      "resolvedPlaceId": "ChIJXRWMXya9oRQRo0hJmLsblio",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "0a1bdd2e-ea9f-44fe-891e-3b5abcfcde9f",
+          "name": "Blue Parrot",
+          "googlePlaceId": "ChIJXRWMXya9oRQRo0hJmLsblio",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "4de7aecf-2b97-461a-8964-fe8e270e67d4",
+          "name": "Blue Parrot",
+          "googlePlaceId": "ChIJXRWMXya9oRQRo0hJmLsblio",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "breeder gallery",
+      "size": 2,
+      "canonicalEventId": "dbe66149-cebf-4286-9a71-b3cd4bdbbdcd",
+      "canonicalName": "Breeder Gallery",
+      "resolvedPlaceId": "ChIJN-WnPSa9oRQRQ2rLaq-w9QY",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "dbe66149-cebf-4286-9a71-b3cd4bdbbdcd",
+          "name": "Breeder Gallery",
+          "googlePlaceId": "ChIJN-WnPSa9oRQRQ2rLaq-w9QY",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "0a9ff02a-1afc-49db-bffb-47ab037ceb01",
+          "name": "The Breeder Gallery",
+          "googlePlaceId": "ChIJN-WnPSa9oRQRQ2rLaq-w9QY",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "cantina social",
+      "size": 3,
+      "canonicalEventId": "f5f4e64d-0ced-4c27-bcd8-56daa9eade4f",
+      "canonicalName": "Cantina Social",
+      "resolvedPlaceId": "ChIJGcB30yO9oRQRSvNPBv8nk4k",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "f5f4e64d-0ced-4c27-bcd8-56daa9eade4f",
+          "name": "Cantina Social",
+          "googlePlaceId": "ChIJGcB30yO9oRQRSvNPBv8nk4k",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "c30c82db-158d-4c45-8dc1-dbf9deec212d",
+          "name": "Cantina Social",
+          "googlePlaceId": "ChIJGcB30yO9oRQRSvNPBv8nk4k",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "345f0f98-960c-4522-8ba9-cf3586d4b748",
+          "name": "Cantina Social",
+          "googlePlaceId": "ChIJGcB30yO9oRQRSvNPBv8nk4k",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "dexameni outdoor cinema",
+      "size": 4,
+      "canonicalEventId": "f99f6a96-1355-4e3a-81d5-b34490989f33",
+      "canonicalName": "Dexameni Outdoor Cinema",
+      "resolvedPlaceId": "ChIJ0XLwm0e9oRQR2t1yAkLYZbg",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "8a5deed7-de67-4f4a-aa2a-b204f4711014",
+          "name": "Cine Dexameni Open Air Cinema",
+          "googlePlaceId": null,
+          "lookup": "no_listing"
+        },
+        {
+          "id": "f99f6a96-1355-4e3a-81d5-b34490989f33",
+          "name": "Dexameni Outdoor Cinema",
+          "googlePlaceId": "ChIJ0XLwm0e9oRQR2t1yAkLYZbg",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "cce8094c-84a4-4453-b64e-b189ace08ee0",
+          "name": "Dexameni Outdoor Cinema",
+          "googlePlaceId": "ChIJ0XLwm0e9oRQR2t1yAkLYZbg",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "d8d90967-786a-425b-ac0e-c6c091517b51",
+          "name": "Dexameni Outdoor Cinema",
+          "googlePlaceId": "ChIJ0XLwm0e9oRQR2t1yAkLYZbg",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "colibri",
+      "size": 2,
+      "canonicalEventId": "7e5143ee-9712-46b2-b3de-d99911b08631",
+      "canonicalName": "Colibri",
+      "resolvedPlaceId": "ChIJhWpknGu9oRQRTFInXitYwa0",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "7e5143ee-9712-46b2-b3de-d99911b08631",
+          "name": "Colibri",
+          "googlePlaceId": "ChIJhWpknGu9oRQRTFInXitYwa0",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "8780c4c4-94c1-4f84-8d3c-8b9b1609c494",
+          "name": "Colibri Burgers and style",
+          "googlePlaceId": "ChIJhWpknGu9oRQRTFInXitYwa0",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "coterie bro",
+      "size": 2,
+      "canonicalEventId": "8c4a03e1-8d8a-450a-8626-b14f9c68cb04",
+      "canonicalName": "Coterie Bro",
+      "resolvedPlaceId": "ChIJq9UkEge9oRQRzQ0NMGcU9h4",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "8c4a03e1-8d8a-450a-8626-b14f9c68cb04",
+          "name": "Coterie Bro",
+          "googlePlaceId": "ChIJq9UkEge9oRQRzQ0NMGcU9h4",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "9349a235-351d-4583-afca-3c2bf2ecaad2",
+          "name": "Coterie Bro",
+          "googlePlaceId": "ChIJq9UkEge9oRQRzQ0NMGcU9h4",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "couleur locale",
+      "size": 2,
+      "canonicalEventId": "e97f75cc-4691-4267-b0c9-b91872a17301",
+      "canonicalName": "Couleur Locale",
+      "resolvedPlaceId": "ChIJYzvSVSK9oRQRXdJTkbjBNUs",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "e97f75cc-4691-4267-b0c9-b91872a17301",
+          "name": "Couleur Locale",
+          "googlePlaceId": "ChIJYzvSVSK9oRQRXdJTkbjBNUs",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "fdfae46e-8c37-4ef5-9d4b-15e24225c0aa",
+          "name": "Couleur Locale",
+          "googlePlaceId": "ChIJYzvSVSK9oRQRXdJTkbjBNUs",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "dybbuk athens",
+      "size": 2,
+      "canonicalEventId": "51aff9d6-3b14-434b-b9dc-9167fa4801bf",
+      "canonicalName": "Dybbuk Athens",
+      "resolvedPlaceId": "ChIJeaSsZUa9oRQRRKb_4pEdrqk",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "51aff9d6-3b14-434b-b9dc-9167fa4801bf",
+          "name": "Dybbuk Athens",
+          "googlePlaceId": "ChIJeaSsZUa9oRQRRKb_4pEdrqk",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "94cf5767-ec61-4418-b827-d6e43ab86729",
+          "name": "Dybbuk Club",
+          "googlePlaceId": "ChIJeaSsZUa9oRQRRKb_4pEdrqk",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "ekiben kitchen",
+      "size": 2,
+      "canonicalEventId": "a4edb0f5-3760-41d6-887a-56687782052a",
+      "canonicalName": "Ekiben Kitchen",
+      "resolvedPlaceId": "ChIJc3ka65-9oRQRyoZlct533n8",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "5e4f526e-ce32-4634-bf4a-266a8a0f327d",
+          "name": "Ekiben Japanese Street Food",
+          "googlePlaceId": null,
+          "lookup": "no_listing"
+        },
+        {
+          "id": "a4edb0f5-3760-41d6-887a-56687782052a",
+          "name": "Ekiben Kitchen",
+          "googlePlaceId": "ChIJc3ka65-9oRQRyoZlct533n8",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "emst national museum of contemporary art",
+      "size": 2,
+      "canonicalEventId": "b0301ecc-809e-4a80-b32a-82d7e9dd242e",
+      "canonicalName": "EMST National Museum of Contemporary Art",
+      "resolvedPlaceId": "ChIJXS3WrEG9oRQReJNjNUOBoeU",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "b0301ecc-809e-4a80-b32a-82d7e9dd242e",
+          "name": "EMST National Museum of Contemporary Art",
+          "googlePlaceId": "ChIJXS3WrEG9oRQReJNjNUOBoeU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "09d7bc0f-4287-4b95-9647-52aeb4b6db34",
+          "name": "National Museum of Contemporary Art (EMST)",
+          "googlePlaceId": "ChIJXS3WrEG9oRQReJNjNUOBoeU",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "ergon house",
+      "size": 2,
+      "canonicalEventId": "361a3390-89bb-4496-ad4c-2b7f0736bacf",
+      "canonicalName": "Ergon House",
+      "resolvedPlaceId": "ChIJSyLizgS9oRQR2ESu_x0Qhqo",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "361a3390-89bb-4496-ad4c-2b7f0736bacf",
+          "name": "Ergon House",
+          "googlePlaceId": "ChIJSyLizgS9oRQR2ESu_x0Qhqo",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "3ce8b8f8-25c0-42be-b520-16271b5cab94",
+          "name": "Ergon House Athens Rooftop Restaurant Hotel",
+          "googlePlaceId": "ChIJSyLizgS9oRQR2ESu_x0Qhqo",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "fine mess smokehouse",
+      "size": 2,
+      "canonicalEventId": "c8fa40c6-a738-444e-b66b-5651cfbbbf51",
+      "canonicalName": "Fine Mess Smokehouse",
+      "resolvedPlaceId": "ChIJzT5aHoq9oRQR2BGLvn4gDT8",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "c8fa40c6-a738-444e-b66b-5651cfbbbf51",
+          "name": "Fine Mess Smokehouse",
+          "googlePlaceId": "ChIJzT5aHoq9oRQR2BGLvn4gDT8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "c5a8ea38-6919-498c-944e-66916695b8d0",
+          "name": "Smokehouse",
+          "googlePlaceId": "ChIJzT5aHoq9oRQR2BGLvn4gDT8",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "greek drag shows",
+      "size": 2,
+      "canonicalEventId": "f6d85fa4-1206-4f70-b205-080e66486b34",
+      "canonicalName": "Greek Drag Shows",
+      "resolvedPlaceId": "ChIJ1ekX-968oRQRtHfMmKgS0Zo",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "f6d85fa4-1206-4f70-b205-080e66486b34",
+          "name": "Greek Drag Shows",
+          "googlePlaceId": "ChIJ1ekX-968oRQRtHfMmKgS0Zo",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "04289458-e518-4050-a0ef-3b8188fe37cd",
+          "name": "Greek Drag Shows (Aggregator)",
+          "googlePlaceId": "ChIJ1ekX-968oRQRtHfMmKgS0Zo",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "hammam baths athens",
+      "size": 2,
+      "canonicalEventId": "4a55742f-eb23-406b-9a71-d282140aed65",
+      "canonicalName": "Hammam Baths Athens",
+      "resolvedPlaceId": "ChIJO1cIbiG9oRQR6uIXMeY2T2E",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "4a55742f-eb23-406b-9a71-d282140aed65",
+          "name": "Hammam Baths Athens",
+          "googlePlaceId": "ChIJO1cIbiG9oRQR6uIXMeY2T2E",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "20b97726-9c15-42ce-916a-c9cc3f05d9d9",
+          "name": "Hammam Baths Thissio",
+          "googlePlaceId": "ChIJO1cIbiG9oRQR6uIXMeY2T2E",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "handpicked cherries",
+      "size": 2,
+      "canonicalEventId": "3141c923-a77b-4aee-81ed-86a952fa3ca5",
+      "canonicalName": "Handpicked Cherries",
+      "resolvedPlaceId": "ChIJAZO78gK9oRQRMdDdkBeSvd4",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "9a993e56-5fad-4760-b9bd-3ee2d28e2527",
+          "name": "Handpicked Cherries",
+          "googlePlaceId": null,
+          "lookup": "no_listing"
+        },
+        {
+          "id": "3141c923-a77b-4aee-81ed-86a952fa3ca5",
+          "name": "Handpicked Cherries",
+          "googlePlaceId": "ChIJAZO78gK9oRQRMdDdkBeSvd4",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "hermina athens",
+      "size": 2,
+      "canonicalEventId": "f8a89336-cf0a-4a12-b3c9-9eb256d3e0e2",
+      "canonicalName": "Hermina Athens",
+      "resolvedPlaceId": "ChIJ-8gxzTy8oRQRL_qzrN1bHF4",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "f8a89336-cf0a-4a12-b3c9-9eb256d3e0e2",
+          "name": "Hermina Athens",
+          "googlePlaceId": "ChIJ-8gxzTy8oRQRL_qzrN1bHF4",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "32373a43-33d3-4cbc-b838-76df2efba2ab",
+          "name": "Hermina Athens",
+          "googlePlaceId": "ChIJ-8gxzTy8oRQRL_qzrN1bHF4",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "impact hub athens",
+      "size": 3,
+      "canonicalEventId": "844f74e7-b200-4f05-8567-f6b9c1682e66",
+      "canonicalName": "Impact Hub Athens",
+      "resolvedPlaceId": "ChIJjZ2TCiO9oRQRx928tDmI5f8",
+      "placeIdConflict": true,
+      "conflictingPlaceIds": [
+        "ChIJjZ2TCiO9oRQRx928tDmI5f8",
+        "ChIJN9cTFSifoRQRHwhYjOzFGlw"
+      ],
+      "members": [
+        {
+          "id": "844f74e7-b200-4f05-8567-f6b9c1682e66",
+          "name": "Impact Hub Athens",
+          "googlePlaceId": "ChIJjZ2TCiO9oRQRx928tDmI5f8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "936f1fce-038a-4c0f-9f30-43f340033dc8",
+          "name": "The Agora Project",
+          "googlePlaceId": "ChIJN9cTFSifoRQRHwhYjOzFGlw",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "a27ef27a-1770-41d5-84be-f3a19db94280",
+          "name": "The Agora Project (Impact Hub)",
+          "googlePlaceId": null,
+          "lookup": "no_listing"
+        }
+      ]
+    },
+    {
+      "clusterKey": "itsclofie vintage",
+      "size": 3,
+      "canonicalEventId": "4e510d34-b958-4430-98b5-72b482131926",
+      "canonicalName": "Itsclofie Vintage",
+      "resolvedPlaceId": "ChIJY4CddX69oRQR0vDZOFCV7qU",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "4e510d34-b958-4430-98b5-72b482131926",
+          "name": "Itsclofie Vintage",
+          "googlePlaceId": "ChIJY4CddX69oRQR0vDZOFCV7qU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "8e2e9916-348d-4aba-b043-edab59c3f23a",
+          "name": "Itsclofie Vintage",
+          "googlePlaceId": "ChIJY4CddX69oRQR0vDZOFCV7qU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "7d6614f4-2132-44bd-94d1-e3afe5de4a66",
+          "name": "Itsclofie Vintage",
+          "googlePlaceId": "ChIJY4CddX69oRQR0vDZOFCV7qU",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "jazz in jazz",
+      "size": 2,
+      "canonicalEventId": "5735d1e2-2a74-4027-8846-35b509ba89a8",
+      "canonicalName": "Jazz In Jazz",
+      "resolvedPlaceId": "ChIJRZijS0a9oRQRbcmg2LE6dMs",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "5735d1e2-2a74-4027-8846-35b509ba89a8",
+          "name": "Jazz In Jazz",
+          "googlePlaceId": "ChIJRZijS0a9oRQRbcmg2LE6dMs",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "6e70f8f7-d262-4376-8137-9ac09dd9a536",
+          "name": "Jazz In Jazz Live",
+          "googlePlaceId": "ChIJRZijS0a9oRQRbcmg2LE6dMs",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "kick",
+      "size": 2,
+      "canonicalEventId": "ec46c458-ceb3-4cf5-bf07-fd0d53b63b9c",
+      "canonicalName": "Kick",
+      "resolvedPlaceId": "ChIJb5xMI-qjoRQR8F-I4YnobN0",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "ec46c458-ceb3-4cf5-bf07-fd0d53b63b9c",
+          "name": "Kick",
+          "googlePlaceId": "ChIJb5xMI-qjoRQR8F-I4YnobN0",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "b2ac2aa7-9b67-4332-9a62-5aabfc410afc",
+          "name": "Kick Cafe",
+          "googlePlaceId": "ChIJb5xMI-qjoRQR8F-I4YnobN0",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "king kong athens vintage",
+      "size": 3,
+      "canonicalEventId": "f14cda37-3a42-4f60-978e-5bab5dd5b671",
+      "canonicalName": "King Kong Athens Vintage",
+      "resolvedPlaceId": "ChIJRUe35Ke9oRQRcaduZWFbwgU",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "f14cda37-3a42-4f60-978e-5bab5dd5b671",
+          "name": "King Kong Athens Vintage",
+          "googlePlaceId": "ChIJRUe35Ke9oRQRcaduZWFbwgU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "d1f7f448-a34a-4812-b8e2-b79cb9c80509",
+          "name": "King Kong Athens Vintage",
+          "googlePlaceId": "ChIJRUe35Ke9oRQRcaduZWFbwgU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "42d6d9a4-c552-4234-9878-856cab7cf1e8",
+          "name": "Kong Athens Vintage",
+          "googlePlaceId": "ChIJRUe35Ke9oRQRcaduZWFbwgU",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "kobra",
+      "size": 2,
+      "canonicalEventId": "e20b3fff-004f-4cb9-a743-845078fb305f",
+      "canonicalName": "Kobra",
+      "resolvedPlaceId": "ChIJ22DYNd69oRQRrqOfMf1sdl8",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "e20b3fff-004f-4cb9-a743-845078fb305f",
+          "name": "Kobra",
+          "googlePlaceId": "ChIJ22DYNd69oRQRrqOfMf1sdl8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "03177a56-622c-4814-b6b3-10d841cde228",
+          "name": "Kobra Vintage Store",
+          "googlePlaceId": "ChIJ22DYNd69oRQRrqOfMf1sdl8",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "krabo beach",
+      "size": 2,
+      "canonicalEventId": "6ba5acef-3575-44f8-8466-3dfcafb6960b",
+      "canonicalName": "Krabo Beach",
+      "resolvedPlaceId": "ChIJ-wjAIC_roRQR4p2a07h-CxY",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "6ba5acef-3575-44f8-8466-3dfcafb6960b",
+          "name": "Krabo Beach",
+          "googlePlaceId": "ChIJ-wjAIC_roRQR4p2a07h-CxY",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "167836a8-e053-4c60-a412-7f137b748bd5",
+          "name": "Krabo Beach Bar & Restaurant",
+          "googlePlaceId": "ChIJ-wjAIC_roRQR4p2a07h-CxY",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "lotte",
+      "size": 2,
+      "canonicalEventId": "75753d42-5a5a-4768-8dc4-09463d00d66e",
+      "canonicalName": "Lotte",
+      "resolvedPlaceId": "ChIJZ69FcBq9oRQRIpaIMhGfS6U",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "75753d42-5a5a-4768-8dc4-09463d00d66e",
+          "name": "Lotte",
+          "googlePlaceId": "ChIJZ69FcBq9oRQRIpaIMhGfS6U",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "d4b9396a-2a47-44b5-bbf6-15078cc3ed89",
+          "name": "Lotte Café-Bistrot",
+          "googlePlaceId": "ChIJZ69FcBq9oRQRIpaIMhGfS6U",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "mania athens",
+      "size": 3,
+      "canonicalEventId": "123ac8d7-d1f2-40e3-9f7c-692492149336",
+      "canonicalName": "Mania Athens",
+      "resolvedPlaceId": "ChIJRXzFqQW9oRQRRDyx4JFakUg",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "123ac8d7-d1f2-40e3-9f7c-692492149336",
+          "name": "Mania Athens",
+          "googlePlaceId": "ChIJRXzFqQW9oRQRRDyx4JFakUg",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "f381e180-7514-4c1f-93c1-2e73beddc050",
+          "name": "Mania Athens",
+          "googlePlaceId": "ChIJRXzFqQW9oRQRRDyx4JFakUg",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "8d6df654-899c-4384-b137-107154c25868",
+          "name": "Mania Athens",
+          "googlePlaceId": "ChIJRXzFqQW9oRQRRDyx4JFakUg",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "minu",
+      "size": 4,
+      "canonicalEventId": "53731b39-5a1e-4b79-95c5-290017bc483f",
+      "canonicalName": "Minu",
+      "resolvedPlaceId": "ChIJHwAhdXy9oRQReocGIxOBygw",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "53731b39-5a1e-4b79-95c5-290017bc483f",
+          "name": "Minu",
+          "googlePlaceId": "ChIJHwAhdXy9oRQReocGIxOBygw",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "823d3cda-a2f6-4123-929b-318f510a3815",
+          "name": "Minu",
+          "googlePlaceId": "ChIJHwAhdXy9oRQReocGIxOBygw",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "026987e4-6fba-4a39-82ef-d5d65143175e",
+          "name": "Minu Cafe Concept Store",
+          "googlePlaceId": "ChIJHwAhdXy9oRQReocGIxOBygw",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "bd7b9fd6-f2da-4682-a921-62d7013a2906",
+          "name": "Minu Concept Store Café",
+          "googlePlaceId": "ChIJHwAhdXy9oRQReocGIxOBygw",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "newskin athens vintage",
+      "size": 3,
+      "canonicalEventId": "b68179bb-31ca-4cef-8248-2e4106415282",
+      "canonicalName": "NewSkin Athens Vintage",
+      "resolvedPlaceId": "ChIJj0BqOTG9oRQRyRzJjkC4SsY",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "b68179bb-31ca-4cef-8248-2e4106415282",
+          "name": "NewSkin Athens Vintage",
+          "googlePlaceId": "ChIJj0BqOTG9oRQRyRzJjkC4SsY",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "70f9bbbf-490e-442a-9155-d23300309fa5",
+          "name": "NewSkin Vintage Clothing",
+          "googlePlaceId": "ChIJj0BqOTG9oRQRyRzJjkC4SsY",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "6900a460-3b41-4501-a25c-386ce0f0ce5f",
+          "name": "NewSkin Vintage Clothing",
+          "googlePlaceId": "ChIJj0BqOTG9oRQRyRzJjkC4SsY",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "ohh boy",
+      "size": 2,
+      "canonicalEventId": "309d6cb4-f80a-4d18-b36e-d1327de0f9d3",
+      "canonicalName": "Ohh Boy",
+      "resolvedPlaceId": "ChIJBTnOKkK9oRQRDqFw5CWvRS4",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "309d6cb4-f80a-4d18-b36e-d1327de0f9d3",
+          "name": "Ohh Boy",
+          "googlePlaceId": "ChIJBTnOKkK9oRQRDqFw5CWvRS4",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "7a6dd58b-1f70-4493-bf33-c9953925098b",
+          "name": "Ohh Boy Brunch Café",
+          "googlePlaceId": "ChIJBTnOKkK9oRQRDqFw5CWvRS4",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "pharaoh barrestaurant",
+      "size": 2,
+      "canonicalEventId": "d2f33ce7-103e-4ee1-bef3-740f78869a31",
+      "canonicalName": "Pharaoh BarRestaurant",
+      "resolvedPlaceId": "ChIJsZWGvy29oRQRa1OmHuA6FDo",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "d2f33ce7-103e-4ee1-bef3-740f78869a31",
+          "name": "Pharaoh BarRestaurant",
+          "googlePlaceId": "ChIJsZWGvy29oRQRa1OmHuA6FDo",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "ed99c8a5-fe0a-4415-9886-26bb8aceae53",
+          "name": "Pharaoh Wine Vinyl Experience",
+          "googlePlaceId": "ChIJsZWGvy29oRQRa1OmHuA6FDo",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "picky brunch specialty coffee",
+      "size": 2,
+      "canonicalEventId": "0143fd30-1eac-4c2c-ae12-c2667a7c85bc",
+      "canonicalName": "Picky Brunch Specialty Coffee",
+      "resolvedPlaceId": "ChIJ7fvJOu-9oRQRzHf10vSxp7c",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "0143fd30-1eac-4c2c-ae12-c2667a7c85bc",
+          "name": "Picky Brunch Specialty Coffee",
+          "googlePlaceId": "ChIJ7fvJOu-9oRQRzHf10vSxp7c",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "e36a3ffd-9cc9-4afe-8e2e-2e8c9434476e",
+          "name": "Picky Brunch Specialty Coffee",
+          "googlePlaceId": "ChIJ7fvJOu-9oRQRzHf10vSxp7c",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "rats vintageclothing",
+      "size": 2,
+      "canonicalEventId": "ebcf171c-57b2-4146-baa5-672a7e665bca",
+      "canonicalName": "rats.vintageclothing",
+      "resolvedPlaceId": "ChIJI4Q_HO69oRQRFIPWdXQ3RgY",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "ebcf171c-57b2-4146-baa5-672a7e665bca",
+          "name": "rats.vintageclothing",
+          "googlePlaceId": "ChIJI4Q_HO69oRQRFIPWdXQ3RgY",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "fb8fbdd3-afd7-4477-a657-07c848f6d792",
+          "name": "rats.vintageclothing",
+          "googlePlaceId": "ChIJI4Q_HO69oRQRFIPWdXQ3RgY",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "rawbata",
+      "size": 2,
+      "canonicalEventId": "004251c9-c9da-49b1-9078-bcac4fed0ee5",
+      "canonicalName": "RawBata",
+      "resolvedPlaceId": "ChIJxf534KejoRQRLrMqTOG6Xc8",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "004251c9-c9da-49b1-9078-bcac4fed0ee5",
+          "name": "RawBata",
+          "googlePlaceId": "ChIJxf534KejoRQRLrMqTOG6Xc8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "2eac17ed-5779-4bfd-8f71-0b45728f59ee",
+          "name": "RawBata",
+          "googlePlaceId": "ChIJxf534KejoRQRLrMqTOG6Xc8",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "rebecca camhi gallery",
+      "size": 3,
+      "canonicalEventId": "0dd41805-62dc-4615-be8c-9a2dc037a721",
+      "canonicalName": "Rebecca Camhi Gallery",
+      "resolvedPlaceId": "ChIJc9St4CW9oRQRrd5izb-NheI",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "0dd41805-62dc-4615-be8c-9a2dc037a721",
+          "name": "Rebecca Camhi Gallery",
+          "googlePlaceId": "ChIJc9St4CW9oRQRrd5izb-NheI",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "bb97d4ac-fae2-433f-b1ee-84be027148e9",
+          "name": "Rebecca Camhi Gallery",
+          "googlePlaceId": "ChIJc9St4CW9oRQRrd5izb-NheI",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "4dd946b6-f8a7-4d57-99c8-ba5a882cc98a",
+          "name": "Rebecca Camhi Gallery",
+          "googlePlaceId": "ChIJc9St4CW9oRQRrd5izb-NheI",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "romantso",
+      "size": 2,
+      "canonicalEventId": "82fc6b0a-2952-4118-a070-737bf6c1a810",
+      "canonicalName": "Romantso",
+      "resolvedPlaceId": "ChIJ6xPhFyW9oRQRgZefo65dYyQ",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "82fc6b0a-2952-4118-a070-737bf6c1a810",
+          "name": "Romantso",
+          "googlePlaceId": "ChIJ6xPhFyW9oRQRgZefo65dYyQ",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "34c92e44-1007-4edf-acc3-ab119aaef375",
+          "name": "Romantso",
+          "googlePlaceId": "ChIJ6xPhFyW9oRQRgZefo65dYyQ",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "september",
+      "size": 2,
+      "canonicalEventId": "ef1c86f8-e7e6-435e-bba3-da9ab7fc7bde",
+      "canonicalName": "September",
+      "resolvedPlaceId": "ChIJo_Inuz29oRQR1TRUjBcOnHM",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "ef1c86f8-e7e6-435e-bba3-da9ab7fc7bde",
+          "name": "September",
+          "googlePlaceId": "ChIJo_Inuz29oRQR1TRUjBcOnHM",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "591c7ab1-2215-4b1a-bf71-c6f4a88a3bc3",
+          "name": "September",
+          "googlePlaceId": "ChIJo_Inuz29oRQR1TRUjBcOnHM",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "sessions",
+      "size": 2,
+      "canonicalEventId": "791ddb6d-6e40-44a8-9279-fe0629f9207b",
+      "canonicalName": "Sessions",
+      "resolvedPlaceId": "ChIJCxKmI4u9oRQREry9ivBdhaU",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "791ddb6d-6e40-44a8-9279-fe0629f9207b",
+          "name": "Sessions",
+          "googlePlaceId": "ChIJCxKmI4u9oRQREry9ivBdhaU",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "f44d278e-8aee-4870-bf0d-9bf92efd103a",
+          "name": "Sessions (sesSSSions)",
+          "googlePlaceId": "ChIJCxKmI4u9oRQREry9ivBdhaU",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "seychelles",
+      "size": 4,
+      "canonicalEventId": "aca30f94-d7af-4b7d-8d73-b15872523c9c",
+      "canonicalName": "Seychelles",
+      "resolvedPlaceId": "ChIJF81tjSa9oRQR-YzddOp6Lz8",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "aca30f94-d7af-4b7d-8d73-b15872523c9c",
+          "name": "Seychelles",
+          "googlePlaceId": "ChIJF81tjSa9oRQR-YzddOp6Lz8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "46b49984-e4df-4d88-a7d9-d532a54ab7e0",
+          "name": "Seychelles",
+          "googlePlaceId": "ChIJF81tjSa9oRQR-YzddOp6Lz8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "015de590-08d0-4a41-91d6-05d5b6556c60",
+          "name": "Seychelles",
+          "googlePlaceId": "ChIJF81tjSa9oRQR-YzddOp6Lz8",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "9d5dd6b3-494a-47ef-a7d3-483441b18eed",
+          "name": "Seychelles Athens",
+          "googlePlaceId": "ChIJF81tjSa9oRQR-YzddOp6Lz8",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "share wish",
+      "size": 2,
+      "canonicalEventId": "169b0551-a3b3-40af-abf9-6145ebb208d0",
+      "canonicalName": "Share Wish",
+      "resolvedPlaceId": "ChIJI0XFy-69oRQR7QAdpqZL7Gw",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "169b0551-a3b3-40af-abf9-6145ebb208d0",
+          "name": "Share Wish",
+          "googlePlaceId": "ChIJI0XFy-69oRQR7QAdpqZL7Gw",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "33b2bd67-1a35-4079-a750-51b1f2b50d17",
+          "name": "Share Wish Tea",
+          "googlePlaceId": "ChIJI0XFy-69oRQR7QAdpqZL7Gw",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "the makers",
+      "size": 2,
+      "canonicalEventId": "2a31a520-c673-42e5-80ca-aeab89538ac5",
+      "canonicalName": "The Makers",
+      "resolvedPlaceId": "ChIJL-NAOc-9oRQRXMYCdQGL_Uo",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "2a31a520-c673-42e5-80ca-aeab89538ac5",
+          "name": "The Makers",
+          "googlePlaceId": "ChIJL-NAOc-9oRQRXMYCdQGL_Uo",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "39f8253e-dd99-45ba-b3db-5dd9049093ba",
+          "name": "THE MAKERS concept store",
+          "googlePlaceId": "ChIJL-NAOc-9oRQRXMYCdQGL_Uo",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "the underdog",
+      "size": 2,
+      "canonicalEventId": "851c82f4-7388-4811-86dc-da9e270c55cf",
+      "canonicalName": "The Underdog",
+      "resolvedPlaceId": "ChIJrfp1eh-9oRQRZIfzJzjNIOg",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "851c82f4-7388-4811-86dc-da9e270c55cf",
+          "name": "The Underdog",
+          "googlePlaceId": "ChIJrfp1eh-9oRQRZIfzJzjNIOg",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "a1e97e1e-34bb-4ea7-b1d6-9a568a7dd28d",
+          "name": "The Underdog",
+          "googlePlaceId": "ChIJrfp1eh-9oRQRZIfzJzjNIOg",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "treasure house vintage",
+      "size": 2,
+      "canonicalEventId": "d0229190-24af-4b15-b410-a4bdbb1165d1",
+      "canonicalName": "Treasure House Vintage",
+      "resolvedPlaceId": "ChIJ28fIaSO9oRQR2LnN1dtc650",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "d0229190-24af-4b15-b410-a4bdbb1165d1",
+          "name": "Treasure House Vintage",
+          "googlePlaceId": "ChIJ28fIaSO9oRQR2LnN1dtc650",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "0fa8be10-816d-4b77-ab93-13c0a10a02e3",
+          "name": "Treasure House Vintage",
+          "googlePlaceId": "ChIJ28fIaSO9oRQR2LnN1dtc650",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "vietnam street food",
+      "size": 3,
+      "canonicalEventId": "720f003b-c36a-4f9f-9580-cb7342df031d",
+      "canonicalName": "Vietnam Street Food",
+      "resolvedPlaceId": "ChIJc28fX5K9oRQRvJYhssjeGws",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "720f003b-c36a-4f9f-9580-cb7342df031d",
+          "name": "Vietnam Street Food",
+          "googlePlaceId": "ChIJc28fX5K9oRQRvJYhssjeGws",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "0ee3aa3e-8abd-437f-8c91-93cb1ef4faaf",
+          "name": "Vietnam Street Food",
+          "googlePlaceId": "ChIJc28fX5K9oRQRvJYhssjeGws",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "3a5d93b5-f857-47d1-8666-05ab0d9104e1",
+          "name": "VIETNAM STREET FOOD",
+          "googlePlaceId": "ChIJc28fX5K9oRQRvJYhssjeGws",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "we need books",
+      "size": 2,
+      "canonicalEventId": "b079b614-82c4-44f5-9f1c-f1dc08262122",
+      "canonicalName": "We Need Books",
+      "resolvedPlaceId": "ChIJw3NPQtqjoRQRw0jXp1TXP6s",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "b079b614-82c4-44f5-9f1c-f1dc08262122",
+          "name": "We Need Books",
+          "googlePlaceId": "ChIJw3NPQtqjoRQRw0jXp1TXP6s",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "5629aad5-2dc6-46dd-9e2e-3322a79fcc87",
+          "name": "We Need Books",
+          "googlePlaceId": "ChIJw3NPQtqjoRQRw0jXp1TXP6s",
+          "lookup": "google_ok"
+        }
+      ]
+    },
+    {
+      "clusterKey": "yesterdays bread",
+      "size": 2,
+      "canonicalEventId": "b23462d2-f5f0-4197-9460-5b9930816f5a",
+      "canonicalName": "Yesterdays Bread",
+      "resolvedPlaceId": "ChIJvdILVzS9oRQRv9MXVxGLofY",
+      "placeIdConflict": false,
+      "conflictingPlaceIds": [],
+      "members": [
+        {
+          "id": "b23462d2-f5f0-4197-9460-5b9930816f5a",
+          "name": "Yesterdays Bread",
+          "googlePlaceId": "ChIJvdILVzS9oRQRv9MXVxGLofY",
+          "lookup": "google_ok"
+        },
+        {
+          "id": "89ea5348-0bfb-449e-822e-c4092934e674",
+          "name": "Yesterdays Bread",
+          "googlePlaceId": "ChIJvdILVzS9oRQRv9MXVxGLofY",
+          "lookup": "google_ok"
+        }
+      ]
+    }
+  ]
+}

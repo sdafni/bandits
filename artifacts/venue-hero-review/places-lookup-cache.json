@@ -1,0 +1,246 @@
+{
+  "generatedAt": "2026-06-28T16:40:00.493Z",
+  "stats": {
+    "attempted": 29,
+    "succeeded": 29,
+    "failed": 0,
+    "zeroResults": 0,
+    "byStatus": {
+      "OK": 29
+    }
+  },
+  "byEventId": {
+    "91ba7dea-b5bc-4f5e-984b-1ade31a16633": {
+      "placeId": "ChIJYcnS4N68oRQRPPVNEOsFAXc",
+      "lookupMethod": "text_search",
+      "searchQuery": "Avant-Drag! (Film / Events) Athens – venues vary Athens Greece",
+      "googleName": "The Greek Film Archive Foundation",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:38.590Z"
+    },
+    "0d2749eb-627e-4b72-a97d-4353c3d007c5": {
+      "placeId": "ChIJEY2wy2ajoRQR5C-AWaE7E3E",
+      "lookupMethod": "text_search",
+      "searchQuery": "Beehive Kypselis Ioánnou Drosopoúlou 65, Athina 112 57 Athens Greece",
+      "googleName": "Beehive Second Chance Shop",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:39.215Z"
+    },
+    "c0437d54-d864-4474-a965-068bbf11a5ae": {
+      "placeId": "ChIJj4gCYgS9oRQRx5eDSSrRoGc",
+      "lookupMethod": "text_search",
+      "searchQuery": "Bel Rey Falirou 88, Athina 117 41 Athens Greece",
+      "googleName": "Bel Ray",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:39.753Z"
+    },
+    "bd62e84b-c783-4de6-aef2-a2db2af2b2c5": {
+      "placeId": "ChIJJ71FdKuioRQRXJlaRM_pgME",
+      "lookupMethod": "text_search",
+      "searchQuery": "Branch Panormou 115, Ambelokipi Athens Greece",
+      "googleName": "My Hood",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:40.347Z"
+    },
+    "dd64af5c-2c37-45b3-99dc-d072b3ea758a": {
+      "placeId": "ChIJuWsuHe29oRQRC-DiBw73Fng",
+      "lookupMethod": "text_search",
+      "searchQuery": "Breadman Φορμίωνος 12 Μονής Σέκου, Athens, Greece 11634 Athens Greece",
+      "googleName": "Breadman",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:40.938Z"
+    },
+    "7fd23539-a8e7-405d-ab81-ff9132c26696": {
+      "placeId": "ChIJowZwUji9oRQRbKfXz8rsyWI",
+      "lookupMethod": "text_search",
+      "searchQuery": "Café Boheme Emmanouil Benaki 94, Athina 106 81 Athens Greece",
+      "googleName": "C.B. BARBAYANNIS",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:41.457Z"
+    },
+    "9684004a-915b-4af1-85e8-f63196c79db8": {
+      "placeId": "ChIJ48k73x69oRQRmcRyMyUn3zU",
+      "lookupMethod": "text_search",
+      "searchQuery": "Cine Thisio Apostolou Pavlou 7, Athina 118 51 Athens Greece",
+      "googleName": "Thision Open Air Cinema",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:42.009Z"
+    },
+    "2677b3db-026a-485d-96b3-4d19506a541b": {
+      "placeId": "ChIJR2AiBeWZoRQRkIp8BunlV1Q",
+      "lookupMethod": "text_search",
+      "searchQuery": "Cultterra Elefsina, Attiki (check socials) Athens Greece",
+      "googleName": "Addictiva Athens Bar",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:42.595Z"
+    },
+    "dc88aa8e-f4da-4ab3-9566-c2ef3162b024": {
+      "placeId": "ChIJeSMNwOO9oRQRGBerTMMGdDI",
+      "lookupMethod": "text_search",
+      "searchQuery": "Dao Vietnamese Street Food Lepeniotou 14, Athina 105 54 Athens Greece",
+      "googleName": "Dao Vietnamese Cuisine",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:43.155Z"
+    },
+    "5c3d3e6a-ea9e-4d31-bf64-870b5b5af7f2": {
+      "placeId": "ChIJe5AcPyW9oRQRduNKjUCu8VI",
+      "lookupMethod": "text_search",
+      "searchQuery": "Ellyz Pangrati Flower Café Archelaou 1, Pangrati 116 35 Athens Greece",
+      "googleName": "ELLYZ Cafe Athens",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:43.779Z"
+    },
+    "bedf13b0-8f20-4989-91b3-fb6e4a45b09f": {
+      "placeId": "ChIJgxF_HS29oRQRjVQz6ZqpJaM",
+      "lookupMethod": "text_search",
+      "searchQuery": "Felicita Aperitivo Wine Bar Vasileiou Tou Megalou 40, Athens Athens Greece",
+      "googleName": "Felicita - Aperitivo & Wine Bar",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:45.022Z"
+    },
+    "e9e06f64-3b97-429c-9345-b9d78321c944": {
+      "placeId": "ChIJpy1Fejq9oRQRrKZFDEDMSLU",
+      "lookupMethod": "text_search",
+      "searchQuery": "Foyer Espresso Bar 2, Vriaxidos Street, Athens, Greece 11635 Athens Greece",
+      "googleName": "Foyer Espresso Bar",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:45.590Z"
+    },
+    "3e048129-a880-4e3f-bdfd-67381d3a8d58": {
+      "placeId": "ChIJ-xZCsTi9oRQRl5q5ra86-g0",
+      "lookupMethod": "text_search",
+      "searchQuery": "Jerar Athens Agias Varvaras 55, Dafni 172 35 Athens Greece",
+      "googleName": "Jerár",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:46.715Z"
+    },
+    "ef0059e3-81b2-4d9d-8ae1-272cb4b55235": {
+      "placeId": "ChIJ4f5rmra9oRQRBRMUriFGTcs",
+      "lookupMethod": "text_search",
+      "searchQuery": "Kowalski Bar 18 Akadimias st., Athens, Greece 10671 Athens Greece",
+      "googleName": "Kowalski",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:47.561Z"
+    },
+    "52113416-86db-4fca-918b-d62255aed225": {
+      "placeId": "ChIJt8euz1K_oRQRQWpd14jurAc",
+      "lookupMethod": "text_search",
+      "searchQuery": "Kyma Seaside Meze Bar Leof. Poseidonos 10, Alimos 174 55 Athens Greece",
+      "googleName": "Kyma Seaside Meze Bar",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:48.193Z"
+    },
+    "80a0b9ea-7a93-4607-9d8f-270b6fcaca7e": {
+      "placeId": "ChIJP8W10jy9oRQRR1nPQ7uV2-o",
+      "lookupMethod": "text_search",
+      "searchQuery": "Lukumades Eolou 21, Aghias Irinis Str, Athina 105 51 Athens Greece",
+      "googleName": "LUKUMAΔΕΣ",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:48.792Z"
+    },
+    "cb2c520e-0b70-478d-80f0-2fef7d43dc74": {
+      "placeId": "ChIJpRooSvq9oRQROAaI0O5DUjA",
+      "lookupMethod": "text_search",
+      "searchQuery": "materiaprima_pagrati Πλ. Μεσολογγίου 3, Athens, Greece 11634 Athens Greece",
+      "googleName": "Materia Prima - cave à manger (Pagrati)",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:49.385Z"
+    },
+    "8585876f-438f-4e01-a4c9-728830d54baa": {
+      "placeId": "ChIJJw4p4Re9oRQRQiOAY5aw2E0",
+      "lookupMethod": "text_search",
+      "searchQuery": "MonAsty Café Kakourgodikiou 4, Athina 105 54 Athens Greece",
+      "googleName": "Mona Athens",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:50.820Z"
+    },
+    "e1b27b30-c902-48fe-8307-c3b787012fea": {
+      "placeId": "ChIJt1_Q0qC9oRQR4HAOnNoH0-Q",
+      "lookupMethod": "text_search",
+      "searchQuery": "Monokeros Bakery Faidrou 4, Pagkrati Athens Greece",
+      "googleName": "Monokeros Bakery",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:51.531Z"
+    },
+    "753dbe70-20ac-4b0e-959f-ff270780c551": {
+      "placeId": "ChIJDx02F2q9oRQR8gJ_kB4kkck",
+      "lookupMethod": "text_search",
+      "searchQuery": "Nido Athens Leventi 5, Athens, Greece 10673 Athens Greece",
+      "googleName": "NiDo",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:52.382Z"
+    },
+    "56fa745f-cd6f-4ce7-952b-3958a742198e": {
+      "placeId": "ChIJzadm-8O9oRQR-5hxjh56QlI",
+      "lookupMethod": "text_search",
+      "searchQuery": "NYX Omirou 19, Athens, Greece 10671 Athens Greece",
+      "googleName": "NYX Japanese Rooftop Gastrobar",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:52.920Z"
+    },
+    "46aefbe2-ca02-410b-9394-2cf081fa0e04": {
+      "placeId": "ChIJc0Ud6Rq9oRQRgDFqdK_Za_E",
+      "lookupMethod": "text_search",
+      "searchQuery": "Riza Riza Δράκου 19, Athens, Greece 11742 Athens Greece",
+      "googleName": "Ρίζα Ρίζα",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:53.502Z"
+    },
+    "a39b2fa9-b229-4723-abf1-28e7565625f4": {
+      "placeId": "ChIJw_8i4Ra9oRQRFt_sV82wg_M",
+      "lookupMethod": "text_search",
+      "searchQuery": "Sense Restaurant 7th floor, AthensWas Athens Greece",
+      "googleName": "Sense Rooftop Restaurant",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:54.190Z"
+    },
+    "0cb611d1-593d-45d1-942b-530bcb0c1398": {
+      "placeId": "ChIJXRfZLt68oRQR55suz2_lthc",
+      "lookupMethod": "text_search",
+      "searchQuery": "SNAP – Athens Queer Comedy Club Various venues (Kypseli focus) Athens Greece",
+      "googleName": "S-Cape",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:55.514Z"
+    },
+    "299c3de5-4fda-4b12-964f-0e7b60a6ce17": {
+      "placeId": "ChIJ820ZK7-9oRQRdCQPw2DOCB4",
+      "lookupMethod": "text_search",
+      "searchQuery": "The Brunch Factory Αθηνάς 11, Athens, Greece 10554 Athens Greece",
+      "googleName": "The Brunch Factory",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:56.532Z"
+    },
+    "7d5424bc-38dd-4622-8670-8de0febc4adf": {
+      "placeId": "ChIJj5jCUuG9oRQRjbYwgnL9vsU",
+      "lookupMethod": "text_search",
+      "searchQuery": "The Rabbit Punch Samou 4, Athina 104 38 Athens Greece",
+      "googleName": "The Rabbit",
+      "photoCount": 0,
+      "cachedAt": "2026-06-28T16:39:58.379Z"
+    },
+    "907ca3ff-fd48-44ad-8ca7-12e38d956c53": {
+      "placeId": "ChIJy9tfHD29oRQRAg79vioVVZ4",
+      "lookupMethod": "text_search",
+      "searchQuery": "The Zillers Boutique Hotel Roof Garden Mitropoleos 54, Athens Athens Greece",
+      "googleName": "The Zillers Rooftop Gastronomy",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:59.096Z"
+    },
+    "fd4fc987-9bd4-40cf-ab26-1510961b31b2": {
+      "placeId": "ChIJfVSrEny9oRQRoJez-yn23kw",
+      "lookupMethod": "text_search",
+      "searchQuery": "Viola Kallidromiou 64, Athina 114 73 Athens Greece",
+      "googleName": "Viola",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:39:59.792Z"
+    },
+    "e9360957-fa6d-4075-a94b-4221624cf800": {
+      "placeId": "ChIJudm5wkW9oRQRfB-KxXQCmdw",
+      "lookupMethod": "text_search",
+      "searchQuery": "Wine is Fine! Vissis 6, Athens Athens Greece",
+      "googleName": "Wine is fine",
+      "photoCount": 10,
+      "cachedAt": "2026-06-28T16:40:00.335Z"
+    }
+  }
+}
