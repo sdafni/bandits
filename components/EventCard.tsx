@@ -1,12 +1,25 @@
 import { Database } from '@/lib/database.types';
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { getEventBanditRecommendations } from '@/app/services/events';
+import { getEventBanditRecommendations, getBanditEventPersonalTip } from '@/app/services/events';
+import LocalBanditOctopusIcon from '@/components/LocalBanditOctopusIcon';
+import {
+  fetchGooglePlacePhotoUrl,
+  getCategoryFallbackImage,
+  isLikelyLogoOrBadPlaceImage,
+  normalizeEventImageUri,
+} from '@/lib/placePhoto';
+import { getCuratedEventImageCandidates } from '@/lib/eventImageCuration';
+import { repairDisplayText } from '@/lib/repairTextEncoding';
 
 type Event = Database['public']['Tables']['event']['Row'];
 type BanditRecommendation = Pick<Database['public']['Tables']['bandit']['Row'], 'id' | 'image_url'>;
+
+// Cache resolved real photo URLs so we don't repeatedly call Google for the same place.
+const EVENT_PHOTO_URL_CACHE = new Map<string, string>();
 
 interface EventCardProps {
   event: Event;
@@ -16,11 +29,12 @@ interface EventCardProps {
   buttonType?: 'like' | 'remove';
   buttonText?: string;
   showButton?: boolean;
-  variant?: 'default' | 'horizontal';
+  variant?: 'default' | 'horizontal' | 'grid';
   imageHeight?: number;
   onPress?: () => void;
   banditId?: string; // Optional bandit ID for navigation context
   showRecommendations?: boolean; // Show bandit recommendation icons
+  isHighlighted?: boolean;
 }
 
 export default function EventCard({
@@ -34,11 +48,125 @@ export default function EventCard({
   imageHeight,
   onPress,
   banditId,
-  showRecommendations = false
+  showRecommendations = false,
+  isHighlighted = false,
 }: EventCardProps) {
   const router = useRouter();
   const isHorizontal = variant === 'horizontal';
+  const isGrid = variant === 'grid';
   const [recommendingBandits, setRecommendingBandits] = useState<BanditRecommendation[]>([]);
+  const [personalTip, setPersonalTip] = useState<string | null>(null);
+  const photoUrlCache = EVENT_PHOTO_URL_CACHE;
+
+  const sanitizeImageUrl = (uri: string | null | undefined) => {
+    const n = normalizeEventImageUri(uri);
+    if (!n || isLikelyLogoOrBadPlaceImage(n)) return null;
+    return n;
+  };
+
+  const isLogoLikeImageUri = (uri: string) => isLikelyLogoOrBadPlaceImage(uri);
+
+  /**
+   * Priority: (1) image_gallery URLs in order, (2) image_url, (3) Google Places photo.
+   * Same URL is not listed twice.
+   */
+  const dbImageCandidates = useMemo(() => {
+    const out: string[] = [];
+    getCuratedEventImageCandidates(event as any).forEach((u) => {
+      const n = normalizeEventImageUri(u);
+      if (n && !out.includes(n)) out.push(n);
+    });
+    const add = (raw: string | null | undefined) => {
+      const n = normalizeEventImageUri(raw);
+      if (!n || isLogoLikeImageUri(n)) return;
+      if (!out.includes(n)) out.push(n);
+    };
+    if (event.image_gallery) {
+      try {
+        const parsed = JSON.parse(event.image_gallery);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((u) => typeof u === 'string' && add(u));
+        }
+      } catch {
+        event.image_gallery.split(',').forEach((u) => add(u.trim()));
+      }
+    }
+    add(event.image_url);
+    return out;
+  }, [event.id, event.image_gallery, event.image_url]);
+
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [useLocalFallback, setUseLocalFallback] = useState(false);
+  const [googlePhotoUri, setGooglePhotoUri] = useState<string | null>(null);
+  const [googleFetchFinished, setGoogleFetchFinished] = useState(false);
+  const googleFetchStarted = useRef(false);
+
+  const displayUri = useMemo(() => {
+    const raw =
+      candidateIndex < dbImageCandidates.length
+        ? dbImageCandidates[candidateIndex]
+        : googlePhotoUri;
+    return normalizeEventImageUri(raw);
+  }, [candidateIndex, dbImageCandidates, googlePhotoUri]);
+
+  /** Always have a visible image: remote/Google when available, else category stock (no blank web tiles). */
+  const resolvedImageUri =
+    displayUri ||
+    getCategoryFallbackImage(event.genre, `event-${event.id}`, 800, 600);
+
+  const fetchPlacePhoto = async () => {
+    return fetchGooglePlacePhotoUrl({
+      placeId: (event as any).google_place_id ?? null,
+      name: String(event.name ?? ''),
+      address: String(event.address ?? ''),
+      city: String(event.city ?? ''),
+      neighborhood: String(event.neighborhood ?? ''),
+    });
+  };
+
+  /** Reset when event / DB URLs change. */
+  useLayoutEffect(() => {
+    setCandidateIndex(0);
+    setUseLocalFallback(false);
+    setGooglePhotoUri(null);
+    setGoogleFetchFinished(false);
+    googleFetchStarted.current = false;
+  }, [event.id, dbImageCandidates.length]);
+
+  /** After all DB URLs fail onError, or when there are no DB URLs — Google Places fallback. */
+  const loadGooglePhoto = () => {
+    if (googleFetchStarted.current) return;
+    googleFetchStarted.current = true;
+    const cached = photoUrlCache.get(event.id);
+    if (cached && !isLogoLikeImageUri(cached)) {
+      setGooglePhotoUri(cached);
+      setGoogleFetchFinished(true);
+      return;
+    }
+    void (async () => {
+      let got: string | null = null;
+      try {
+        const photoUrl = await fetchPlacePhoto();
+        if (photoUrl && !isLogoLikeImageUri(photoUrl)) {
+          photoUrlCache.set(event.id, photoUrl);
+          setGooglePhotoUri(photoUrl);
+          got = photoUrl;
+        }
+      } catch (e) {
+        console.warn('[EventCard] google photo fetch failed', { eventId: event.id, e });
+      } finally {
+        setGoogleFetchFinished(true);
+      }
+      if (!got) {
+        setGooglePhotoUri(getCategoryFallbackImage(event.genre, `event-${event.id}`, 800, 600));
+      }
+    })();
+  };
+
+  useEffect(() => {
+    if (dbImageCandidates.length > 0) return;
+    loadGooglePhoto();
+  }, [event.id, dbImageCandidates.length]);
 
   // Fetch bandit recommendations when showRecommendations is true
   useEffect(() => {
@@ -55,14 +183,28 @@ export default function EventCard({
     }
   }, [event.id, showRecommendations]);
 
+  // Fetch bandit's personal tip for this event when banditId is provided
+  useEffect(() => {
+    if (!banditId) return;
+    const loadTip = async () => {
+      try {
+        const tip = await getBanditEventPersonalTip(banditId, event.id);
+        setPersonalTip(tip);
+      } catch (error) {
+        console.error('Error fetching bandit personal tip:', error);
+      }
+    };
+    loadTip();
+  }, [banditId, event.id]);
+
   const handleCardPress = () => {
     if (onPress) {
       onPress();
     } else {
-      // Default navigation to event detail page
+      // Default navigation to spot detail page
       const url = banditId 
-        ? `/event/${event.id}?banditId=${banditId}` as any
-        : `/event/${event.id}` as any;
+        ? `/spot/${event.id}?banditId=${banditId}` as any
+        : `/spot/${event.id}` as any;
       router.push(url);
     }
   };
@@ -76,18 +218,38 @@ export default function EventCard({
     <>
       {/* Event Image - Always show container so bandit icons are visible */}
       <View style={[
-        styles.imageContainer, 
+        styles.imageContainer,
         isHorizontal && styles.imageContainerHorizontal,
-        ...(imageHeight ? [{ height: imageHeight }] : [])
+        isGrid && styles.imageContainerGrid,
+        ...(imageHeight ? [{ height: imageHeight }] : []),
       ]}>
-        <Image
-          source={{
-            uri: (event.image_url && event.image_url.trim()) || 'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/jazzInjazz.png'
-          }}
-          style={styles.eventImage}
-          resizeMode="cover"
-          onError={(error) => {
-            console.error('Image failed to load:', event.image_url || 'default image', error);
+        <ExpoImage
+          source={
+            useLocalFallback
+              ? require('@/assets/images/play_athens_bg.png')
+              : { uri: resolvedImageUri }
+          }
+          style={
+            isHorizontal
+              ? styles.eventImageHorizontal
+              : isGrid
+                ? styles.eventImageGrid
+                : styles.eventImage
+          }
+          contentFit="cover"
+          transition={150}
+          onError={() => {
+            if (useLocalFallback) return;
+            if (candidateIndex + 1 < dbImageCandidates.length) {
+              setCandidateIndex((i) => i + 1);
+              return;
+            }
+            setCandidateIndex(dbImageCandidates.length);
+            if (!googleFetchFinished) {
+              loadGooglePhoto();
+              return;
+            }
+            setUseLocalFallback(true);
           }}
         />
         <View style={styles.ratingContainer}>
@@ -107,14 +269,20 @@ export default function EventCard({
                 ]}
                 onPress={(e) => {
                   e.stopPropagation();
-                  router.push(`/bandit/${bandit.id}` as any);
+                  router.push(`/bandits?focusBanditId=${encodeURIComponent(bandit.id)}` as any);
                 }}
               >
-                <Image
-                  source={{ uri: bandit.image_url }}
-                  style={styles.banditIconImage}
-                  resizeMode="cover"
-                />
+                {sanitizeImageUrl(bandit.image_url) ? (
+                  <Image
+                    source={{ uri: sanitizeImageUrl(bandit.image_url) as string }}
+                    style={styles.banditIconImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.banditIconImage, styles.octopusInIcon]}>
+                    <LocalBanditOctopusIcon style={{ width: 40, height: 40, marginRight: 0 }} />
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -123,7 +291,8 @@ export default function EventCard({
       
       <View style={[
         styles.eventContent,
-        isHorizontal && styles.eventContentHorizontal
+        isHorizontal && styles.eventContentHorizontal,
+        isGrid && styles.eventContentGrid,
       ]}>
         <View style={styles.eventHeader}>
           <Text style={styles.eventName}>{event.name || ''}</Text>
@@ -143,13 +312,37 @@ export default function EventCard({
             )
           )}
         </View>
-        <Text style={styles.eventDescription} numberOfLines={3} ellipsizeMode="tail">{event.description || ''}</Text>
-        <View style={styles.bottomInfo}>
-          <Text style={styles.eventAddress} numberOfLines={0} adjustsFontSizeToFit={false}>{event.address || ''}</Text>
+        {event.genre && (
+          <Text style={styles.eventGenre}>
+            {event.genre}
+          </Text>
+        )}
+        <Text
+          style={[
+            styles.eventDescription,
+            isHorizontal && styles.eventDescriptionHorizontal,
+            isGrid && styles.eventDescriptionGrid,
+          ]}
+          numberOfLines={isGrid ? 3 : undefined}
+        >
+          {repairDisplayText(event.description || '')}
+        </Text>
+        {personalTip && (
+          <Text style={[styles.personalTip, isHorizontal && styles.personalTipHorizontal, isGrid && styles.personalTipGrid]}>
+            {`banDit tip: ${repairDisplayText(personalTip)}`}
+          </Text>
+        )}
+        <View style={[styles.bottomInfo, isHorizontal && styles.bottomInfoHorizontal, isGrid && styles.bottomInfoGrid]}>
+          <Text
+            style={[styles.eventAddress, isHorizontal && styles.eventAddressHorizontal, isGrid && styles.eventAddressGrid]}
+            numberOfLines={isGrid ? 2 : undefined}
+          >
+            {repairDisplayText(event.address || '')}
+          </Text>
           {event.timing_info && typeof event.timing_info === 'string' && event.timing_info.trim() && (
             <View style={styles.timeContainer}>
               <Text style={styles.eventTime}>
-                {event.timing_info || ''}
+                {repairDisplayText(event.timing_info || '')}
               </Text>
             </View>
           )}
@@ -163,7 +356,9 @@ export default function EventCard({
       style={[
         styles.eventCard,
         isHorizontal && styles.eventCardHorizontal,
-        !isHorizontal && Platform.OS === 'android' && styles.eventCardAndroid
+        isGrid && styles.eventCardGrid,
+        !isHorizontal && !isGrid && Platform.OS === 'android' && styles.eventCardAndroid,
+        isHighlighted && styles.highlightedCard,
       ]}
       onPress={handleCardPress}
     >
@@ -187,9 +382,8 @@ const styles = StyleSheet.create({
   },
   eventCardHorizontal: {
     width: 192,
-    height: 320,
     marginRight: 8,
-    marginBottom: 0,
+    marginBottom: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 7,
     shadowColor: '#000',
@@ -197,6 +391,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'visible',
+    paddingBottom: 14,
+  },
+  eventCardGrid: {
+    width: '100%',
+    flex: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 0,
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
+    overflow: 'hidden',
   },
   eventHeader: {
     flexDirection: 'row',
@@ -235,24 +448,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventAddress: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     color: '#666',
     marginBottom: 4,
     flexWrap: 'wrap',
-    flexShrink: 0,
+  },
+  eventAddressHorizontal: {
+    flexShrink: 1,
+    marginTop: 4,
   },
 
   eventDescription: {
     fontSize: 14,
     color: '#333',
-    marginBottom: 2,
+    marginBottom: 4,
     marginTop: 2,
-    flex: 1,
-    minHeight: 0,
-    maxHeight: 100, // Prevent description from taking too much space
+    lineHeight: 20,
+  },
+  eventDescriptionHorizontal: {
+    marginBottom: 8,
+  },
+  personalTipHorizontal: {
+    marginBottom: 8,
+    marginTop: 2,
   },
   bottomInfo: {
     flexShrink: 0,
+  },
+  bottomInfoHorizontal: {
+    paddingTop: 6,
+    width: '100%',
   },
   eventTime: {
     fontSize: 16,
@@ -262,10 +488,20 @@ const styles = StyleSheet.create({
   timeContainer: {
     marginTop: 4,
   },
+  /** Default: fill aspect-ratio box. Horizontal Explore grid: explicit ratio fixes blank tiles on web. */
   eventImage: {
-    width: '100%',
-    height: '90%',
+    ...StyleSheet.absoluteFillObject,
     borderRadius: 8,
+  },
+  eventImageHorizontal: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 8,
+  },
+  eventImageGrid: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
   },
   eventContent: {
     flex: 1,
@@ -276,24 +512,60 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   eventContentHorizontal: {
-    flex: 1,
-    padding: 3,
+    flex: 0,
+    flexGrow: 0,
+    padding: 6,
+    paddingBottom: 12,
+    justifyContent: 'flex-start',
+  },
+  eventContentGrid: {
+    flex: 0,
+    flexGrow: 0,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    justifyContent: 'flex-start',
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: Platform.OS === 'android' ? 160 : 140,
+    aspectRatio: 4 / 3,
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 6,
     flexShrink: 0,
+    backgroundColor: '#EAEAEA',
+  },
+  octopusInIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
   },
   imageContainerHorizontal: {
     width: '100%',
-    height: 205,
     marginBottom: 8,
     borderTopLeftRadius: 7,
     borderTopRightRadius: 7,
+  },
+  imageContainerGrid: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    marginBottom: 0,
+    borderRadius: 0,
+    backgroundColor: '#EAEAEA',
+  },
+  eventDescriptionGrid: {
+    marginBottom: 6,
+  },
+  personalTipGrid: {
+    marginBottom: 6,
+  },
+  bottomInfoGrid: {
+    paddingTop: 2,
+    width: '100%',
+  },
+  eventAddressGrid: {
+    marginTop: 0,
   },
   ratingContainer: {
     position: 'absolute',
@@ -335,5 +607,30 @@ const styles = StyleSheet.create({
   banditIconImage: {
     width: '100%',
     height: '100%',
+  },
+  banditIconImageLoading: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  eventGenre: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF3B30',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  personalTip: {
+    fontSize: 12,
+    color: '#555',
+    marginTop: 2,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  highlightedCard: {
+    borderWidth: 2,
+    borderColor: '#111',
   },
 }); 
