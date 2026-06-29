@@ -1,40 +1,25 @@
 import { Database } from '@/lib/database.types';
-import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { getEventBanditRecommendations, getBanditEventPersonalTip } from '@/app/services/events';
-import LocalBanditOctopusIcon from '@/components/LocalBanditOctopusIcon';
-import {
-  fetchGooglePlacePhotoUrl,
-  getCategoryFallbackImage,
-  isLikelyLogoOrBadPlaceImage,
-  normalizeEventImageUri,
-} from '@/lib/placePhoto';
-import { getCuratedEventImageCandidates } from '@/lib/eventImageCuration';
-import { repairDisplayText } from '@/lib/repairTextEncoding';
+import { getEventBanditRecommendations } from '@/app/services/events';
 
 type Event = Database['public']['Tables']['event']['Row'];
 type BanditRecommendation = Pick<Database['public']['Tables']['bandit']['Row'], 'id' | 'image_url'>;
-
-// Cache resolved real photo URLs so we don't repeatedly call Google for the same place.
-const EVENT_PHOTO_URL_CACHE = new Map<string, string>();
 
 interface EventCardProps {
   event: Event;
   onLike: () => void;
   isLiked: boolean;
-  // New variant props for different behaviors
   buttonType?: 'like' | 'remove';
   buttonText?: string;
   showButton?: boolean;
   variant?: 'default' | 'horizontal' | 'grid';
   imageHeight?: number;
   onPress?: () => void;
-  banditId?: string; // Optional bandit ID for navigation context
-  showRecommendations?: boolean; // Show bandit recommendation icons
-  isHighlighted?: boolean;
+  banditId?: string;
+  showRecommendations?: boolean;
 }
 
 export default function EventCard({
@@ -49,126 +34,16 @@ export default function EventCard({
   onPress,
   banditId,
   showRecommendations = false,
-  isHighlighted = false,
 }: EventCardProps) {
   const router = useRouter();
   const isHorizontal = variant === 'horizontal';
   const isGrid = variant === 'grid';
   const [recommendingBandits, setRecommendingBandits] = useState<BanditRecommendation[]>([]);
-  const [personalTip, setPersonalTip] = useState<string | null>(null);
-  const photoUrlCache = EVENT_PHOTO_URL_CACHE;
 
-  const sanitizeImageUrl = (uri: string | null | undefined) => {
-    const n = normalizeEventImageUri(uri);
-    if (!n || isLikelyLogoOrBadPlaceImage(n)) return null;
-    return n;
-  };
+  const imageUri =
+    (event.image_url && event.image_url.trim()) ||
+    'https://zubcakeamyfqatdmleqx.supabase.co/storage/v1/object/public/banditsassets4/assets/jazzInjazz.png';
 
-  const isLogoLikeImageUri = (uri: string) => isLikelyLogoOrBadPlaceImage(uri);
-
-  /**
-   * Priority: (1) image_gallery URLs in order, (2) image_url, (3) Google Places photo.
-   * Same URL is not listed twice.
-   */
-  const dbImageCandidates = useMemo(() => {
-    const out: string[] = [];
-    getCuratedEventImageCandidates(event as any).forEach((u) => {
-      const n = normalizeEventImageUri(u);
-      if (n && !out.includes(n)) out.push(n);
-    });
-    const add = (raw: string | null | undefined) => {
-      const n = normalizeEventImageUri(raw);
-      if (!n || isLogoLikeImageUri(n)) return;
-      if (!out.includes(n)) out.push(n);
-    };
-    if (event.image_gallery) {
-      try {
-        const parsed = JSON.parse(event.image_gallery);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((u) => typeof u === 'string' && add(u));
-        }
-      } catch {
-        event.image_gallery.split(',').forEach((u) => add(u.trim()));
-      }
-    }
-    add(event.image_url);
-    return out;
-  }, [event.id, event.image_gallery, event.image_url]);
-
-  const [candidateIndex, setCandidateIndex] = useState(0);
-  const [useLocalFallback, setUseLocalFallback] = useState(false);
-  const [googlePhotoUri, setGooglePhotoUri] = useState<string | null>(null);
-  const [googleFetchFinished, setGoogleFetchFinished] = useState(false);
-  const googleFetchStarted = useRef(false);
-
-  const displayUri = useMemo(() => {
-    const raw =
-      candidateIndex < dbImageCandidates.length
-        ? dbImageCandidates[candidateIndex]
-        : googlePhotoUri;
-    return normalizeEventImageUri(raw);
-  }, [candidateIndex, dbImageCandidates, googlePhotoUri]);
-
-  /** Always have a visible image: remote/Google when available, else category stock (no blank web tiles). */
-  const resolvedImageUri =
-    displayUri ||
-    getCategoryFallbackImage(event.genre, `event-${event.id}`, 800, 600);
-
-  const fetchPlacePhoto = async () => {
-    return fetchGooglePlacePhotoUrl({
-      placeId: (event as any).google_place_id ?? null,
-      name: String(event.name ?? ''),
-      address: String(event.address ?? ''),
-      city: String(event.city ?? ''),
-      neighborhood: String(event.neighborhood ?? ''),
-    });
-  };
-
-  /** Reset when event / DB URLs change. */
-  useLayoutEffect(() => {
-    setCandidateIndex(0);
-    setUseLocalFallback(false);
-    setGooglePhotoUri(null);
-    setGoogleFetchFinished(false);
-    googleFetchStarted.current = false;
-  }, [event.id, dbImageCandidates.length]);
-
-  /** After all DB URLs fail onError, or when there are no DB URLs — Google Places fallback. */
-  const loadGooglePhoto = () => {
-    if (googleFetchStarted.current) return;
-    googleFetchStarted.current = true;
-    const cached = photoUrlCache.get(event.id);
-    if (cached && !isLogoLikeImageUri(cached)) {
-      setGooglePhotoUri(cached);
-      setGoogleFetchFinished(true);
-      return;
-    }
-    void (async () => {
-      let got: string | null = null;
-      try {
-        const photoUrl = await fetchPlacePhoto();
-        if (photoUrl && !isLogoLikeImageUri(photoUrl)) {
-          photoUrlCache.set(event.id, photoUrl);
-          setGooglePhotoUri(photoUrl);
-          got = photoUrl;
-        }
-      } catch (e) {
-        console.warn('[EventCard] google photo fetch failed', { eventId: event.id, e });
-      } finally {
-        setGoogleFetchFinished(true);
-      }
-      if (!got) {
-        setGooglePhotoUri(getCategoryFallbackImage(event.genre, `event-${event.id}`, 800, 600));
-      }
-    })();
-  };
-
-  useEffect(() => {
-    if (dbImageCandidates.length > 0) return;
-    loadGooglePhoto();
-  }, [event.id, dbImageCandidates.length]);
-
-  // Fetch bandit recommendations when showRecommendations is true
   useEffect(() => {
     if (showRecommendations) {
       const fetchRecommendations = async () => {
@@ -183,167 +58,102 @@ export default function EventCard({
     }
   }, [event.id, showRecommendations]);
 
-  // Fetch bandit's personal tip for this event when banditId is provided
-  useEffect(() => {
-    if (!banditId) return;
-    const loadTip = async () => {
-      try {
-        const tip = await getBanditEventPersonalTip(banditId, event.id);
-        setPersonalTip(tip);
-      } catch (error) {
-        console.error('Error fetching bandit personal tip:', error);
-      }
-    };
-    loadTip();
-  }, [banditId, event.id]);
-
   const handleCardPress = () => {
     if (onPress) {
       onPress();
-    } else {
-      // Default navigation to spot detail page
-      const url = banditId 
-        ? `/spot/${event.id}?banditId=${banditId}` as any
-        : `/spot/${event.id}` as any;
-      router.push(url);
+      return;
     }
+    const url = banditId
+      ? (`/event/${event.id}?banditId=${banditId}` as const)
+      : (`/event/${event.id}` as const);
+    router.push(url as any);
   };
 
   const handleLikePress = (e: any) => {
-    e.stopPropagation(); // Prevent card press when like button is pressed
+    e.stopPropagation();
     onLike();
   };
 
   const cardContent = (
     <>
-      {/* Event Image - Always show container so bandit icons are visible */}
-      <View style={[
-        styles.imageContainer,
-        isHorizontal && styles.imageContainerHorizontal,
-        isGrid && styles.imageContainerGrid,
-        ...(imageHeight ? [{ height: imageHeight }] : []),
-      ]}>
-        <ExpoImage
-          source={
-            useLocalFallback
-              ? require('@/assets/images/play_athens_bg.png')
-              : { uri: resolvedImageUri }
-          }
-          style={
-            isHorizontal
-              ? styles.eventImageHorizontal
-              : isGrid
-                ? styles.eventImageGrid
-                : styles.eventImage
-          }
-          contentFit="cover"
-          transition={150}
-          onError={() => {
-            if (useLocalFallback) return;
-            if (candidateIndex + 1 < dbImageCandidates.length) {
-              setCandidateIndex((i) => i + 1);
-              return;
-            }
-            setCandidateIndex(dbImageCandidates.length);
-            if (!googleFetchFinished) {
-              loadGooglePhoto();
-              return;
-            }
-            setUseLocalFallback(true);
+      <View
+        style={[
+          styles.imageContainer,
+          isHorizontal && styles.imageContainerHorizontal,
+          isGrid && styles.imageContainerGrid,
+          !isHorizontal && !isGrid && styles.imageContainerDefault,
+          ...(imageHeight ? [{ height: imageHeight }] : []),
+        ]}
+      >
+        <Image
+          source={{ uri: imageUri }}
+          style={isHorizontal ? styles.eventImageHorizontal : styles.eventImageCover}
+          resizeMode="cover"
+          onError={(error) => {
+            console.error('Image failed to load:', event.image_url || 'default image', error);
           }}
         />
         <View style={styles.ratingContainer}>
           <Text style={styles.ratingText}>{(event.rating || 0).toFixed(1)}</Text>
           <Text style={styles.starText}>★</Text>
         </View>
-        
-        {/* Bandit Recommendation Icons - Now always visible */}
+
         {showRecommendations && recommendingBandits.length > 0 && (
           <View style={styles.recommendationsContainer}>
             {recommendingBandits.map((bandit, index) => (
               <TouchableOpacity
                 key={bandit.id}
-                style={[
-                  styles.banditIcon,
-                  { zIndex: recommendingBandits.length - index } // Stack icons with proper layering
-                ]}
+                style={[styles.banditIcon, { zIndex: recommendingBandits.length - index }]}
                 onPress={(e) => {
                   e.stopPropagation();
-                  router.push(`/bandits?focusBanditId=${encodeURIComponent(bandit.id)}` as any);
+                  router.push(`/bandit/${bandit.id}` as any);
                 }}
               >
-                {sanitizeImageUrl(bandit.image_url) ? (
-                  <Image
-                    source={{ uri: sanitizeImageUrl(bandit.image_url) as string }}
-                    style={styles.banditIconImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.banditIconImage, styles.octopusInIcon]}>
-                    <LocalBanditOctopusIcon style={{ width: 40, height: 40, marginRight: 0 }} />
-                  </View>
-                )}
+                <Image source={{ uri: bandit.image_url }} style={styles.banditIconImage} resizeMode="cover" />
               </TouchableOpacity>
             ))}
           </View>
         )}
       </View>
-      
-      <View style={[
-        styles.eventContent,
-        isHorizontal && styles.eventContentHorizontal,
-        isGrid && styles.eventContentGrid,
-      ]}>
+
+      <View style={[styles.eventContent, isHorizontal && styles.eventContentHorizontal, isGrid && styles.eventContentGrid]}>
         <View style={styles.eventHeader}>
-          <Text style={styles.eventName}>{event.name || ''}</Text>
-          {showButton && (
-            buttonType === 'remove' ? (
+          <Text style={styles.eventName} numberOfLines={isGrid ? 2 : undefined}>
+            {event.name || ''}
+          </Text>
+          {showButton &&
+            (buttonType === 'remove' ? (
               <TouchableOpacity onPress={handleLikePress} style={styles.removeButton}>
-                <Text style={styles.removeButtonText}>
-                  {buttonText || 'Remove'}
-                </Text>
+                <Text style={styles.removeButtonText}>{buttonText || 'Remove'}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={handleLikePress} style={styles.likeButton}>
-                <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
-                  {isLiked ? '❤️' : '🤍'}
-                </Text>
+                <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>{isLiked ? '❤️' : '🤍'}</Text>
               </TouchableOpacity>
-            )
-          )}
+            ))}
         </View>
-        {event.genre && (
-          <Text style={styles.eventGenre}>
+
+        {!!event.genre && (
+          <Text style={styles.eventGenre} numberOfLines={1}>
             {event.genre}
           </Text>
         )}
+
         <Text
-          style={[
-            styles.eventDescription,
-            isHorizontal && styles.eventDescriptionHorizontal,
-            isGrid && styles.eventDescriptionGrid,
-          ]}
-          numberOfLines={isGrid ? 3 : undefined}
+          style={[styles.eventDescription, isGrid && styles.eventDescriptionGrid]}
+          numberOfLines={isGrid ? 3 : 3}
+          ellipsizeMode="tail"
         >
-          {repairDisplayText(event.description || '')}
+          {event.description || ''}
         </Text>
-        {personalTip && (
-          <Text style={[styles.personalTip, isHorizontal && styles.personalTipHorizontal, isGrid && styles.personalTipGrid]}>
-            {`banDit tip: ${repairDisplayText(personalTip)}`}
-          </Text>
-        )}
-        <View style={[styles.bottomInfo, isHorizontal && styles.bottomInfoHorizontal, isGrid && styles.bottomInfoGrid]}>
-          <Text
-            style={[styles.eventAddress, isHorizontal && styles.eventAddressHorizontal, isGrid && styles.eventAddressGrid]}
-            numberOfLines={isGrid ? 2 : undefined}
-          >
-            {repairDisplayText(event.address || '')}
+
+        <View style={[styles.bottomInfo, isGrid && styles.bottomInfoGrid]}>
+          <Text style={styles.eventAddress} numberOfLines={isGrid ? 2 : 0}>
+            {event.address || ''}
           </Text>
           {event.timing_info && typeof event.timing_info === 'string' && event.timing_info.trim() && (
             <View style={styles.timeContainer}>
-              <Text style={styles.eventTime}>
-                {repairDisplayText(event.timing_info || '')}
-              </Text>
+              <Text style={styles.eventTime}>{event.timing_info}</Text>
             </View>
           )}
         </View>
@@ -358,7 +168,6 @@ export default function EventCard({
         isHorizontal && styles.eventCardHorizontal,
         isGrid && styles.eventCardGrid,
         !isHorizontal && !isGrid && Platform.OS === 'android' && styles.eventCardAndroid,
-        isHighlighted && styles.highlightedCard,
       ]}
       onPress={handleCardPress}
     >
@@ -382,8 +191,9 @@ const styles = StyleSheet.create({
   },
   eventCardHorizontal: {
     width: 192,
+    height: 320,
     marginRight: 8,
-    marginBottom: 8,
+    marginBottom: 0,
     backgroundColor: '#FFFFFF',
     borderRadius: 7,
     shadowColor: '#000',
@@ -391,8 +201,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
-    overflow: 'visible',
-    paddingBottom: 14,
   },
   eventCardGrid: {
     width: '100%',
@@ -414,8 +222,9 @@ const styles = StyleSheet.create({
   eventHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 0,
+    gap: 8,
   },
   likeButton: {
     padding: 4,
@@ -447,38 +256,39 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     flex: 1,
   },
+  eventGenre: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF3B30',
+    marginTop: 4,
+    marginBottom: 2,
+  },
   eventAddress: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
     color: '#666',
     marginBottom: 4,
     flexWrap: 'wrap',
+    flexShrink: 0,
   },
-  eventAddressHorizontal: {
-    flexShrink: 1,
-    marginTop: 4,
-  },
-
   eventDescription: {
     fontSize: 14,
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 2,
     marginTop: 2,
-    lineHeight: 20,
+    flex: 1,
+    minHeight: 0,
+    maxHeight: 100,
   },
-  eventDescriptionHorizontal: {
+  eventDescriptionGrid: {
+    flex: 0,
+    maxHeight: undefined,
     marginBottom: 8,
-  },
-  personalTipHorizontal: {
-    marginBottom: 8,
-    marginTop: 2,
   },
   bottomInfo: {
     flexShrink: 0,
   },
-  bottomInfoHorizontal: {
-    paddingTop: 6,
-    width: '100%',
+  bottomInfoGrid: {
+    paddingTop: 2,
   },
   eventTime: {
     fontSize: 16,
@@ -488,20 +298,14 @@ const styles = StyleSheet.create({
   timeContainer: {
     marginTop: 4,
   },
-  /** Default: fill aspect-ratio box. Horizontal Explore grid: explicit ratio fixes blank tiles on web. */
-  eventImage: {
+  eventImageCover: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
+    borderRadius: 0,
   },
   eventImageHorizontal: {
     width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: 8,
-  },
-  eventImageGrid: {
-    width: '100%',
     height: '100%',
-    borderRadius: 0,
+    borderRadius: 8,
   },
   eventContent: {
     flex: 1,
@@ -512,11 +316,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   eventContentHorizontal: {
-    flex: 0,
-    flexGrow: 0,
-    padding: 6,
-    paddingBottom: 12,
-    justifyContent: 'flex-start',
+    flex: 1,
+    padding: 3,
   },
   eventContentGrid: {
     flex: 0,
@@ -529,43 +330,27 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    aspectRatio: 4 / 3,
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 6,
     flexShrink: 0,
     backgroundColor: '#EAEAEA',
   },
-  octopusInIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF',
+  imageContainerDefault: {
+    aspectRatio: 4 / 3,
+    height: Platform.OS === 'android' ? 160 : undefined,
   },
   imageContainerHorizontal: {
     width: '100%',
+    height: 205,
     marginBottom: 8,
     borderTopLeftRadius: 7,
     borderTopRightRadius: 7,
   },
   imageContainerGrid: {
-    width: '100%',
     aspectRatio: 4 / 3,
     marginBottom: 0,
     borderRadius: 0,
-    backgroundColor: '#EAEAEA',
-  },
-  eventDescriptionGrid: {
-    marginBottom: 6,
-  },
-  personalTipGrid: {
-    marginBottom: 6,
-  },
-  bottomInfoGrid: {
-    paddingTop: 2,
-    width: '100%',
-  },
-  eventAddressGrid: {
-    marginTop: 0,
   },
   ratingContainer: {
     position: 'absolute',
@@ -601,36 +386,11 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 2,
     borderColor: 'white',
-    marginLeft: -12, // Overlap icons slightly
+    marginLeft: -12,
     overflow: 'hidden',
   },
   banditIconImage: {
     width: '100%',
     height: '100%',
   },
-  banditIconImageLoading: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  eventGenre: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF3B30',
-    marginTop: 2,
-    marginBottom: 2,
-  },
-  personalTip: {
-    fontSize: 12,
-    color: '#555',
-    marginTop: 2,
-    marginBottom: 8,
-    lineHeight: 18,
-  },
-  highlightedCard: {
-    borderWidth: 2,
-    borderColor: '#111',
-  },
-}); 
+});

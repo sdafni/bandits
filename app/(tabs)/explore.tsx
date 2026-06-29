@@ -319,6 +319,7 @@ const styles = StyleSheet.create({
   row: {
     gap: 16,
     marginBottom: 16,
+    alignItems: 'stretch',
   },
   cardWrapGrid: {
     flex: 1,

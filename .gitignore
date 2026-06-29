@@ -50,3 +50,4 @@ android/build
 python_scripts/bandit_images/
 # Local Netlify folder
 .netlify
+.vercel
